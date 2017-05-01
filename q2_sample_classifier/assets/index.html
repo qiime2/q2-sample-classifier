@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="row">
+  <div class="col-lg-12">
+    {{ result }}
+    <h1>Accuracy result</h1>
+    <div class="text-center">
+      <a href="predictions.pdf">
+        <img src="predictions.png">
+        <br>
+        <p>Download as PDF</p>
+      </a>
+      {% if classification %}
+      <div class="col-lg-12">
+        {{ predictions }}
+      </div>
+      {% endif %}
+    </div>
+    {% if optimize_feature_selection %}
+    <h1>Recursive feature extraction</h1>
+    <div class="text-center">
+      <a href="rfe_plot.pdf">
+        <img src="rfe_plot.png">
+        <br>
+        <p>Download as PDF</p>
+      </a>
+    </div>
+    {% endif %}
+    {% importances %}
+    <h1>Feature Importance</h1>
+    <div class="col-lg-12">
+      {{ importances }}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
