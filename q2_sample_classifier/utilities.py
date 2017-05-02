@@ -17,8 +17,8 @@ from sklearn.model_selection import RandomizedSearchCV
 from biom import load_table
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from os.path import join
+import matplotlib.pyplot as plt
 
 from .visuals import linear_regress, plot_confusion_matrix, plot_RFE
 
@@ -175,11 +175,12 @@ def split_optimize_classify(features_fp, targets_fp, category, estimator,
         rfecv, importance, top_feature_data, rfep = rfecv_feature_selection(
             X_train, y_train, estimator=estimator, cv=cv, step=step,
             random_state=random_state, n_jobs=n_jobs)
+        rfep.savefig(join(output_dir, 'rfe_plot.png'))
+        rfep.savefig(join(output_dir, 'rfe_plot.pdf'))
+        plt.close()
 
         X_train = X_train.loc[:, importance["feature"]]
         X_test = X_test.loc[:, importance["feature"]]
-        rfep.get_figure().savefig(join(output_dir, 'rfe_plot.png'))
-        rfep.get_figure().savefig(join(output_dir, 'rfe_plot.pdf'))
 
     # optimize tuning parameters on your training set
     if parameter_tuning:
@@ -197,8 +198,10 @@ def split_optimize_classify(features_fp, targets_fp, category, estimator,
             y_test, y_pred, sorted(estimator.classes_))
     else:
         predictions, predict_plot = linear_regress(y_test, y_pred, plot=True)
-    predict_plot.get_figure().savefig(join(output_dir, 'predictions.png'))
-    predict_plot.get_figure().savefig(join(output_dir, 'predictions.pdf'))
+    predict_plot.get_figure().savefig(
+        join(output_dir, 'predictions.png'), bbox_inches='tight')
+    predict_plot.get_figure().savefig(
+        join(output_dir, 'predictions.pdf'), bbox_inches='tight')
 
     if calc_feature_importance:
         importances = extract_important_features(

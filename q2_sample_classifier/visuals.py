@@ -71,18 +71,19 @@ def plot_confusion_matrix(y_test, y_pred, classes, normalize=True):
 
 
 def plot_RFE(rfecv):
-        rfe = plt.figure()
-        plt.xlabel("Feature Count")
-        plt.ylabel("Accuracy")
-        # If using fractional step, step = integer of fraction * n_features
-        if rfecv.step < 1:
-            rfecv.step = int(rfecv.step * len(rfecv.ranking_))
-        # Need to manually calculate x-axis, as rfecv.grid_scores_ are a
-        # 1-d array
-        x = [len(rfecv.ranking_) - (n * rfecv.step)
-             for n in range(len(rfecv.grid_scores_)-1, -1, -1)]
-        if x[0] < 1:
-            x[0] = 1
-        plt.plot(x, rfecv.grid_scores_, 'grey')
-        # plt.show()
-        return rfe
+    # If using fractional step, step = integer of fraction * n_features
+    if rfecv.step < 1:
+        rfecv.step = int(rfecv.step * len(rfecv.ranking_))
+    # Need to manually calculate x-axis, as rfecv.grid_scores_ are a
+    # 1-d array
+    x = [len(rfecv.ranking_) - (n * rfecv.step)
+         for n in range(len(rfecv.grid_scores_)-1, -1, -1)]
+    if x[0] < 1:
+        x[0] = 1
+        
+    rfe = plt.figure()
+    plt.xlabel("Feature Count")
+    plt.ylabel("Accuracy")
+    plt.plot(x, rfecv.grid_scores_, 'grey')
+    # plt.show()
+    return rfe

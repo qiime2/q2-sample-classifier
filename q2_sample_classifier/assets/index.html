@@ -5,7 +5,7 @@
 <div class="row">
   <div class="col-lg-12">
     {{ result }}
-    <h1>Accuracy result</h1>
+    <h1>Model Accuracy</h1>
     <div class="text-center">
       <a href="predictions.pdf">
         <img src="predictions.png">
@@ -32,6 +32,9 @@
     <h1>Feature Importance</h1>
     <div class="col-lg-12">
       {{ importances }}
+      <a href="feature_importance.tsv">
+        <p>Download as tsv</p>
+      </a>
     </div>
     {% endif %}
   </div>

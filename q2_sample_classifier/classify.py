@@ -58,13 +58,16 @@ def classify_random_forest(output_dir: str, table: biom.Table,
 
     importances.to_csv(join(output_dir, 'feature_importance.tsv'), sep='\t')
 
-    result = pd.Series(['random forest classification', random_state,
-                        estimator.get_params],
-                       index=['Random state', 'Parameters', 'Accuracy'],
+    pd.set_option('display.max_colwidth', -1)
+    result = pd.Series([str(estimator), accuracy],
+                       index=['Parameters', 'Accuracy score'],
                        name='Random forest classification results')
+
     result = result.to_frame().to_html(classes=(
         "table table-striped table-hover")).replace('border="1"', 'border="0"')
     cm = cm.to_html(classes=(
+        "table table-striped table-hover")).replace('border="1"', 'border="0"')
+    importances = importances.to_html(classes=(
         "table table-striped table-hover")).replace('border="1"', 'border="0"')
 
     index = join(TEMPLATES, 'index.html')
