@@ -17,3 +17,8 @@ qiime sample-classifier classify-random-forest --i-table feature-table-even11000
 qiime sample-classifier regress-random-forest --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization estimated_elevation --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 500
 
 ```
+### Linear support vector machine classifier
+```
+qiime sample-classifier classify-linearSVC --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization svc --p-parameter-tuning
+
+```

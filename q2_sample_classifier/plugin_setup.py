@@ -10,7 +10,8 @@
 
 from qiime2.plugin import Int, Str, Float, Range, Bool, Plugin, Metadata
 from q2_types.feature_table import FeatureTable, Frequency
-from .classify import (classify_random_forest, regress_random_forest)
+from .classify import (
+    classify_random_forest, regress_random_forest, classify_linearSVC)
 import q2_sample_classifier
 
 
@@ -58,13 +59,6 @@ parameter_descriptions = {
     'cv': 'Number of k-fold cross-validations to perform.',
     'random_state': 'Seed used by random number generator.',
     'n_jobs': 'Number of jobs to run in parallel.',
-    'n_estimators': ('Number of random forests to grow for estimation. '
-                     'More trees will improve predictive accuracy up to '
-                     'a threshold level, but will also increase time and '
-                     'memory requirements.'),
-    'optimize_feature_selection': ('Automatically optimize input feature '
-                                   'selection using recursive feature '
-                                   'elimination?'),
     'parameter_tuning': ('Automatically tune hyperparameters using random '
                          'grid search?')
 }
@@ -107,4 +101,16 @@ plugin.visualizers.register_function(
         **parameter_descriptions, **random_forest_parameter_descriptions},
     name='Random forest regressor',
     description=description.format('continuous', 'random forest regressor')
+)
+
+
+plugin.visualizers.register_function(
+    function=classify_linearSVC,
+    inputs=inputs,
+    parameters=parameters,
+    input_descriptions=input_descriptions,
+    parameter_descriptions=parameter_descriptions,
+    name='Linear support vector machine classifier',
+    description=description.format(
+        'categorical', 'linear support vector machine classifier')
 )

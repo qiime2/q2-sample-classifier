@@ -86,10 +86,20 @@ def classify_linearSVC(output_dir: str, table: biom.Table,
                        parameter_tuning: bool=False):
 
     # specify parameters and distributions to sample from for parameter tuning
-    param_dist = {"C": [1, 0.9, 0.8],
-                  "penalty": ["l1", "l2"],
+    param_dist = {"C": [1, 0.5, 0.1, 0.9, 0.8],
+                  # should probably include penalty in grid search, but:
+                  # Unsupported set of arguments: The combination of
+                  # penalty='l1' and loss='hinge' is not supported
+                  # "penalty": ["l1", "l2"],
                   "loss": ["hinge", "squared_hinge"],
-                  "dual": [True, False]}
+                  "tol": [0.00001, 0.0001, 0.001]
+                  # should probably include this in grid search, as dual=False
+                  # is preferred when samples > features. However:
+                  # Unsupported set of arguments: The combination of
+                  # penalty='l2' and loss='hinge' are not supported when
+                  # dual=False
+                  # "dual": [True, False]
+                  }
 
     estimator = LinearSVC()
 
