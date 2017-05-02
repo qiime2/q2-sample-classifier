@@ -13,7 +13,7 @@ from qiime2.plugin import (Int, Str, Float, Range, Bool, Plugin, Metadata,
 from q2_types.feature_table import FeatureTable, Frequency
 from .classify import (
     classify_random_forest, regress_random_forest, classify_linearSVC,
-    regress_linearSVR, regress_SVR, classify_SVC)
+    regress_linearSVR, regress_SVR, classify_SVC, classify_kneighbors)
 import q2_sample_classifier
 
 
@@ -92,6 +92,18 @@ svm_parameter_descriptions = {
 }
 
 
+neighbors_parameters = {
+    'algorithm': Str % Choices(['ball_tree', 'kd_tree', 'brute', 'auto'])
+}
+
+
+neighbors_parameter_descriptions = {
+    'algorithm': ('Algorithm used to compute the nearest neighbors. Default, '
+    'auto, will attempt to decide the most appropriate algorithm based on the '
+    'values passed to fit method.')
+}
+
+
 plugin.visualizers.register_function(
     function=classify_random_forest,
     inputs=inputs,
@@ -163,4 +175,17 @@ plugin.visualizers.register_function(
     name='Support vector machine regressor',
     description=description.format(
         'continuous', 'support vector machine regressor')
+)
+
+
+plugin.visualizers.register_function(
+    function=classify_kneighbors,
+    inputs=inputs,
+    parameters={**parameters, **neighbors_parameters},
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions, **neighbors_parameter_descriptions},
+    name='K-nearest neighbors vote classifier',
+    description=description.format(
+        'categorical', 'K-nearest neighbors vote classifier')
 )

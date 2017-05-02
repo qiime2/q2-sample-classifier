@@ -13,6 +13,7 @@ from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import mean_squared_error
 from sklearn.svm import LinearSVC, LinearSVR, SVR, SVC
 from sklearn.pipeline import Pipeline
+from sklearn.neighbors import KNeighborsClassifier
 
 import qiime2
 import biom
@@ -48,6 +49,13 @@ linear_svm_params = {"C": [1, 0.5, 0.1, 0.9, 0.8],
 svm_params = {"C": [1, 0.5, 0.1, 0.9, 0.8],
               "tol": [0.00001, 0.0001, 0.001, 0.01],
               "shrinking": [True, False],
+}
+
+
+neighbors_params = {
+    "n_neighbors": randint(2, 15),
+    "weights": ['uniform', 'distance'],
+    "leaf_size": randint(15, 100)
 }
 
 
@@ -191,6 +199,27 @@ def regress_SVR(output_dir: str, table: biom.Table,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=False, scoring=mean_squared_error,
         classification=False)
+
+    visualize(output_dir, estimator, cm, accuracy, importances)
+
+
+def classify_kneighbors(output_dir: str, table: biom.Table,
+                        metadata: qiime2.Metadata, category: str,
+                        test_size: float=0.2, step: float=0.05,
+                        cv: int=5, random_state: int=None, n_jobs: int=1,
+                        parameter_tuning: bool=False, algorithm: str='auto'):
+
+    # specify parameters and distributions to sample from for parameter tuning
+    param_dist = neighbors_params
+
+    estimator = KNeighborsClassifier(algorithm=algorithm)
+
+    estimator, cm, accuracy, importances = split_optimize_classify(
+        table, metadata, category, estimator, output_dir,
+        test_size=test_size, step=step, cv=cv, random_state=random_state,
+        n_jobs=n_jobs, optimize_feature_selection=False,
+        parameter_tuning=parameter_tuning, param_dist=param_dist,
+        calc_feature_importance=False)
 
     visualize(output_dir, estimator, cm, accuracy, importances)
 

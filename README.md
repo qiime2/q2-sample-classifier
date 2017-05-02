@@ -5,16 +5,17 @@ This software is currently in pre-alpha phase and probably should not be used fo
 
 If you use any of the code contained in this repository, please cite: https://github.com/nbokulich/q2-sample-classifier
 
-## Examples
+# Examples
+## Classification
 ### Random forest classifier
 ```
 cd ~/Desktop/projects/q2-sample-classifier/q2_sample_classifier/test_data/
 
 qiime sample-classifier classify-random-forest --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization test --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 500
 ```
-### Random forest regressor
+### K-nearest neighbors classifier
 ```
-qiime sample-classifier regress-random-forest --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization estimated_elevation --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 500
+qiime sample-classifier classify-kneighbors --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization knn --p-parameter-tuning
 ```
 ### Linear support vector machine classifier
 ```
@@ -25,6 +26,12 @@ qiime sample-classifier classify-SVC --i-table feature-table-even11000-SedimentN
 ### Support vector machine classifier
 ```
 qiime sample-classifier classify-SVC --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization svc --p-parameter-tuning
+```
+
+## Regression
+### Random forest regressor
+```
+qiime sample-classifier regress-random-forest --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization estimated_elevation --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 500
 ```
 ### Linear support vector machine regressor
 ```
