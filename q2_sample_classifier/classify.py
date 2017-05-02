@@ -54,7 +54,8 @@ def classify_random_forest(output_dir: str, table: biom.Table,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=True)
 
-    # return estimator, cm, accuracy, importances
+    # Need to sort out how to save estimator as sklearn.pipeline
+    # This will be possible once qiime2 support pipeline actions
 
     importances.to_csv(join(output_dir, 'feature_importance.tsv'), sep='\t')
 
@@ -108,7 +109,6 @@ def regression_random_forest(table: biom.Table, metadata: qiime2.Metadata,
 def classify_linearSVC(table: biom.Table, metadata: qiime2.Metadata, category,
                        test_size=0.2, step=0.05, cv=5,
                        random_state=None, n_jobs=4,
-                       optimize_feature_selection=False,
                        parameter_tuning=False):
 
     # specify parameters and distributions to sample from for parameter tuning
@@ -122,7 +122,7 @@ def classify_linearSVC(table: biom.Table, metadata: qiime2.Metadata, category,
     estimator, cm, accuracy, importances = split_optimize_classify(
         table, metadata, category, estimator, output_dir,
         test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
+        n_jobs=n_jobs, optimize_feature_selection=False,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=False)
 

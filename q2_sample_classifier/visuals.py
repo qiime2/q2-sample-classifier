@@ -28,7 +28,6 @@ def regplot_from_dataframe(x, y, plot_style="whitegrid", arb=True,
         y0, y1 = reg.axes.get_ylim()
         lims = [min(x0, y0), max(x1, y1)]
         reg.axes.plot(lims, lims, ':k')
-    # sns.plt.show()
     return reg
 
 
@@ -65,7 +64,6 @@ def plot_confusion_matrix(y_test, y_pred, classes, normalize=True):
     tick_marks = np.arange(len(classes))
     plt.xticks(tick_marks, classes, rotation=90)
     plt.yticks(tick_marks, sorted(classes, reverse=True), rotation=0)
-    # plt.show()
 
     return pd.DataFrame(cm, index=classes, columns=classes), confusion
 
@@ -74,16 +72,14 @@ def plot_RFE(rfecv):
     # If using fractional step, step = integer of fraction * n_features
     if rfecv.step < 1:
         rfecv.step = int(rfecv.step * len(rfecv.ranking_))
-    # Need to manually calculate x-axis, as rfecv.grid_scores_ are a
-    # 1-d array
+    # Need to manually calculate x-axis, as rfecv.grid_scores_ are a 1-d array
     x = [len(rfecv.ranking_) - (n * rfecv.step)
          for n in range(len(rfecv.grid_scores_)-1, -1, -1)]
     if x[0] < 1:
         x[0] = 1
-        
+
     rfe = plt.figure()
     plt.xlabel("Feature Count")
     plt.ylabel("Accuracy")
     plt.plot(x, rfecv.grid_scores_, 'grey')
-    # plt.show()
     return rfe

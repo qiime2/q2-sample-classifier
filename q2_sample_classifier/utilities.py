@@ -14,7 +14,6 @@ from sklearn.metrics import accuracy_score
 from sklearn.feature_selection import RFECV
 from sklearn.model_selection import RandomizedSearchCV
 
-from biom import load_table
 import pandas as pd
 import numpy as np
 from os.path import join
@@ -44,16 +43,12 @@ def load_data(features_fp, targets_fp, transpose=True):
         Transpose feature data? biom tables need to be transposed
         to have features (columns) X samples (rows)
     '''
-    # Load Table
-    # table = load_table(features_fp)
-
     # convert to df
     feature_data = biom_to_pandas(features_fp)
     if transpose is True:
         feature_data = feature_data.transpose()
 
-    # Load metadata, convert to numeric
-    # targets = pd.DataFrame.from_csv(targets_fp, sep='\t')
+    # Load metadata, attempt to convert to numeric
     targets = targets_fp.to_dataframe()
     targets = targets.apply(lambda x: pd.to_numeric(x, errors='ignore'))
 
@@ -222,7 +217,7 @@ def tune_parameters(X_train, y_train, estimator, param_dist, n_iter_search=20,
 
 
 def fit_and_predict(X_train, X_test, y_train, y_test, estimator,
-                   scoring=accuracy_score):
+                    scoring=accuracy_score):
     '''train and test estimators.
     scoring: str
         use accuracy_score for classification, mean_squared_error for

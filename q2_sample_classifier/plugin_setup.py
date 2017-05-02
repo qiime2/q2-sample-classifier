@@ -8,10 +8,8 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
-import biom
 import qiime2
-from qiime2.plugin import (Int, Str, Float, Range, Bool, Plugin, Metadata,
-                           MetadataCategory)
+from qiime2.plugin import Int, Str, Float, Range, Bool, Plugin, Metadata
 from q2_types.feature_table import FeatureTable, Frequency
 from .classify import classify_random_forest
 import q2_sample_classifier
