@@ -11,7 +11,8 @@
 from qiime2.plugin import Int, Str, Float, Range, Bool, Plugin, Metadata
 from q2_types.feature_table import FeatureTable, Frequency
 from .classify import (
-    classify_random_forest, regress_random_forest, classify_linearSVC)
+    classify_random_forest, regress_random_forest, classify_linearSVC,
+    regress_linearSVR)
 import q2_sample_classifier
 
 
@@ -113,4 +114,16 @@ plugin.visualizers.register_function(
     name='Linear support vector machine classifier',
     description=description.format(
         'categorical', 'linear support vector machine classifier')
+)
+
+
+plugin.visualizers.register_function(
+    function=regress_linearSVR,
+    inputs=inputs,
+    parameters=parameters,
+    input_descriptions=input_descriptions,
+    parameter_descriptions=parameter_descriptions,
+    name='Linear support vector machine regressor',
+    description=description.format(
+        'continuous', 'linear support vector machine regressor')
 )

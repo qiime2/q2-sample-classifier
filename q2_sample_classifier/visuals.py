@@ -23,6 +23,8 @@ def regplot_from_dataframe(x, y, plot_style="whitegrid", arb=True,
     '''Seaborn regplot with true 1:1 ratio set by arb (bool).'''
     sns.set_style(plot_style)
     reg = sns.regplot(x, y, color=color)
+    plt.xlabel('True label')
+    plt.ylabel('Predicted label')
     if arb is True:
         x0, x1 = reg.axes.get_xlim()
         y0, y1 = reg.axes.get_ylim()
