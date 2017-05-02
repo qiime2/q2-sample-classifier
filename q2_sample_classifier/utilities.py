@@ -9,17 +9,21 @@
 # ----------------------------------------------------------------------------
 
 
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.metrics import accuracy_score
 from sklearn.feature_selection import RFECV
-from sklearn.model_selection import RandomizedSearchCV
 
+import q2templates
 import pandas as pd
 import numpy as np
 from os.path import join
 import matplotlib.pyplot as plt
+import pkg_resources
 
 from .visuals import linear_regress, plot_confusion_matrix, plot_RFE
+
+
+TEMPLATES = pkg_resources.resource_filename('q2_sample_classifier', 'assets')
 
 
 def biom_to_pandas(table):
@@ -205,6 +209,37 @@ def split_optimize_classify(features_fp, targets_fp, category, estimator,
         importances = None
 
     return estimator, predictions, accuracy, importances
+
+
+def visualize(output_dir, estimator, cm, accuracy, importances=None,
+              optimize_feature_selection=False):
+
+    # Need to sort out how to save estimator as sklearn.pipeline
+    # This will be possible once qiime2 support pipeline actions
+
+    pd.set_option('display.max_colwidth', -1)
+    result = pd.Series([str(estimator), accuracy],
+                       index=['Parameters', 'Accuracy score'],
+                       name='Random forest classification results')
+
+    result = result.to_frame().to_html(classes=(
+        "table table-striped table-hover")).replace('border="1"', 'border="0"')
+    cm = cm.to_html(classes=(
+        "table table-striped table-hover")).replace('border="1"', 'border="0"')
+    if importances is not None:
+        importances.to_csv(join(
+            output_dir, 'feature_importance.tsv'), sep='\t')
+        importances = importances.to_html(classes=(
+            "table table-striped table-hover")).replace(
+                'border="1"', 'border="0"')
+
+    index = join(TEMPLATES, 'index.html')
+    q2templates.render(index, output_dir, context={
+        'result': result,
+        'predictions': cm,
+        'importances': importances,
+        'classification': True,
+        'optimize_feature_selection': optimize_feature_selection})
 
 
 def tune_parameters(X_train, y_train, estimator, param_dist, n_iter_search=20,
