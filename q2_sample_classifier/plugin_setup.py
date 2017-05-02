@@ -8,11 +8,12 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
-from qiime2.plugin import Int, Str, Float, Range, Bool, Plugin, Metadata
+from qiime2.plugin import (Int, Str, Float, Range, Bool, Plugin, Metadata,
+                           Choices)
 from q2_types.feature_table import FeatureTable, Frequency
 from .classify import (
     classify_random_forest, regress_random_forest, classify_linearSVC,
-    regress_linearSVR)
+    regress_linearSVR, regress_SVR, classify_SVC)
 import q2_sample_classifier
 
 
@@ -81,6 +82,16 @@ random_forest_parameter_descriptions = {
 }
 
 
+svm_parameters = {
+    'kernel': Str % Choices(['linear', 'poly', 'rbf', 'sigmoid'])
+}
+
+
+svm_parameter_descriptions = {
+    'kernel': 'Specifies the kernel type to be used in the algorithm.'
+}
+
+
 plugin.visualizers.register_function(
     function=classify_random_forest,
     inputs=inputs,
@@ -118,12 +129,38 @@ plugin.visualizers.register_function(
 
 
 plugin.visualizers.register_function(
+    function=classify_SVC,
+    inputs=inputs,
+    parameters={**parameters, **svm_parameters},
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions, **svm_parameter_descriptions},
+    name='Support vector machine classifier',
+    description=description.format(
+        'categorical', 'support vector machine classifier')
+)
+
+
+plugin.visualizers.register_function(
     function=regress_linearSVR,
     inputs=inputs,
     parameters=parameters,
     input_descriptions=input_descriptions,
-    parameter_descriptions=parameter_descriptions,
+    parameter_descriptions={**parameter_descriptions, },
     name='Linear support vector machine regressor',
     description=description.format(
         'continuous', 'linear support vector machine regressor')
+)
+
+
+plugin.visualizers.register_function(
+    function=regress_SVR,
+    inputs=inputs,
+    parameters={**parameters, **svm_parameters},
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions, **svm_parameter_descriptions},
+    name='Support vector machine regressor',
+    description=description.format(
+        'continuous', 'support vector machine regressor')
 )
