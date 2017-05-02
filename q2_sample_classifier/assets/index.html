@@ -28,7 +28,7 @@
       </a>
     </div>
     {% endif %}
-    {% importances %}
+    {% if not importances.empty %}
     <h1>Feature Importance</h1>
     <div class="col-lg-12">
       {{ importances }}

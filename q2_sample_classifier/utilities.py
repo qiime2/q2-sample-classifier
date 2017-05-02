@@ -45,15 +45,17 @@ def load_data(features_fp, targets_fp, transpose=True):
         to have features (columns) X samples (rows)
     '''
     # Load Table
-    table = load_table(features_fp)
+    # table = load_table(features_fp)
 
     # convert to df
-    feature_data = biom_to_pandas(table)
+    feature_data = biom_to_pandas(features_fp)
     if transpose is True:
         feature_data = feature_data.transpose()
 
-    # Load metadata
-    targets = pd.DataFrame.from_csv(targets_fp, sep='\t')
+    # Load metadata, convert to numeric
+    # targets = pd.DataFrame.from_csv(targets_fp, sep='\t')
+    targets = targets_fp.to_dataframe()
+    targets = targets.apply(lambda x: pd.to_numeric(x, errors='ignore'))
 
     return feature_data, targets
 
@@ -154,7 +156,7 @@ def rfecv_feature_selection(feature_data, targets, estimator,
 
 
 def split_optimize_classify(features_fp, targets_fp, category, estimator,
-                            output_dir, transpose=True, test_size=0.2, 
+                            output_dir, transpose=True, test_size=0.2,
                             step=0.05, cv=5, random_state=None, n_jobs=4,
                             optimize_feature_selection=False,
                             parameter_tuning=False, param_dist=None,
@@ -176,8 +178,8 @@ def split_optimize_classify(features_fp, targets_fp, category, estimator,
 
         X_train = X_train.loc[:, importance["feature"]]
         X_test = X_test.loc[:, importance["feature"]]
-        rfep.savefig(join(output_dir, 'rfe_plot.png'))
-        rfep.savefig(join(output_dir, 'rfe_plot.pdf'))
+        rfep.get_figure().savefig(join(output_dir, 'rfe_plot.png'))
+        rfep.get_figure().savefig(join(output_dir, 'rfe_plot.pdf'))
 
     # optimize tuning parameters on your training set
     if parameter_tuning:
@@ -195,8 +197,8 @@ def split_optimize_classify(features_fp, targets_fp, category, estimator,
             y_test, y_pred, sorted(estimator.classes_))
     else:
         predictions, predict_plot = linear_regress(y_test, y_pred, plot=True)
-    predict_plot.savefig(join(output_dir, 'predictions.png'))
-    predict_plot.savefig(join(output_dir, 'predictions.pdf'))
+    predict_plot.get_figure().savefig(join(output_dir, 'predictions.png'))
+    predict_plot.get_figure().savefig(join(output_dir, 'predictions.pdf'))
 
     if calc_feature_importance:
         importances = extract_important_features(

@@ -17,6 +17,7 @@ from sklearn.pipeline import Pipeline
 import qiime2
 import q2templates
 import biom
+import pandas as pd
 from scipy.stats import randint
 from os.path import join
 import pkg_resources
@@ -53,9 +54,9 @@ def classify_random_forest(output_dir: str, table: biom.Table,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=True)
 
-    return estimator, cm, accuracy, importances
+    # return estimator, cm, accuracy, importances
 
-    importances.to_csv(join(output_dir, 'feature_importance.tsv', sep='\t'))
+    importances.to_csv(join(output_dir, 'feature_importance.tsv'), sep='\t')
 
     result = pd.Series(['random forest classification', random_state,
                         estimator.get_params],
@@ -63,7 +64,7 @@ def classify_random_forest(output_dir: str, table: biom.Table,
                        name='Random forest classification results')
     result = result.to_frame().to_html(classes=(
         "table table-striped table-hover")).replace('border="1"', 'border="0"')
-    cm = cm.to_frame().to_html(classes=(
+    cm = cm.to_html(classes=(
         "table table-striped table-hover")).replace('border="1"', 'border="0"')
 
     index = join(TEMPLATES, 'index.html')
@@ -71,6 +72,7 @@ def classify_random_forest(output_dir: str, table: biom.Table,
         'result': result,
         'predictions': cm,
         'importances': importances,
+        'classification': True,
         'optimize_feature_selection': optimize_feature_selection})
 
 

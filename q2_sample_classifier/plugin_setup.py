@@ -32,7 +32,7 @@ plugin.visualizers.register_function(
     function=classify_random_forest,
     inputs={'table': FeatureTable[Frequency]},
     parameters={'metadata': Metadata,
-                'category': MetadataCategory,
+                'category': Str,
                 'test_size': Float % Range(0.0, 1.0, inclusive_end=False,
                                            inclusive_start=False),
                 'step': Float % Range(0.0, 1.0, inclusive_end=False,
