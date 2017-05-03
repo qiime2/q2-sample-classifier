@@ -25,7 +25,8 @@ import biom
 from scipy.stats import randint
 import warnings
 
-from .utilities import split_optimize_classify, visualize
+from .utilities import (split_optimize_classify, visualize, load_data,
+                        tune_parameters)
 
 
 ensemble_params = {"max_depth": [4, 8, 16, None],
@@ -126,9 +127,6 @@ def classify_extra_trees(output_dir: str, table: biom.Table,
               optimize_feature_selection)
 
 
-# currently does not support parameter tuning, as the tuning parameters need to
-# be fed to the DecisionTreeClassifier estimator, not to the AdaBoostClassifier
-# meta-estimator. Currently raises warning if users attempt to tune.
 def classify_adaboost(output_dir: str, table: biom.Table,
                       metadata: qiime2.Metadata, category: str,
                       test_size: float=0.2, step: float=0.05,
@@ -137,14 +135,20 @@ def classify_adaboost(output_dir: str, table: biom.Table,
                       optimize_feature_selection: bool=False,
                       parameter_tuning: bool=False):
 
+    base_estimator = DecisionTreeClassifier()
+
     # specify parameters and distributions to sample from for parameter tuning
     param_dist = {k: ensemble_params[k] for k in ensemble_params.keys()
                   if k != "bootstrap"}
 
+    # parameter tune base estimator
     if parameter_tuning:
-        param_warning()
+        features, targets = load_data(table, metadata, transpose=True)
+        base_estimator = tune_parameters(
+            features, targets[category], base_estimator, param_dist,
+            n_jobs=n_jobs, cv=cv, random_state=random_state)
 
-    estimator = AdaBoostClassifier(DecisionTreeClassifier(), n_estimators)
+    estimator = AdaBoostClassifier(base_estimator, n_estimators)
 
     estimator, cm, accuracy, importances = split_optimize_classify(
         table, metadata, category, estimator, output_dir,
@@ -232,9 +236,6 @@ def regress_extra_trees(output_dir: str, table: biom.Table,
               optimize_feature_selection)
 
 
-# currently does not support parameter tuning, as the tuning parameters need to
-# be fed to the DecisionTreeRegressor estimator, not to the AdaBoostRegressor
-# meta-estimator. Currently raises warning if users attempt to tune.
 def regress_adaboost(output_dir: str, table: biom.Table,
                      metadata: qiime2.Metadata, category: str,
                      test_size: float=0.2, step: float=0.05,
@@ -243,14 +244,20 @@ def regress_adaboost(output_dir: str, table: biom.Table,
                      optimize_feature_selection: bool=False,
                      parameter_tuning: bool=False):
 
+    base_estimator = DecisionTreeRegressor()
+
     # specify parameters and distributions to sample from for parameter tuning
     param_dist = {k: ensemble_params[k] for k in ensemble_params.keys()
                   if k != "bootstrap"}
 
+    # parameter tune base estimator
     if parameter_tuning:
-        param_warning()
+        features, targets = load_data(table, metadata, transpose=True)
+        base_estimator = tune_parameters(
+            features, targets[category], base_estimator, param_dist,
+            n_jobs=n_jobs, cv=cv, random_state=random_state)
 
-    estimator = AdaBoostRegressor(DecisionTreeRegressor(), n_estimators)
+    estimator = AdaBoostRegressor(base_estimator, n_estimators)
 
     estimator, cm, accuracy, importances = split_optimize_classify(
         table, metadata, category, estimator, output_dir,
