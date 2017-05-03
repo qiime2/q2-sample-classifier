@@ -16,7 +16,8 @@ from .classify import (
     regress_linearSVR, regress_SVR, classify_SVC, classify_kneighbors,
     regress_ridge, regress_lasso, regress_elasticnet,
     regress_kneighbors, classify_extra_trees, classify_adaboost,
-    classify_gradient_boosting, regress_extra_trees, regress_adaboost)
+    classify_gradient_boosting, regress_extra_trees, regress_adaboost,
+    regress_gradient_boosting)
 import q2_sample_classifier
 
 
@@ -201,7 +202,21 @@ plugin.visualizers.register_function(
         **parameter_descriptions, **ensemble_parameter_descriptions},
     name='AdaBoost decision tree regressor',
     description=description.format(
-        'categorical', 'Adaboost regressor',
+        'continuous', 'Adaboost regressor',
+        'http://scikit-learn.org/stable/modules/ensemble.html')
+)
+
+
+plugin.visualizers.register_function(
+    function=regress_gradient_boosting,
+    inputs=inputs,
+    parameters={**parameters, **ensemble_parameters},
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions, **ensemble_parameter_descriptions},
+    name='Gradient boosting regressor',
+    description=description.format(
+        'continuous', 'Gradient boosting regressor',
         'http://scikit-learn.org/stable/modules/ensemble.html')
 )
 

@@ -53,6 +53,10 @@ qiime sample-classifier regress-extra-trees --i-table feature-table-even11000-Se
 ```
 qiime sample-classifier regress-adaboost --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization abr --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
 ```
+### Gradient boosting regressor
+```
+qiime sample-classifier regress-gradient-boosting --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization gbr --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
+```
 ### Linear support vector machine regressor
 ```
 qiime sample-classifier regress-SVR --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization svr --p-parameter-tuning --p-kernel linear
