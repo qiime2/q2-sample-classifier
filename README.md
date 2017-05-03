@@ -5,6 +5,10 @@ This software is currently in pre-alpha phase and probably should not be used fo
 
 If you use any of the code contained in this repository, please cite: https://github.com/nbokulich/q2-sample-classifier
 
+See the [QIIME2 documentation](https://qiime2.org/) for installation and use of the QIIME2 framework.
+
+Not sure which model to use? A good starting point is [this flowchart](http://scikit-learn.org/dev/tutorial/machine_learning_map/index.html). Most of the classification and regression models shown in that chart (and a few extras) are implemented in q2-sample-classifier.
+
 # Examples
 ## Classification
 ### Random forest classifier
