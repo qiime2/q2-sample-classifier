@@ -15,7 +15,7 @@ from .classify import (
     classify_random_forest, regress_random_forest, classify_linearSVC,
     regress_linearSVR, regress_SVR, classify_SVC, classify_kneighbors,
     regress_ridge, regress_lasso, regress_elasticnet,
-    regress_kneighbors, classify_extra_trees)
+    regress_kneighbors, classify_extra_trees, classify_adaboost)
 import q2_sample_classifier
 
 
@@ -131,6 +131,20 @@ plugin.visualizers.register_function(
     name='Extra Trees sample classifier',
     description=description.format(
         'categorical', 'Extra Trees classifier',
+        'http://scikit-learn.org/stable/modules/ensemble.html')
+)
+
+
+plugin.visualizers.register_function(
+    function=classify_adaboost,
+    inputs=inputs,
+    parameters={**parameters, **ensemble_parameters},
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions, **ensemble_parameter_descriptions},
+    name='AdaBoost decision tree sample classifier',
+    description=description.format(
+        'categorical', 'Adaboost classifier',
         'http://scikit-learn.org/stable/modules/ensemble.html')
 )
 

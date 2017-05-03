@@ -11,11 +11,15 @@ If you use any of the code contained in this repository, please cite: https://gi
 ```
 cd ~/Desktop/projects/q2-sample-classifier/q2_sample_classifier/test_data/
 
-qiime sample-classifier classify-random-forest --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization test --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 500
+qiime sample-classifier classify-random-forest --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization test --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
 ```
 ### Extra Trees classifier
 ```
-qiime sample-classifier classify-extra-trees --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization etc --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 500
+qiime sample-classifier classify-extra-trees --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization etc --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
+```
+### AdaBoost classifier
+```
+qiime sample-classifier classify-adaboost --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization abc --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
 ```
 ### K-nearest neighbors classifier
 ```
@@ -35,7 +39,7 @@ qiime sample-classifier classify-SVC --i-table feature-table-even11000-SedimentN
 ## Regression
 ### Random forest regressor
 ```
-qiime sample-classifier regress-random-forest --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization estimated_elevation --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 500
+qiime sample-classifier regress-random-forest --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization estimated_elevation --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
 ```
 ### Linear support vector machine regressor
 ```
