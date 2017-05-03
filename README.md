@@ -49,3 +49,7 @@ qiime sample-classifier regress-ridge --i-table feature-table-even11000-Sediment
 ```
 qiime sample-classifier regress-lasso --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization lasso --p-parameter-tuning
 ```
+### Elastic Net linear regression
+```
+qiime sample-classifier regress-elasticnet --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization elastic --p-parameter-tuning
+```

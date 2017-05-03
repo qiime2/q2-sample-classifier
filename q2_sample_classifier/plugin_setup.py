@@ -14,7 +14,7 @@ from q2_types.feature_table import FeatureTable, Frequency
 from .classify import (
     classify_random_forest, regress_random_forest, classify_linearSVC,
     regress_linearSVR, regress_SVR, classify_SVC, classify_kneighbors,
-    regress_ridge, regress_lasso) #, regress_elasticnet)
+    regress_ridge, regress_lasso, regress_elasticnet)
 import q2_sample_classifier
 
 
@@ -207,6 +207,18 @@ plugin.visualizers.register_function(
     name='Lasso regression',
     description=description.format(
         'continuous', 'Lasso linear regression')
+)
+
+
+plugin.visualizers.register_function(
+    function=regress_elasticnet,
+    inputs=inputs,
+    parameters=parameters,
+    input_descriptions=input_descriptions,
+    parameter_descriptions=parameter_descriptions,
+    name='Elastic Net regression',
+    description=description.format(
+        'continuous', 'Elastic Net linear regression')
 )
 
 

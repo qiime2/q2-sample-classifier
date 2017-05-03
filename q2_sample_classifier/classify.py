@@ -254,6 +254,28 @@ def regress_lasso(output_dir: str, table: biom.Table,
     visualize(output_dir, estimator, cm, accuracy, importances)
 
 
+def regress_elasticnet(output_dir: str, table: biom.Table,
+                  metadata: qiime2.Metadata, category: str,
+                  test_size: float=0.2, step: float=0.05,
+                  cv: int=5, random_state: int=None, n_jobs: int=1,
+                  parameter_tuning: bool=False):
+
+    # specify parameters and distributions to sample from for parameter tuning
+    param_dist = linear_params
+
+    estimator = ElasticNet()
+
+    estimator, cm, accuracy, importances = split_optimize_classify(
+        table, metadata, category, estimator, output_dir,
+        test_size=test_size, step=step, cv=cv, random_state=random_state,
+        n_jobs=n_jobs, optimize_feature_selection=False,
+        parameter_tuning=parameter_tuning, param_dist=param_dist,
+        calc_feature_importance=False, scoring=mean_squared_error,
+        classification=False)
+
+    visualize(output_dir, estimator, cm, accuracy, importances)
+
+
 def classify_kneighbors(output_dir: str, table: biom.Table,
                         metadata: qiime2.Metadata, category: str,
                         test_size: float=0.2, step: float=0.05,
