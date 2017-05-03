@@ -13,7 +13,8 @@ from qiime2.plugin import (Int, Str, Float, Range, Bool, Plugin, Metadata,
 from q2_types.feature_table import FeatureTable, Frequency
 from .classify import (
     classify_random_forest, regress_random_forest, classify_linearSVC,
-    regress_linearSVR, regress_SVR, classify_SVC, classify_kneighbors)
+    regress_linearSVR, regress_SVR, classify_SVC, classify_kneighbors,
+    regress_ridge, )#regress_lasso, regress_elasticnet)
 import q2_sample_classifier
 
 
@@ -175,6 +176,25 @@ plugin.visualizers.register_function(
     name='Support vector machine regressor',
     description=description.format(
         'continuous', 'support vector machine regressor')
+)
+
+
+plugin.visualizers.register_function(
+    function=regress_ridge,
+    inputs=inputs,
+    parameters={**parameters, 'solver': Str % Choices([
+        'auto', 'svd', 'cholesky', 'sparse_cg', 'lsqr', 'sag', 'saga'])},
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions,
+        "solver": ('Solver to use in computational routines. "auto" chooses '
+                   'the solver automatically based on the type of data. For '
+                   'details see http://scikit-learn.org/dev/modules/generated/'
+                   'sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge'
+                  )},
+    name='Ridge regression',
+    description=description.format(
+        'continuous', 'Ridge regression model')
 )
 
 
