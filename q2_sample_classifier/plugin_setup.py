@@ -14,7 +14,8 @@ from q2_types.feature_table import FeatureTable, Frequency
 from .classify import (
     classify_random_forest, regress_random_forest, classify_linearSVC,
     regress_linearSVR, regress_SVR, classify_SVC, classify_kneighbors,
-    regress_ridge, regress_lasso, regress_elasticnet)
+    regress_ridge, regress_lasso, regress_elasticnet,
+    regress_kneighbors, classify_extra_trees)
 import q2_sample_classifier
 
 
@@ -68,12 +69,12 @@ parameter_descriptions = {
 }
 
 
-random_forest_parameters = {
+ensemble_parameters = {
     'n_estimators': Int % Range(1, None), 'optimize_feature_selection': Bool
 }
 
 
-random_forest_parameter_descriptions = {
+ensemble_parameter_descriptions = {
     'n_estimators': ('Number of random forests to grow for estimation. '
                      'More trees will improve predictive accuracy up to '
                      'a threshold level, but will also increase time and '
@@ -109,10 +110,10 @@ neighbors_parameter_descriptions = {
 plugin.visualizers.register_function(
     function=classify_random_forest,
     inputs=inputs,
-    parameters={**parameters, **random_forest_parameters},
+    parameters={**parameters, **ensemble_parameters},
     input_descriptions=input_descriptions,
     parameter_descriptions={
-        **parameter_descriptions, **random_forest_parameter_descriptions},
+        **parameter_descriptions, **ensemble_parameter_descriptions},
     name='Random forest sample classifier',
     description=description.format(
         'categorical', 'random forest classifier',
@@ -121,12 +122,26 @@ plugin.visualizers.register_function(
 
 
 plugin.visualizers.register_function(
-    function=regress_random_forest,
+    function=classify_extra_trees,
     inputs=inputs,
-    parameters={**parameters, **random_forest_parameters},
+    parameters={**parameters, **ensemble_parameters},
     input_descriptions=input_descriptions,
     parameter_descriptions={
-        **parameter_descriptions, **random_forest_parameter_descriptions},
+        **parameter_descriptions, **ensemble_parameter_descriptions},
+    name='Extra Trees sample classifier',
+    description=description.format(
+        'categorical', 'Extra Trees classifier',
+        'http://scikit-learn.org/stable/modules/ensemble.html')
+)
+
+
+plugin.visualizers.register_function(
+    function=regress_random_forest,
+    inputs=inputs,
+    parameters={**parameters, **ensemble_parameters},
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions, **ensemble_parameter_descriptions},
     name='Random forest regressor',
     description=description.format(
         'continuous', 'random forest regressor',
@@ -231,6 +246,20 @@ plugin.visualizers.register_function(
     description=description.format(
         'continuous', 'Elastic Net linear regression',
         'http://scikit-learn.org/dev/modules/linear_model.html')
+)
+
+
+plugin.visualizers.register_function(
+    function=regress_kneighbors,
+    inputs=inputs,
+    parameters={**parameters, **neighbors_parameters},
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions, **neighbors_parameter_descriptions},
+    name='K-nearest neighbors regression',
+    description=description.format(
+        'continuous', 'K-nearest neighbors regression',
+        'http://scikit-learn.org/dev/modules/neighbors.html')
 )
 
 

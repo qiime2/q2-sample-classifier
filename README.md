@@ -13,6 +13,10 @@ cd ~/Desktop/projects/q2-sample-classifier/q2_sample_classifier/test_data/
 
 qiime sample-classifier classify-random-forest --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization test --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 500
 ```
+### Extra Trees classifier
+```
+qiime sample-classifier classify-extra-trees --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization etc --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 500
+```
 ### K-nearest neighbors classifier
 ```
 qiime sample-classifier classify-kneighbors --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization knn --p-parameter-tuning
@@ -52,4 +56,8 @@ qiime sample-classifier regress-lasso --i-table feature-table-even11000-Sediment
 ### Elastic Net linear regression
 ```
 qiime sample-classifier regress-elasticnet --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization elastic --p-parameter-tuning
+```
+### K-nearest neighbors regression
+```
+qiime sample-classifier regress-kneighbors --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization knnr --p-parameter-tuning
 ```

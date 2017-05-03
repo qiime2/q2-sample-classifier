@@ -9,12 +9,15 @@
 # ----------------------------------------------------------------------------
 
 
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+from sklearn.ensemble import (RandomForestRegressor, RandomForestClassifier,
+                              ExtraTreesClassifier, ExtraTreesRegressor,
+                              AdaBoostClassifier, GradientBoostingClassifier,
+                              AdaBoostRegressor, GradientBoostingRegressor)
 from sklearn.metrics import mean_squared_error
 from sklearn.svm import LinearSVC, LinearSVR, SVR, SVC
 from sklearn.linear_model import Ridge, Lasso, ElasticNet
 from sklearn.pipeline import Pipeline
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 
 import qiime2
 import biom
@@ -24,11 +27,11 @@ import warnings
 from .utilities import split_optimize_classify, visualize
 
 
-random_forest_params = {"max_depth": [4, 8, 16, None],
-                        "max_features": randint(1, 11),
-                        "min_samples_split": [0.001, 0.01, 0.1],
-                        "min_weight_fraction_leaf": [0.0001, 0.001, 0.01],
-                        "bootstrap": [True, False]}
+ensemble_params = {"max_depth": [4, 8, 16, None],
+                   "max_features": [None, 'sqrt', 'log2', 0.1],
+                   "min_samples_split": [0.001, 0.01, 0.1],
+                   "min_weight_fraction_leaf": [0.0001, 0.001, 0.01],
+                   "bootstrap": [True, False]}
 
 
 linear_svm_params = {"C": [1, 0.5, 0.1, 0.9, 0.8],
@@ -75,9 +78,34 @@ def classify_random_forest(output_dir: str, table: biom.Table,
                            parameter_tuning: bool=False) -> None:
 
     # specify parameters and distributions to sample from for parameter tuning
-    param_dist = {**random_forest_params, "criterion": ["gini", "entropy"]}
+    param_dist = {**ensemble_params, "criterion": ["gini", "entropy"]}
 
     estimator = RandomForestClassifier(
+        n_jobs=n_jobs, n_estimators=n_estimators)
+
+    estimator, cm, accuracy, importances = split_optimize_classify(
+        table, metadata, category, estimator, output_dir,
+        test_size=test_size, step=step, cv=cv, random_state=random_state,
+        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
+        parameter_tuning=parameter_tuning, param_dist=param_dist,
+        calc_feature_importance=True)
+
+    visualize(output_dir, estimator, cm, accuracy, importances,
+              optimize_feature_selection)
+
+
+def classify_extra_trees(output_dir: str, table: biom.Table,
+                         metadata: qiime2.Metadata, category: str,
+                         test_size: float=0.2, step: float=0.05,
+                         cv: int=5, random_state: int=None, n_jobs: int=1,
+                         n_estimators: int=100,
+                         optimize_feature_selection: bool=False,
+                         parameter_tuning: bool=False) -> None:
+
+    # specify parameters and distributions to sample from for parameter tuning
+    param_dist = {**ensemble_params, "criterion": ["gini", "entropy"]}
+
+    estimator = ExtraTreesClassifier(
         n_jobs=n_jobs, n_estimators=n_estimators)
 
     estimator, cm, accuracy, importances = split_optimize_classify(
@@ -100,7 +128,7 @@ def regress_random_forest(output_dir: str, table: biom.Table,
                           parameter_tuning: bool=False):
 
     # specify parameters and distributions to sample from for parameter tuning
-    param_dist = random_forest_params
+    param_dist = ensemble_params
 
     estimator = RandomForestRegressor(n_jobs=n_jobs, n_estimators=n_estimators)
 
@@ -293,6 +321,28 @@ def classify_kneighbors(output_dir: str, table: biom.Table,
         n_jobs=n_jobs, optimize_feature_selection=False,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=False)
+
+    visualize(output_dir, estimator, cm, accuracy, importances)
+
+
+def regress_kneighbors(output_dir: str, table: biom.Table,
+                        metadata: qiime2.Metadata, category: str,
+                        test_size: float=0.2, step: float=0.05,
+                        cv: int=5, random_state: int=None, n_jobs: int=1,
+                        parameter_tuning: bool=False, algorithm: str='auto'):
+
+    # specify parameters and distributions to sample from for parameter tuning
+    param_dist = neighbors_params
+
+    estimator = KNeighborsRegressor(algorithm=algorithm)
+
+    estimator, cm, accuracy, importances = split_optimize_classify(
+        table, metadata, category, estimator, output_dir,
+        test_size=test_size, step=step, cv=cv, random_state=random_state,
+        n_jobs=n_jobs, optimize_feature_selection=False,
+        parameter_tuning=parameter_tuning, param_dist=param_dist,
+        calc_feature_importance=False, scoring=mean_squared_error,
+        classification=False)
 
     visualize(output_dir, estimator, cm, accuracy, importances)
 
