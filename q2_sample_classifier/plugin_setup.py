@@ -104,9 +104,9 @@ neighbors_parameters = {
 
 neighbors_parameter_descriptions = {
     'algorithm': ('Algorithm used to compute the nearest neighbors. Default, '
-    'auto, will attempt to decide the most appropriate algorithm based on the '
-    'values passed to fit method.')
-}
+                  'auto, will attempt to decide the most appropriate '
+                  'algorithm based on the values passed to fit method.')
+    }
 
 
 plugin.visualizers.register_function(
@@ -287,7 +287,7 @@ plugin.visualizers.register_function(
                    'the solver automatically based on the type of data. For '
                    'details see http://scikit-learn.org/dev/modules/generated/'
                    'sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge'
-                  )},
+                   )},
     name='Ridge regression',
     description=description.format(
         'continuous', 'Ridge linear regression',
