@@ -16,7 +16,7 @@ from .classify import (
     regress_linearSVR, regress_SVR, classify_SVC, classify_kneighbors,
     regress_ridge, regress_lasso, regress_elasticnet,
     regress_kneighbors, classify_extra_trees, classify_adaboost,
-    classify_gradient_boosting)
+    classify_gradient_boosting, regress_extra_trees)
 import q2_sample_classifier
 
 
@@ -174,6 +174,20 @@ plugin.visualizers.register_function(
     name='Random forest regressor',
     description=description.format(
         'continuous', 'random forest regressor',
+        'http://scikit-learn.org/stable/modules/ensemble.html')
+)
+
+
+plugin.visualizers.register_function(
+    function=regress_extra_trees,
+    inputs=inputs,
+    parameters={**parameters, **ensemble_parameters},
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions, **ensemble_parameter_descriptions},
+    name='Extra Trees regressor',
+    description=description.format(
+        'continuous', 'Extra Trees regressor',
         'http://scikit-learn.org/stable/modules/ensemble.html')
 )
 
