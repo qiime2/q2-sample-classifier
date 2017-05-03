@@ -34,7 +34,8 @@ description = ('Predict {0} sample metadata classes using a {1}. Splits input '
                'The test set validates classification accuracy of the '
                'optimized estimator. Outputs classification results for test '
                'set, and optionally a trained estimator to use on additional '
-               'unknown samples.')
+               'unknown samples. For more details on the learning algorithm, '
+               'see {2}')
 
 inputs = {'table': FeatureTable[Frequency]}
 
@@ -113,7 +114,9 @@ plugin.visualizers.register_function(
     parameter_descriptions={
         **parameter_descriptions, **random_forest_parameter_descriptions},
     name='Random forest sample classifier',
-    description=description.format('categorical', 'random forest classifier')
+    description=description.format(
+        'categorical', 'random forest classifier',
+        'http://scikit-learn.org/stable/modules/ensemble.html')
 )
 
 
@@ -125,7 +128,9 @@ plugin.visualizers.register_function(
     parameter_descriptions={
         **parameter_descriptions, **random_forest_parameter_descriptions},
     name='Random forest regressor',
-    description=description.format('continuous', 'random forest regressor')
+    description=description.format(
+        'continuous', 'random forest regressor',
+        'http://scikit-learn.org/stable/modules/ensemble.html')
 )
 
 
@@ -137,7 +142,8 @@ plugin.visualizers.register_function(
     parameter_descriptions=parameter_descriptions,
     name='Linear support vector machine classifier',
     description=description.format(
-        'categorical', 'linear support vector machine classifier')
+        'categorical', 'linear support vector machine classifier',
+        'http://scikit-learn.org/dev/modules/svm.html')
 )
 
 
@@ -150,7 +156,8 @@ plugin.visualizers.register_function(
         **parameter_descriptions, **svm_parameter_descriptions},
     name='Support vector machine classifier',
     description=description.format(
-        'categorical', 'support vector machine classifier')
+        'categorical', 'support vector machine classifier',
+        'http://scikit-learn.org/dev/modules/svm.html')
 )
 
 
@@ -162,7 +169,8 @@ plugin.visualizers.register_function(
     parameter_descriptions={**parameter_descriptions, },
     name='Linear support vector machine regressor',
     description=description.format(
-        'continuous', 'linear support vector machine regressor')
+        'continuous', 'linear support vector machine regressor',
+        'http://scikit-learn.org/dev/modules/svm.html')
 )
 
 
@@ -175,7 +183,8 @@ plugin.visualizers.register_function(
         **parameter_descriptions, **svm_parameter_descriptions},
     name='Support vector machine regressor',
     description=description.format(
-        'continuous', 'support vector machine regressor')
+        'continuous', 'support vector machine regressor',
+        'http://scikit-learn.org/dev/modules/svm.html')
 )
 
 
@@ -194,7 +203,8 @@ plugin.visualizers.register_function(
                   )},
     name='Ridge regression',
     description=description.format(
-        'continuous', 'Ridge linear regression')
+        'continuous', 'Ridge linear regression',
+        'http://scikit-learn.org/dev/modules/linear_model.html')
 )
 
 
@@ -206,7 +216,8 @@ plugin.visualizers.register_function(
     parameter_descriptions=parameter_descriptions,
     name='Lasso regression',
     description=description.format(
-        'continuous', 'Lasso linear regression')
+        'continuous', 'Lasso linear regression',
+        'http://scikit-learn.org/dev/modules/linear_model.html')
 )
 
 
@@ -218,7 +229,8 @@ plugin.visualizers.register_function(
     parameter_descriptions=parameter_descriptions,
     name='Elastic Net regression',
     description=description.format(
-        'continuous', 'Elastic Net linear regression')
+        'continuous', 'Elastic Net linear regression',
+        'http://scikit-learn.org/dev/modules/linear_model.html')
 )
 
 
@@ -231,5 +243,6 @@ plugin.visualizers.register_function(
         **parameter_descriptions, **neighbors_parameter_descriptions},
     name='K-nearest neighbors vote classifier',
     description=description.format(
-        'categorical', 'K-nearest neighbors vote classifier')
+        'categorical', 'K-nearest neighbors vote classifier',
+        'http://scikit-learn.org/dev/modules/neighbors.html')
 )
