@@ -157,6 +157,31 @@ def classify_adaboost(output_dir: str, table: biom.Table,
               optimize_feature_selection)
 
 
+def classify_gradient_boosting(output_dir: str, table: biom.Table,
+                               metadata: qiime2.Metadata, category: str,
+                               test_size: float=0.2, step: float=0.05,
+                               cv: int=5, random_state: int=None,
+                               n_jobs: int=1, n_estimators: int=100,
+                               optimize_feature_selection: bool=False,
+                               parameter_tuning: bool=False):
+
+    # specify parameters and distributions to sample from for parameter tuning
+    param_dist = {k: ensemble_params[k] for k in ensemble_params.keys()
+                  if k != "bootstrap"}
+
+    estimator = GradientBoostingClassifier(n_estimators=n_estimators)
+
+    estimator, cm, accuracy, importances = split_optimize_classify(
+        table, metadata, category, estimator, output_dir,
+        test_size=test_size, step=step, cv=cv, random_state=random_state,
+        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
+        parameter_tuning=parameter_tuning, param_dist=param_dist,
+        calc_feature_importance=True)
+
+    visualize(output_dir, estimator, cm, accuracy, importances,
+              optimize_feature_selection)
+
+
 def regress_random_forest(output_dir: str, table: biom.Table,
                           metadata: qiime2.Metadata, category: str,
                           test_size: float=0.2, step: float=0.05,

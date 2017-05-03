@@ -21,6 +21,10 @@ qiime sample-classifier classify-extra-trees --i-table feature-table-even11000-S
 ```
 qiime sample-classifier classify-adaboost --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization abc --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
 ```
+### Gradient boosting classifier
+```
+qiime sample-classifier classify-gradient-boosting --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization gbc --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
+```
 ### K-nearest neighbors classifier
 ```
 qiime sample-classifier classify-kneighbors --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization knn --p-parameter-tuning
