@@ -41,7 +41,11 @@ qiime sample-classifier regress-SVR --i-table feature-table-even11000-SedimentNo
 ```
 qiime sample-classifier regress-SVR --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization svr --p-parameter-tuning
 ```
-### Ridge regressor
+### Ridge linear regression
 ```
 qiime sample-classifier regress-ridge --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization ridge --p-parameter-tuning
+```
+### Lasso linear regression
+```
+qiime sample-classifier regress-lasso --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization lasso --p-parameter-tuning
 ```
