@@ -63,12 +63,22 @@ def extract_important_features(table, top, ascending=False):
     '''Find top features, match names to indices, sort.
     table: pandas.DataFrame
         Source data table containing samples x features.
-    regr_rf: array
-        Feature importance scores or ranking of scores.
+    top: array
+        Feature importance scores, coef_ scores, or ranking of scores.
     '''
-    importances = pd.DataFrame([i for i in zip(table.columns, top)],
-                               columns=["feature", "importance"])
-    return importances.sort_values(by="importance", ascending=ascending)
+    # is top a 1-d or multi-d array?
+    # coef_ is a multidimensional array of shape = [n_class-1, n_features]
+    if any(isinstance(i, list) for i in top) or top.ndim > 1:
+        # iterate over each list of importances (coef_ sets) in array
+        tops = range(len(top))
+        imp = pd.DataFrame(
+            [i for i in zip(table.columns, *[top[n] for n in tops])],
+            columns=["feature", *["importance{0}".format(n) for n in tops]])
+    # ensemble estimators and RFECV return 1-d arrays
+    else:
+        imp = pd.DataFrame([i for i in zip(table.columns, top)],
+                           columns=["feature", "importance"])
+    return imp.sort_values(by=imp.columns[1], ascending=ascending)
 
 
 def split_training_data(feature_data, targets, category, test_size=0.2,
@@ -202,9 +212,20 @@ def split_optimize_classify(features_fp, targets_fp, category, estimator,
     predict_plot.get_figure().savefig(
         join(output_dir, 'predictions.pdf'), bbox_inches='tight')
 
+    # only set calc_feature_importance=True if estimator has attributes
+    # feature_importances_ or coef_ to report feature importance/weights
     if calc_feature_importance:
-        importances = extract_important_features(
-            X_train, estimator.feature_importances_)
+        try:
+            importances = extract_important_features(
+                X_train, estimator.feature_importances_)
+        # is there a better way to determine whether estimator has coef_ ?
+        except AttributeError:
+            importances = extract_important_features(
+                X_train, estimator.coef_)
+    # otherwise, if optimizing feature selection, just return ranking from RFE
+    elif optimize_feature_selection:
+        importances = importance
+    # otherwise, we have no weights nor selection, so features==n_features
     else:
         importances = None
 
@@ -212,7 +233,7 @@ def split_optimize_classify(features_fp, targets_fp, category, estimator,
 
 
 def visualize(output_dir, estimator, cm, accuracy, importances=None,
-              optimize_feature_selection=False):
+              optimize_feature_selection=True):
 
     # Need to sort out how to save estimator as sklearn.pipeline
     # This will be possible once qiime2 support pipeline actions

@@ -35,13 +35,13 @@ qiime sample-classifier classify-kneighbors --i-table feature-table-even11000-Se
 ```
 ### Linear support vector machine classifier
 ```
-qiime sample-classifier classify-linearSVC --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization lsvc --p-parameter-tuning
+qiime sample-classifier classify-linearSVC --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization lsvc --p-parameter-tuning --p-optimize-feature-selection
 
-qiime sample-classifier classify-SVC --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization svcl --p-parameter-tuning --p-kernel linear
+qiime sample-classifier classify-SVC --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization svcl --p-parameter-tuning --p-optimize-feature-selection --p-kernel linear
 ```
 ### Support vector machine classifier
 ```
-qiime sample-classifier classify-SVC --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization svc --p-parameter-tuning
+qiime sample-classifier classify-SVC --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization svc --p-parameter-tuning --p-optimize-feature-selection
 ```
 
 ## Regression
@@ -63,11 +63,11 @@ qiime sample-classifier regress-gradient-boosting --i-table feature-table-even11
 ```
 ### Linear support vector machine regressor
 ```
-qiime sample-classifier regress-SVR --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization svr --p-parameter-tuning --p-kernel linear
+qiime sample-classifier regress-SVR --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization svrl --p-parameter-tuning --p-optimize-feature-selection --p-kernel linear
 ```
 ### Support vector machine regressor
 ```
-qiime sample-classifier regress-SVR --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization svr --p-parameter-tuning
+qiime sample-classifier regress-SVR --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization svr --p-parameter-tuning --p-optimize-feature-selection
 ```
 ### Ridge linear regression
 ```
@@ -79,7 +79,7 @@ qiime sample-classifier regress-lasso --i-table feature-table-even11000-Sediment
 ```
 ### Elastic Net linear regression
 ```
-qiime sample-classifier regress-elasticnet --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization elastic --p-parameter-tuning
+qiime sample-classifier regress-elasticnet --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization elastic --p-parameter-tuning --p-optimize-feature-selection
 ```
 ### K-nearest neighbors regression
 ```

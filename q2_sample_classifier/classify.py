@@ -14,7 +14,7 @@ from sklearn.ensemble import (RandomForestRegressor, RandomForestClassifier,
                               AdaBoostClassifier, GradientBoostingClassifier,
                               AdaBoostRegressor, GradientBoostingRegressor)
 from sklearn.metrics import mean_squared_error
-from sklearn.svm import LinearSVC, LinearSVR, SVR, SVC
+from sklearn.svm import LinearSVC, SVR, SVC
 from sklearn.linear_model import Ridge, Lasso, ElasticNet
 from sklearn.pipeline import Pipeline
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
@@ -65,7 +65,7 @@ neighbors_params = {
 
 
 linear_params = {
-    "alpha": [1.0, 1.5, 3.0, 10.0, 100.0],
+    "alpha": [0.0001, 0.01, 1.0, 10.0, 1000.0],
     "tol": [0.00001, 0.0001, 0.001, 0.01]
 }
 
@@ -294,7 +294,8 @@ def classify_linearSVC(output_dir: str, table: biom.Table,
                        metadata: qiime2.Metadata, category: str,
                        test_size: float=0.2, step: float=0.05,
                        cv: int=5, random_state: int=None, n_jobs: int=1,
-                       parameter_tuning: bool=False):
+                       parameter_tuning: bool=False,
+                       optimize_feature_selection: bool=False):
 
     # specify parameters and distributions to sample from for parameter tuning
     param_dist = linear_svm_params
@@ -304,61 +305,75 @@ def classify_linearSVC(output_dir: str, table: biom.Table,
     estimator, cm, accuracy, importances = split_optimize_classify(
         table, metadata, category, estimator, output_dir,
         test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=False,
+        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=False)
+        calc_feature_importance=True)
 
-    visualize(output_dir, estimator, cm, accuracy, importances)
+    visualize(output_dir, estimator, cm, accuracy, importances,
+              optimize_feature_selection)
 
 
 def classify_SVC(output_dir: str, table: biom.Table,
                  metadata: qiime2.Metadata, category: str,
                  test_size: float=0.2, step: float=0.05,
                  cv: int=5, random_state: int=None, n_jobs: int=1,
-                 parameter_tuning: bool=False, kernel: str='rbf'):
+                 parameter_tuning: bool=False,
+                 optimize_feature_selection: bool=False, kernel: str='rbf'):
 
     # specify parameters and distributions to sample from for parameter tuning
     param_dist = svm_params
 
     estimator = SVC(kernel=kernel)
 
+    # linear SVC returns feature weights as coef_
+    calc_feature_importance, optimize_feature_selection = svm_set(
+        kernel, optimize_feature_selection)
+
     estimator, cm, accuracy, importances = split_optimize_classify(
         table, metadata, category, estimator, output_dir,
         test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=False,
+        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=False)
+        calc_feature_importance=calc_feature_importance)
 
-    visualize(output_dir, estimator, cm, accuracy, importances)
+    visualize(output_dir, estimator, cm, accuracy, importances,
+              optimize_feature_selection)
 
 
 def regress_SVR(output_dir: str, table: biom.Table,
                 metadata: qiime2.Metadata, category: str,
                 test_size: float=0.2, step: float=0.05,
                 cv: int=5, random_state: int=None, n_jobs: int=1,
-                parameter_tuning: bool=False, kernel: str='rbf'):
+                parameter_tuning: bool=False,
+                optimize_feature_selection: bool=False, kernel: str='rbf'):
 
     # specify parameters and distributions to sample from for parameter tuning
     param_dist = {**svm_params, 'epsilon': [0.0, 0.1]}
 
     estimator = SVR(kernel=kernel)
 
+    # linear SVR returns feature weights as coef_ , non-linear does not
+    calc_feature_importance, optimize_feature_selection = svm_set(
+        kernel, optimize_feature_selection)
+
     estimator, cm, accuracy, importances = split_optimize_classify(
         table, metadata, category, estimator, output_dir,
         test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=False,
+        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=False, scoring=mean_squared_error,
-        classification=False)
+        calc_feature_importance=calc_feature_importance,
+        scoring=mean_squared_error, classification=False)
 
-    visualize(output_dir, estimator, cm, accuracy, importances)
+    visualize(output_dir, estimator, cm, accuracy, importances,
+              optimize_feature_selection)
 
 
 def regress_ridge(output_dir: str, table: biom.Table,
                   metadata: qiime2.Metadata, category: str,
                   test_size: float=0.2, step: float=0.05,
                   cv: int=5, random_state: int=None, n_jobs: int=1,
-                  parameter_tuning: bool=False, solver: str='auto'):
+                  parameter_tuning: bool=False,
+                  optimize_feature_selection: bool=False, solver: str='auto'):
 
     # specify parameters and distributions to sample from for parameter tuning
     param_dist = linear_params
@@ -368,18 +383,20 @@ def regress_ridge(output_dir: str, table: biom.Table,
     estimator, cm, accuracy, importances = split_optimize_classify(
         table, metadata, category, estimator, output_dir,
         test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=False,
+        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=False, scoring=mean_squared_error,
+        calc_feature_importance=True, scoring=mean_squared_error,
         classification=False)
 
-    visualize(output_dir, estimator, cm, accuracy, importances)
+    visualize(output_dir, estimator, cm, accuracy, importances,
+              optimize_feature_selection)
 
 
 def regress_lasso(output_dir: str, table: biom.Table,
                   metadata: qiime2.Metadata, category: str,
                   test_size: float=0.2, step: float=0.05,
                   cv: int=5, random_state: int=None, n_jobs: int=1,
+                  optimize_feature_selection: bool=False,
                   parameter_tuning: bool=False):
 
     # specify parameters and distributions to sample from for parameter tuning
@@ -390,18 +407,20 @@ def regress_lasso(output_dir: str, table: biom.Table,
     estimator, cm, accuracy, importances = split_optimize_classify(
         table, metadata, category, estimator, output_dir,
         test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=False,
+        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=False, scoring=mean_squared_error,
+        calc_feature_importance=True, scoring=mean_squared_error,
         classification=False)
 
-    visualize(output_dir, estimator, cm, accuracy, importances)
+    visualize(output_dir, estimator, cm, accuracy, importances,
+              optimize_feature_selection)
 
 
 def regress_elasticnet(output_dir: str, table: biom.Table,
                        metadata: qiime2.Metadata, category: str,
                        test_size: float=0.2, step: float=0.05,
                        cv: int=5, random_state: int=None, n_jobs: int=1,
+                       optimize_feature_selection: bool=False,
                        parameter_tuning: bool=False):
 
     # specify parameters and distributions to sample from for parameter tuning
@@ -412,12 +431,13 @@ def regress_elasticnet(output_dir: str, table: biom.Table,
     estimator, cm, accuracy, importances = split_optimize_classify(
         table, metadata, category, estimator, output_dir,
         test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=False,
+        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=False, scoring=mean_squared_error,
+        calc_feature_importance=True, scoring=mean_squared_error,
         classification=False)
 
-    visualize(output_dir, estimator, cm, accuracy, importances)
+    visualize(output_dir, estimator, cm, accuracy, importances,
+              optimize_feature_selection)
 
 
 def classify_kneighbors(output_dir: str, table: biom.Table,
@@ -438,7 +458,7 @@ def classify_kneighbors(output_dir: str, table: biom.Table,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=False)
 
-    visualize(output_dir, estimator, cm, accuracy, importances)
+    visualize(output_dir, estimator, cm, accuracy, importances, False)
 
 
 def regress_kneighbors(output_dir: str, table: biom.Table,
@@ -460,7 +480,7 @@ def regress_kneighbors(output_dir: str, table: biom.Table,
         calc_feature_importance=False, scoring=mean_squared_error,
         classification=False)
 
-    visualize(output_dir, estimator, cm, accuracy, importances)
+    visualize(output_dir, estimator, cm, accuracy, importances, False)
 
 
 # Need to figure out how to pickle/import estimators
@@ -468,3 +488,22 @@ def classify_new_data(table: biom.Table, estimator: Pipeline):
     '''Use trained estimator to predict values on unseen data.'''
     predictions = estimator.predict(table)
     return predictions
+
+
+def svm_set(kernel, optimize_feature_selection):
+    if kernel == 'linear':
+        calc_feature_importance = True
+        optimize_feature_selection = optimize_feature_selection
+    else:
+        calc_feature_importance = False
+        optimize_feature_selection = False
+        warn_feature_selection()
+    return calc_feature_importance, optimize_feature_selection
+
+
+def warn_feature_selection():
+    warning = (
+        ('This estimator does not support recursive feature extraction with '
+         'the parameter settings requested. See documentation or try a '
+         'different estimator model.'))
+    warnings.warn(warning, UserWarning)

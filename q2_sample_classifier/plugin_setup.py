@@ -13,7 +13,7 @@ from qiime2.plugin import (Int, Str, Float, Range, Bool, Plugin, Metadata,
 from q2_types.feature_table import FeatureTable, Frequency
 from .classify import (
     classify_random_forest, regress_random_forest, classify_linearSVC,
-    regress_linearSVR, regress_SVR, classify_SVC, classify_kneighbors,
+    regress_SVR, classify_SVC, classify_kneighbors,
     regress_ridge, regress_lasso, regress_elasticnet,
     regress_kneighbors, classify_extra_trees, classify_adaboost,
     classify_gradient_boosting, regress_extra_trees, regress_adaboost,
@@ -51,7 +51,8 @@ parameters = {'metadata': Metadata,
               'cv': Int % Range(1, None),
               'random_state': Int,
               'n_jobs': Int,
-              'parameter_tuning': Bool}
+              'parameter_tuning': Bool,
+              'optimize_feature_selection': Bool}
 
 input_descriptions = {'table': ('Feature table containing all features that '
                                 'should be used for target prediction.')}
@@ -67,12 +68,15 @@ parameter_descriptions = {
     'random_state': 'Seed used by random number generator.',
     'n_jobs': 'Number of jobs to run in parallel.',
     'parameter_tuning': ('Automatically tune hyperparameters using random '
-                         'grid search?')
+                         'grid search?'),
+    'optimize_feature_selection': ('Automatically optimize input feature '
+                                   'selection using recursive feature '
+                                   'elimination?')
 }
 
 
 ensemble_parameters = {
-    'n_estimators': Int % Range(1, None), 'optimize_feature_selection': Bool
+    'n_estimators': Int % Range(1, None)
 }
 
 
@@ -81,9 +85,6 @@ ensemble_parameter_descriptions = {
                      'More trees will improve predictive accuracy up to '
                      'a threshold level, but will also increase time and '
                      'memory requirements.'),
-    'optimize_feature_selection': ('Automatically optimize input feature '
-                                   'selection using recursive feature '
-                                   'elimination?')
 }
 
 
@@ -98,11 +99,15 @@ svm_parameter_descriptions = {
 
 
 neighbors_parameters = {
+    **{k: parameters[k] for k in parameters.keys() if
+       k != "optimize_feature_selection"},
     'algorithm': Str % Choices(['ball_tree', 'kd_tree', 'brute', 'auto'])
 }
 
 
 neighbors_parameter_descriptions = {
+    **{k: parameter_descriptions[k] for k in parameter_descriptions.keys() if
+       k != "optimize_feature_selection"},
     'algorithm': ('Algorithm used to compute the nearest neighbors. Default, '
                   'auto, will attempt to decide the most appropriate '
                   'algorithm based on the values passed to fit method.')
@@ -249,19 +254,6 @@ plugin.visualizers.register_function(
 
 
 plugin.visualizers.register_function(
-    function=regress_linearSVR,
-    inputs=inputs,
-    parameters=parameters,
-    input_descriptions=input_descriptions,
-    parameter_descriptions={**parameter_descriptions, },
-    name='Linear support vector machine regressor',
-    description=description.format(
-        'continuous', 'linear support vector machine regressor',
-        'http://scikit-learn.org/dev/modules/svm.html')
-)
-
-
-plugin.visualizers.register_function(
     function=regress_SVR,
     inputs=inputs,
     parameters={**parameters, **svm_parameters},
@@ -324,10 +316,9 @@ plugin.visualizers.register_function(
 plugin.visualizers.register_function(
     function=regress_kneighbors,
     inputs=inputs,
-    parameters={**parameters, **neighbors_parameters},
+    parameters=neighbors_parameters,
     input_descriptions=input_descriptions,
-    parameter_descriptions={
-        **parameter_descriptions, **neighbors_parameter_descriptions},
+    parameter_descriptions=neighbors_parameter_descriptions,
     name='K-nearest neighbors regression',
     description=description.format(
         'continuous', 'K-nearest neighbors regression',
@@ -338,10 +329,9 @@ plugin.visualizers.register_function(
 plugin.visualizers.register_function(
     function=classify_kneighbors,
     inputs=inputs,
-    parameters={**parameters, **neighbors_parameters},
+    parameters=neighbors_parameters,
     input_descriptions=input_descriptions,
-    parameter_descriptions={
-        **parameter_descriptions, **neighbors_parameter_descriptions},
+    parameter_descriptions=neighbors_parameter_descriptions,
     name='K-nearest neighbors vote classifier',
     description=description.format(
         'categorical', 'K-nearest neighbors vote classifier',
