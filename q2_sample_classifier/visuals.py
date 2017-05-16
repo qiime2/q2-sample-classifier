@@ -14,8 +14,12 @@ from sklearn.metrics import mean_squared_error, confusion_matrix
 import pandas as pd
 import numpy as np
 import seaborn as sns
-from scipy.stats import linregress
+from scipy.stats import linregress, ttest_ind
 import matplotlib.pyplot as plt
+from statsmodels.formula.api import ols
+from statsmodels.stats.anova import anova_lm
+from itertools import combinations
+from statsmodels.sandbox.stats.multicomp import multipletests
 
 
 def regplot_from_dataframe(x, y, plot_style="whitegrid", arb=True,
@@ -33,25 +37,100 @@ def regplot_from_dataframe(x, y, plot_style="whitegrid", arb=True,
     return reg
 
 
-def linear_regress(actual, pred, plot=False, plot_style="whitegrid"):
+def lmplot_from_dataframe(metadata, category, predicted_category, group_by,
+                          plot_style="whitegrid"):
+    sns.set_style(plot_style)
+    return sns.lmplot(category, predicted_category, data=metadata,
+                      hue=group_by, fit_reg=False,
+                      scatter_kws={"marker": ".", "s": 100})
+
+
+def boxplot_from_dataframe(metadata, category, dep, group_by,
+                           plot_style="whitegrid"):
+    sns.set_style(plot_style)
+    return sns.boxplot(x=category, y=dep, hue=group_by, data=metadata)
+
+
+def clustermap_from_dataframe(table, metadata, group_by, category,
+                              metric='correlation', method='weighted',
+                              plot_style="whitegrid"):
+    sns.set_style(plot_style)
+    table = metadata[[group_by, category]].merge(
+        table, left_index=True, right_index=True)
+    table = table.groupby(by=[group_by, category]).median()
+    # remove any empty columns
+    table = table.loc[:, (table != 0).any(axis=0)]
+    g = sns.clustermap(table, metric=metric, method=method, z_score=1,
+                       row_cluster=False)
+    plt.setp(g.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
+    return g
+
+
+def two_way_anova(table, metadata, dep, time, group_by):
+    '''pd.DataFrame -> pd.DataFrame of AOV and OLS summary'''
+    # Prep data
+    table = metadata[[dep, time, group_by]].merge(
+        table, left_index=True, right_index=True)
+    table = table[[dep, time, group_by]].dropna()
+
+    # remove whitespace from column names
+    table.rename(columns=lambda x: x.replace(' ', '_'))
+    dep = dep.replace(' ', '_')
+    time = time.replace(' ', '_')
+    group_by = group_by.replace(' ', '_')
+
+    # AOV
+    mod = ols(formula='{0} ~ {1} * {2}'.format(dep, time, group_by),
+              data=table).fit()
+    aov_table = anova_lm(mod, typ=2)
+    return aov_table, mod.summary2()
+
+
+def pairwise_tests(table, metadata, dep, time, group_by):
+    '''pd.DataFrame -> pd.DataFrame
+    Perform pairwise t-tests on all groups in group_by and time categories.
+    '''
+    table = metadata[[dep, time, group_by]].merge(
+        table, left_index=True, right_index=True)
+    table = table[[dep, time, group_by]].dropna()
+    # find and store all valid subgroups' distributions of dependent var dep
+    distributions = []
+    for tp in table[time].unique():
+        tab_tp = table[table[time] == tp]
+        for group in tab_tp[group_by].unique():
+            tab_group = tab_tp[tab_tp[group_by] == group][dep]
+            distributions.append((tp, group, tab_group))
+
+    # compare all distributions
+    p_vals = []
+    for combo in combinations(distributions, 2):
+        try:
+            t, p = ttest_ind(combo[0][2], combo[1][2], nan_policy='raise')
+            p_vals.append(
+                ((combo[0][0], combo[0][1]), (combo[1][0], combo[1][1]), t, p))
+        except ValueError:
+            pass
+
+    result = pd.DataFrame(p_vals, columns=["Group A", "Group B", "t", "P"])
+    result.set_index(['Group A', 'Group B'], inplace=True)
+    result['q-value'] = multipletests(result['P'], method='fdr_bh')[1]
+    result.sort_index(inplace=True)
+
+    return result
+
+
+def linear_regress(actual, pred):
     '''Calculate linear regression on predicted versus expected values.
     actual: pandas.DataFrame
         Actual y-values for test samples.
     pred: pandas.DataFrame
         Predicted y-values for test samples.
-    plot: bool
-        If True, print seaborn.regplot
-    plot_style: str
-        Seaborn plot style theme.
     '''
-    if plot is True:
-        reg = regplot_from_dataframe(actual, pred, plot_style)
-
     slope, intercept, r_value, p_value, std_err = linregress(actual, pred)
     mse = mean_squared_error(actual, pred)
     return pd.DataFrame([(mse, r_value, p_value, std_err, slope, intercept)],
                         columns=["MSE", "R", "P-val", "Std Error", "Slope",
-                                 "Intercept"]), reg
+                                 "Intercept"])
 
 
 def plot_confusion_matrix(y_test, y_pred, classes, normalize=True):

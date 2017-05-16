@@ -25,8 +25,8 @@ import biom
 from scipy.stats import randint
 import warnings
 
-from .utilities import (split_optimize_classify, visualize, load_data,
-                        tune_parameters)
+from .utilities import (split_optimize_classify, _visualize, _load_data,
+                        tune_parameters, _maz_score, _visualize_maturity_index)
 
 
 ensemble_params = {"max_depth": [4, 8, 16, None],
@@ -91,8 +91,8 @@ def classify_random_forest(output_dir: str, table: biom.Table,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=True)
 
-    visualize(output_dir, estimator, cm, accuracy, importances,
-              optimize_feature_selection)
+    _visualize(output_dir, estimator, cm, accuracy, importances,
+               optimize_feature_selection)
 
 
 def classify_extra_trees(output_dir: str, table: biom.Table,
@@ -116,8 +116,8 @@ def classify_extra_trees(output_dir: str, table: biom.Table,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=True)
 
-    visualize(output_dir, estimator, cm, accuracy, importances,
-              optimize_feature_selection)
+    _visualize(output_dir, estimator, cm, accuracy, importances,
+               optimize_feature_selection)
 
 
 def classify_adaboost(output_dir: str, table: biom.Table,
@@ -136,7 +136,7 @@ def classify_adaboost(output_dir: str, table: biom.Table,
 
     # parameter tune base estimator
     if parameter_tuning:
-        features, targets = load_data(table, metadata, transpose=True)
+        features, targets = _load_data(table, metadata, transpose=True)
         base_estimator = tune_parameters(
             features, targets[category], base_estimator, param_dist,
             n_jobs=n_jobs, cv=cv, random_state=random_state)
@@ -150,8 +150,8 @@ def classify_adaboost(output_dir: str, table: biom.Table,
         parameter_tuning=False, param_dist=param_dist,
         calc_feature_importance=True)
 
-    visualize(output_dir, estimator, cm, accuracy, importances,
-              optimize_feature_selection)
+    _visualize(output_dir, estimator, cm, accuracy, importances,
+               optimize_feature_selection)
 
 
 def classify_gradient_boosting(output_dir: str, table: biom.Table,
@@ -175,8 +175,8 @@ def classify_gradient_boosting(output_dir: str, table: biom.Table,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=True)
 
-    visualize(output_dir, estimator, cm, accuracy, importances,
-              optimize_feature_selection)
+    _visualize(output_dir, estimator, cm, accuracy, importances,
+               optimize_feature_selection)
 
 
 def regress_random_forest(output_dir: str, table: biom.Table,
@@ -200,8 +200,8 @@ def regress_random_forest(output_dir: str, table: biom.Table,
         calc_feature_importance=True, scoring=mean_squared_error,
         classification=False)
 
-    visualize(output_dir, estimator, cm, accuracy, importances,
-              optimize_feature_selection)
+    _visualize(output_dir, estimator, cm, accuracy, importances,
+               optimize_feature_selection)
 
 
 def regress_extra_trees(output_dir: str, table: biom.Table,
@@ -225,8 +225,8 @@ def regress_extra_trees(output_dir: str, table: biom.Table,
         calc_feature_importance=True, scoring=mean_squared_error,
         classification=False)
 
-    visualize(output_dir, estimator, cm, accuracy, importances,
-              optimize_feature_selection)
+    _visualize(output_dir, estimator, cm, accuracy, importances,
+               optimize_feature_selection)
 
 
 def regress_adaboost(output_dir: str, table: biom.Table,
@@ -245,7 +245,7 @@ def regress_adaboost(output_dir: str, table: biom.Table,
 
     # parameter tune base estimator
     if parameter_tuning:
-        features, targets = load_data(table, metadata, transpose=True)
+        features, targets = _load_data(table, metadata, transpose=True)
         base_estimator = tune_parameters(
             features, targets[category], base_estimator, param_dist,
             n_jobs=n_jobs, cv=cv, random_state=random_state)
@@ -260,8 +260,8 @@ def regress_adaboost(output_dir: str, table: biom.Table,
         calc_feature_importance=True, scoring=mean_squared_error,
         classification=False)
 
-    visualize(output_dir, estimator, cm, accuracy, importances,
-              optimize_feature_selection)
+    _visualize(output_dir, estimator, cm, accuracy, importances,
+               optimize_feature_selection)
 
 
 def regress_gradient_boosting(output_dir: str, table: biom.Table,
@@ -286,8 +286,8 @@ def regress_gradient_boosting(output_dir: str, table: biom.Table,
         calc_feature_importance=True, scoring=mean_squared_error,
         classification=False)
 
-    visualize(output_dir, estimator, cm, accuracy, importances,
-              optimize_feature_selection)
+    _visualize(output_dir, estimator, cm, accuracy, importances,
+               optimize_feature_selection)
 
 
 def classify_linearSVC(output_dir: str, table: biom.Table,
@@ -309,8 +309,8 @@ def classify_linearSVC(output_dir: str, table: biom.Table,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=True)
 
-    visualize(output_dir, estimator, cm, accuracy, importances,
-              optimize_feature_selection)
+    _visualize(output_dir, estimator, cm, accuracy, importances,
+               optimize_feature_selection)
 
 
 def classify_SVC(output_dir: str, table: biom.Table,
@@ -336,8 +336,8 @@ def classify_SVC(output_dir: str, table: biom.Table,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=calc_feature_importance)
 
-    visualize(output_dir, estimator, cm, accuracy, importances,
-              optimize_feature_selection)
+    _visualize(output_dir, estimator, cm, accuracy, importances,
+               optimize_feature_selection)
 
 
 def regress_SVR(output_dir: str, table: biom.Table,
@@ -364,8 +364,8 @@ def regress_SVR(output_dir: str, table: biom.Table,
         calc_feature_importance=calc_feature_importance,
         scoring=mean_squared_error, classification=False)
 
-    visualize(output_dir, estimator, cm, accuracy, importances,
-              optimize_feature_selection)
+    _visualize(output_dir, estimator, cm, accuracy, importances,
+               optimize_feature_selection)
 
 
 def regress_ridge(output_dir: str, table: biom.Table,
@@ -388,8 +388,8 @@ def regress_ridge(output_dir: str, table: biom.Table,
         calc_feature_importance=True, scoring=mean_squared_error,
         classification=False)
 
-    visualize(output_dir, estimator, cm, accuracy, importances,
-              optimize_feature_selection)
+    _visualize(output_dir, estimator, cm, accuracy, importances,
+               optimize_feature_selection)
 
 
 def regress_lasso(output_dir: str, table: biom.Table,
@@ -412,8 +412,8 @@ def regress_lasso(output_dir: str, table: biom.Table,
         calc_feature_importance=True, scoring=mean_squared_error,
         classification=False)
 
-    visualize(output_dir, estimator, cm, accuracy, importances,
-              optimize_feature_selection)
+    _visualize(output_dir, estimator, cm, accuracy, importances,
+               optimize_feature_selection)
 
 
 def regress_elasticnet(output_dir: str, table: biom.Table,
@@ -436,8 +436,8 @@ def regress_elasticnet(output_dir: str, table: biom.Table,
         calc_feature_importance=True, scoring=mean_squared_error,
         classification=False)
 
-    visualize(output_dir, estimator, cm, accuracy, importances,
-              optimize_feature_selection)
+    _visualize(output_dir, estimator, cm, accuracy, importances,
+               optimize_feature_selection)
 
 
 def classify_kneighbors(output_dir: str, table: biom.Table,
@@ -458,7 +458,7 @@ def classify_kneighbors(output_dir: str, table: biom.Table,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=False)
 
-    visualize(output_dir, estimator, cm, accuracy, importances, False)
+    _visualize(output_dir, estimator, cm, accuracy, importances, False)
 
 
 def regress_kneighbors(output_dir: str, table: biom.Table,
@@ -480,7 +480,62 @@ def regress_kneighbors(output_dir: str, table: biom.Table,
         calc_feature_importance=False, scoring=mean_squared_error,
         classification=False)
 
-    visualize(output_dir, estimator, cm, accuracy, importances, False)
+    _visualize(output_dir, estimator, cm, accuracy, importances, False)
+
+
+def maturity_index(output_dir: str, table: biom.Table,
+                   metadata: qiime2.Metadata, category: str, group_by: str,
+                   control: str, estimator: str='RandomForestRegressor',
+                   n_estimators: int=100, test_size: float=0.2,
+                   step: float=0.05, cv: int=5, random_state: int=None,
+                   n_jobs: int=1, parameter_tuning: bool=True,
+                   optimize_feature_selection: bool=True):
+    '''Calculate a "maturity index" to predict values of a continuous
+    metadata category as a function of microbiota composition. A "normal"
+    maturation profile is trained based on a set of control samples. MAZ scores
+    are then calculated for all samples. Plots predicted vs. expected values
+    for each group in category; barplots of MAZ scores for each group in
+    category; and heatmap of top feature abundance X category. CATEGORY MUST
+    BE PREVIOUSLY BINNED INTO SENSIBLE BINS, E.G., MONTHS INSTEAD OF DAYS.
+
+    category: str
+        Continuous metadata category to use for estimator fitting/prediction.
+    group_by: str
+        Metadata category to use for plotting and significance testing.
+    control: str
+        Value of group_by to use as control group.
+    '''
+    # select estimator
+    estimator, param_dist = select_estimator(estimator, n_jobs, n_estimators)
+
+    # split input data into control and treatment groups
+    table, metadata = _load_data(table, metadata, transpose=True)
+    md_control = metadata[metadata[group_by] == control]
+    table_control = table.ix[list(md_control.index.values)]
+
+    # train model on control data
+    estimator, cm, accuracy, importances = split_optimize_classify(
+        table_control, md_control, category, estimator, output_dir,
+        random_state=random_state, n_jobs=n_jobs, test_size=test_size,
+        step=step, cv=cv, parameter_tuning=parameter_tuning,
+        optimize_feature_selection=optimize_feature_selection,
+        param_dist=param_dist, calc_feature_importance=True, load_data=False,
+        scoring=mean_squared_error, classification=False)
+
+    # predict treatment data
+    table = table.loc[:, importances["feature"]]
+    y_pred = estimator.predict(table)
+    predicted_category = 'predicted {0}'.format(category)
+    metadata[predicted_category] = y_pred
+
+    # calculate MAZ score
+    metadata = _maz_score(
+        metadata, predicted_category, category, group_by, control)
+
+    # visualize
+    _visualize_maturity_index(table, metadata, group_by, category,
+                              predicted_category, importances, estimator,
+                              accuracy, output_dir)
 
 
 # Need to figure out how to pickle/import estimators
@@ -488,6 +543,35 @@ def classify_new_data(table: biom.Table, estimator: Pipeline):
     '''Use trained estimator to predict values on unseen data.'''
     predictions = estimator.predict(table)
     return predictions
+
+
+def select_estimator(estimator, n_jobs, n_estimators):
+    '''Select estimator and parameters from argument name.'''
+    if estimator == 'RandomForestRegressor':
+        param_dist = ensemble_params
+        estimator = RandomForestRegressor(
+            n_jobs=n_jobs, n_estimators=n_estimators)
+    elif estimator == 'ExtraTreesRegressor':
+        param_dist = ensemble_params
+        estimator = ExtraTreesRegressor(
+            n_jobs=n_jobs, n_estimators=n_estimators)
+    elif estimator == 'GradientBoostingRegressor':
+        param_dist = {k: ensemble_params[k] for k in ensemble_params.keys()
+                      if k != "bootstrap"}
+        estimator = GradientBoostingRegressor(n_estimators=n_estimators)
+    elif estimator == 'SVR':
+        param_dist = {**svm_params, 'epsilon': [0.0, 0.1]}
+        estimator = SVR(kernel='linear')
+    elif estimator == 'Ridge':
+        param_dist = linear_params
+        estimator = Ridge(solver='auto')
+    elif estimator == 'Lasso':
+        param_dist = linear_params
+        estimator = Lasso()
+    elif estimator == 'ElasticNet':
+        param_dist = linear_params
+        estimator = ElasticNet()
+    return estimator, param_dist
 
 
 def svm_set(kernel, optimize_feature_selection):

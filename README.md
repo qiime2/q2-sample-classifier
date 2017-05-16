@@ -85,3 +85,16 @@ qiime sample-classifier regress-elasticnet --i-table feature-table-even11000-Sed
 ```
 qiime sample-classifier regress-kneighbors --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization knnr --p-parameter-tuning
 ```
+
+## "Maturity Index" prediction
+
+This method calculates a "microbial maturity" index from a regression model trained on feature data to predict a given continuous metadata category, e.g., to predict a subject's age as a function of microbiota composition. The model is trained on a subset of control group samples, then predicts the category value for all samples. This visualization computes maturity index z-scores to compare relative "maturity" between each group, as described in doi:10.1038/nature13421. This method can be used to predict between-group differences in relative trajectory across any type of continuous metadata gradient, e.g., intestinal microbiome development by age, microbial succession during wine fermentation, or microbial community differences along environmental gradients, as a function of two or more different "treatment" groups.
+
+```
+qiime sample-classifier maturity-index --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --p-group-by Site_Name --p-control Hcanyon --p-n-jobs 4 --o-visualization maturity --p-test-size 0.4
+```
+
+# Troubleshooting
+Here follow some common errors and their solutions.
+```The test_size = 8 should be greater or equal to the number of classes = 12```
+This indicates that you have fewer test samples than the number of metadata classes (unique values in `category`). Increase parameter `test_size`. If you continue to get this error, you probably have either too few samples, or too few samples per class.

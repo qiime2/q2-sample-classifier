@@ -20,7 +20,10 @@ from os.path import join
 import matplotlib.pyplot as plt
 import pkg_resources
 
-from .visuals import linear_regress, plot_confusion_matrix, plot_RFE
+from .visuals import (linear_regress, plot_confusion_matrix, plot_RFE,
+                      pairwise_tests, two_way_anova, clustermap_from_dataframe,
+                      boxplot_from_dataframe, lmplot_from_dataframe,
+                      regplot_from_dataframe)
 
 
 TEMPLATES = pkg_resources.resource_filename('q2_sample_classifier', 'assets')
@@ -36,7 +39,7 @@ def biom_to_pandas(table):
     return out
 
 
-def load_data(features_fp, targets_fp, transpose=True):
+def _load_data(features_fp, targets_fp, transpose=True):
     '''Load data and generate training and test sets.
 
     features_fp: path
@@ -164,15 +167,16 @@ def rfecv_feature_selection(feature_data, targets, estimator,
     return rfecv, importance, top_feature_data, rfep
 
 
-def split_optimize_classify(features_fp, targets_fp, category, estimator,
+def split_optimize_classify(features, targets, category, estimator,
                             output_dir, transpose=True, test_size=0.2,
                             step=0.05, cv=5, random_state=None, n_jobs=4,
                             optimize_feature_selection=False,
                             parameter_tuning=False, param_dist=None,
-                            calc_feature_importance=False,
+                            calc_feature_importance=False, load_data=True,
                             scoring=accuracy_score, classification=True):
     # load data
-    features, targets = load_data(features_fp, targets_fp, transpose=transpose)
+    if load_data:
+        features, targets = _load_data(features, targets, transpose=transpose)
 
     # split into training and test sets
     X_train, X_test, y_train, y_test = split_training_data(
@@ -206,7 +210,8 @@ def split_optimize_classify(features_fp, targets_fp, category, estimator,
         predictions, predict_plot = plot_confusion_matrix(
             y_test, y_pred, sorted(estimator.classes_))
     else:
-        predictions, predict_plot = linear_regress(y_test, y_pred, plot=True)
+        predictions = linear_regress(y_test, y_pred)
+        predict_plot = regplot_from_dataframe(y_test, y_pred)
     predict_plot.get_figure().savefig(
         join(output_dir, 'predictions.png'), bbox_inches='tight')
     predict_plot.get_figure().savefig(
@@ -232,8 +237,8 @@ def split_optimize_classify(features_fp, targets_fp, category, estimator,
     return estimator, predictions, accuracy, importances
 
 
-def visualize(output_dir, estimator, cm, accuracy, importances=None,
-              optimize_feature_selection=True):
+def _visualize(output_dir, estimator, cm, accuracy, importances=None,
+               optimize_feature_selection=True):
 
     # Need to sort out how to save estimator as sklearn.pipeline
     # This will be possible once qiime2 support pipeline actions
@@ -260,7 +265,66 @@ def visualize(output_dir, estimator, cm, accuracy, importances=None,
         'predictions': cm,
         'importances': importances,
         'classification': True,
-        'optimize_feature_selection': optimize_feature_selection})
+        'optimize_feature_selection': optimize_feature_selection,
+        'maturity_index': False})
+
+
+def _visualize_maturity_index(table, metadata, group_by, category,
+                              predicted_category, importances, estimator,
+                              accuracy, output_dir):
+
+    pd.set_option('display.max_colwidth', -1)
+
+    maturity = '{0} maturity'.format(category)
+    maz = '{0} MAZ score'.format(category)
+
+    # save feature importance data and convert to html
+    importances.to_csv(join(output_dir, 'feature_importance.tsv'), sep='\t')
+    importance = importances.to_html(classes=(
+        "table table-striped table-hover")).replace('border="1"', 'border="0"')
+
+    # save predicted values, maturity, and MAZ score data
+    maz_md = metadata[[group_by, category, predicted_category, maturity, maz]]
+    maz_md.to_csv(join(output_dir, 'maz_scores.tsv'), sep='\t')
+    maz_aov = two_way_anova(table, metadata, maz, group_by, category)[0]
+    maz_aov.to_csv(join(output_dir, 'maz_aov.tsv'), sep='\t')
+    maz_pairwise = pairwise_tests(table, metadata, maz, group_by, category)
+    maz_pairwise.to_csv(join(output_dir, 'maz_pairwise.tsv'), sep='\t')
+
+    # plot control/treatment predicted vs. actual values
+    g = lmplot_from_dataframe(metadata, category, predicted_category, group_by)
+    g.get_figure().savefig(
+        join(output_dir, 'maz_predictions.png'), bbox_inches='tight')
+    g.get_figure().savefig(
+        join(output_dir, 'maz_predictions.pdf'), bbox_inches='tight')
+
+    # plot barplots of MAZ score vs. category (e.g., age)
+    g = boxplot_from_dataframe(metadata, category, maz, group_by)
+    g.get_figure().savefig(
+        join(output_dir, 'maz_boxplots.png'), bbox_inches='tight')
+    g.get_figure().savefig(
+        join(output_dir, 'maz_boxplots.pdf'), bbox_inches='tight')
+
+    # plot heatmap of category (e.g., age) vs. abundance of top features
+    top = table[list(importances.feature)]
+    g = clustermap_from_dataframe(top, metadata, group_by, category)
+    g.get_figure().savefig(
+        join(output_dir, 'maz_heatmaps.png'), bbox_inches='tight')
+    g.get_figure().savefig(
+        join(output_dir, 'maz_heatmaps.pdf'), bbox_inches='tight')
+
+    result = pd.Series([str(estimator), accuracy],
+                       index=['Parameters', 'Accuracy score'],
+                       name='Random forest classification results')
+
+    index = join(TEMPLATES, 'index.html')
+    q2templates.render(index, output_dir, context={
+        'result': result,
+        'predictions': None,
+        'importances': importance,
+        'classification': False,
+        'optimize_feature_selection': True,
+        'maturity_index': False})
 
 
 def tune_parameters(X_train, y_train, estimator, param_dist, n_iter_search=20,
@@ -284,3 +348,33 @@ def fit_and_predict(X_train, X_test, y_train, y_test, estimator,
     accuracy = scoring(y_test, pd.DataFrame(y_pred))
 
     return estimator, accuracy, y_pred
+
+
+def _maz_score(metadata, predicted, category, group_by, control):
+    '''pd.DataFrame -> pd.DataFrame'''
+    # extract control data
+    md_control = metadata[metadata[group_by] == control]
+
+    # for each bin, calculate median and SD in control samples
+    medians = {}
+    for n in md_control[category].unique():
+        _bin = md_control[md_control[category] == n]
+        _median = _bin[category].median()
+        _std = _bin[category].std()
+        medians[n] = (_median, _std)
+
+    # calculate maturity and MAZ scores in all samples
+    maturity_scores = []
+    maz_scores = []
+    for i, v in metadata[predicted].iteritems():
+        _median, _std = medians[metadata.loc[i][category]]
+        maturity = v - _median
+        maturity_scores.append(maturity)
+        maz_scores.append(maturity / _std)
+
+    maturity = '{0} maturity'.format(category)
+    metadata[maturity] = maturity_scores
+    maz = '{0} MAZ score'.format(category)
+    metadata[maz] = maz_scores
+
+    return metadata

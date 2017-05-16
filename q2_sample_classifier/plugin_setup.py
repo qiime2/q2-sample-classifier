@@ -17,7 +17,7 @@ from .classify import (
     regress_ridge, regress_lasso, regress_elasticnet,
     regress_kneighbors, classify_extra_trees, classify_adaboost,
     classify_gradient_boosting, regress_extra_trees, regress_adaboost,
-    regress_gradient_boosting)
+    regress_gradient_boosting, maturity_index)
 import q2_sample_classifier
 
 
@@ -81,10 +81,9 @@ ensemble_parameters = {
 
 
 ensemble_parameter_descriptions = {
-    'n_estimators': ('Number of random forests to grow for estimation. '
-                     'More trees will improve predictive accuracy up to '
-                     'a threshold level, but will also increase time and '
-                     'memory requirements.'),
+    'n_estimators': ('Number of trees to grow for estimation. More trees will '
+                     'improve predictive accuracy up to a threshold level, '
+                     'but will also increase time and memory requirements.'),
 }
 
 
@@ -336,4 +335,47 @@ plugin.visualizers.register_function(
     description=description.format(
         'categorical', 'K-nearest neighbors vote classifier',
         'http://scikit-learn.org/dev/modules/neighbors.html')
+)
+
+
+plugin.visualizers.register_function(
+    function=maturity_index,
+    inputs=inputs,
+    parameters={'group_by': Str,
+                'control': Str,
+                'estimator': Str % Choices([
+                    'RandomForestRegressor', 'ExtraTreesRegressor',
+                    'GradientBoostingRegressor', 'SVR', 'Ridge', 'Lasso',
+                    'ElasticNet']),
+                **parameters,
+                **ensemble_parameters,
+                },
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions,
+        'group_by': ('Metadata category to use for plotting and significance '
+                     'testing between main treatment groups.'),
+        'control': (
+            'Value of group_by to use as control group. The regression  model '
+            'will be trained using only control group data, and the maturity '
+            'scores of other groups consequently will be assessed relative to '
+            'this group.'),
+        'estimator': 'Regression model to use for prediction.',
+        **ensemble_parameter_descriptions,
+    },
+    name='Microbial maturity index prediction',
+    description=('Calculates a "microbial maturity" index from a regression '
+                 'model trained on feature data to predict a given continuous '
+                 'metadata category, e.g., to predict age as a function of '
+                 'microbiota composition. The model is trained on a subset of '
+                 'control group samples, then predicts the category value for '
+                 'all samples. This visualization computes maturity index '
+                 'z-scores to compare relative "maturity" between each group, '
+                 'as described in doi:10.1038/nature13421. This method can '
+                 'be used to predict between-group differences in relative '
+                 'trajectory across any type of continuous metadata gradient, '
+                 'e.g., intestinal microbiome development by age, microbial '
+                 'succession during wine fermentation, or microbial community '
+                 'differences along environmental gradients, as a function of '
+                 'two or more different "treatment" groups.')
 )
