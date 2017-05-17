@@ -349,6 +349,7 @@ plugin.visualizers.register_function(
                     'ElasticNet']),
                 **parameters,
                 **ensemble_parameters,
+                'maz_stats': Bool,
                 },
     input_descriptions=input_descriptions,
     parameter_descriptions={
@@ -362,6 +363,7 @@ plugin.visualizers.register_function(
             'this group.'),
         'estimator': 'Regression model to use for prediction.',
         **ensemble_parameter_descriptions,
+        'maz_stats': 'Calculate anova and pairwise tests on MAZ scores?',
     },
     name='Microbial maturity index prediction',
     description=('Calculates a "microbial maturity" index from a regression '

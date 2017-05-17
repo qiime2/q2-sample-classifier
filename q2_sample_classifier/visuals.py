@@ -63,6 +63,7 @@ def clustermap_from_dataframe(table, metadata, group_by, category,
     g = sns.clustermap(table, metric=metric, method=method, z_score=1,
                        row_cluster=False)
     plt.setp(g.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
+    plt.setp(g.ax_heatmap.xaxis.get_majorticklabels(), rotation=90)
     return g
 
 
@@ -74,7 +75,7 @@ def two_way_anova(table, metadata, dep, time, group_by):
     table = table[[dep, time, group_by]].dropna()
 
     # remove whitespace from column names
-    table.rename(columns=lambda x: x.replace(' ', '_'))
+    table = table.rename(columns=lambda x: x.replace(' ', '_'))
     dep = dep.replace(' ', '_')
     time = time.replace(' ', '_')
     group_by = group_by.replace(' ', '_')

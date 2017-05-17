@@ -489,7 +489,8 @@ def maturity_index(output_dir: str, table: biom.Table,
                    n_estimators: int=100, test_size: float=0.2,
                    step: float=0.05, cv: int=5, random_state: int=None,
                    n_jobs: int=1, parameter_tuning: bool=True,
-                   optimize_feature_selection: bool=True):
+                   optimize_feature_selection: bool=True,
+                   maz_stats: bool=True):
     '''Calculate a "maturity index" to predict values of a continuous
     metadata category as a function of microbiota composition. A "normal"
     maturation profile is trained based on a set of control samples. MAZ scores
@@ -535,7 +536,7 @@ def maturity_index(output_dir: str, table: biom.Table,
     # visualize
     _visualize_maturity_index(table, metadata, group_by, category,
                               predicted_category, importances, estimator,
-                              accuracy, output_dir)
+                              accuracy, output_dir, maz_stats=maz_stats)
 
 
 # Need to figure out how to pickle/import estimators

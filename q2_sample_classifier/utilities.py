@@ -271,7 +271,7 @@ def _visualize(output_dir, estimator, cm, accuracy, importances=None,
 
 def _visualize_maturity_index(table, metadata, group_by, category,
                               predicted_category, importances, estimator,
-                              accuracy, output_dir):
+                              accuracy, output_dir, maz_stats=True):
 
     pd.set_option('display.max_colwidth', -1)
 
@@ -286,17 +286,17 @@ def _visualize_maturity_index(table, metadata, group_by, category,
     # save predicted values, maturity, and MAZ score data
     maz_md = metadata[[group_by, category, predicted_category, maturity, maz]]
     maz_md.to_csv(join(output_dir, 'maz_scores.tsv'), sep='\t')
-    maz_aov = two_way_anova(table, metadata, maz, group_by, category)[0]
-    maz_aov.to_csv(join(output_dir, 'maz_aov.tsv'), sep='\t')
-    maz_pairwise = pairwise_tests(table, metadata, maz, group_by, category)
-    maz_pairwise.to_csv(join(output_dir, 'maz_pairwise.tsv'), sep='\t')
+    if maz_stats:
+        maz_aov = two_way_anova(table, metadata, maz, group_by, category)[0]
+        maz_aov.to_csv(join(output_dir, 'maz_aov.tsv'), sep='\t')
+        maz_pairwise = pairwise_tests(table, metadata, maz, group_by, category)
+        maz_pairwise.to_csv(join(output_dir, 'maz_pairwise.tsv'), sep='\t')
 
     # plot control/treatment predicted vs. actual values
     g = lmplot_from_dataframe(metadata, category, predicted_category, group_by)
-    g.get_figure().savefig(
-        join(output_dir, 'maz_predictions.png'), bbox_inches='tight')
-    g.get_figure().savefig(
-        join(output_dir, 'maz_predictions.pdf'), bbox_inches='tight')
+    g.savefig(join(output_dir, 'maz_predictions.png'), bbox_inches='tight')
+    g.savefig(join(output_dir, 'maz_predictions.pdf'), bbox_inches='tight')
+    plt.close()
 
     # plot barplots of MAZ score vs. category (e.g., age)
     g = boxplot_from_dataframe(metadata, category, maz, group_by)
@@ -304,14 +304,13 @@ def _visualize_maturity_index(table, metadata, group_by, category,
         join(output_dir, 'maz_boxplots.png'), bbox_inches='tight')
     g.get_figure().savefig(
         join(output_dir, 'maz_boxplots.pdf'), bbox_inches='tight')
+    plt.close()
 
     # plot heatmap of category (e.g., age) vs. abundance of top features
     top = table[list(importances.feature)]
     g = clustermap_from_dataframe(top, metadata, group_by, category)
-    g.get_figure().savefig(
-        join(output_dir, 'maz_heatmaps.png'), bbox_inches='tight')
-    g.get_figure().savefig(
-        join(output_dir, 'maz_heatmaps.pdf'), bbox_inches='tight')
+    g.savefig(join(output_dir, 'maz_heatmaps.png'), bbox_inches='tight')
+    g.savefig(join(output_dir, 'maz_heatmaps.pdf'), bbox_inches='tight')
 
     result = pd.Series([str(estimator), accuracy],
                        index=['Parameters', 'Accuracy score'],
@@ -324,7 +323,7 @@ def _visualize_maturity_index(table, metadata, group_by, category,
         'importances': importance,
         'classification': False,
         'optimize_feature_selection': True,
-        'maturity_index': False})
+        'maturity_index': True})
 
 
 def tune_parameters(X_train, y_train, estimator, param_dist, n_iter_search=20,
@@ -370,7 +369,11 @@ def _maz_score(metadata, predicted, category, group_by, control):
         _median, _std = medians[metadata.loc[i][category]]
         maturity = v - _median
         maturity_scores.append(maturity)
-        maz_scores.append(maturity / _std)
+        if maturity == 0.0 or _std == 0.0:
+            maz_score = 0.0
+        else:
+            maz_score = maturity / _std
+        maz_scores.append(maz_score)
 
     maturity = '{0} maturity'.format(category)
     metadata[maturity] = maturity_scores
