@@ -40,15 +40,18 @@ def regplot_from_dataframe(x, y, plot_style="whitegrid", arb=True,
 def lmplot_from_dataframe(metadata, category, predicted_category, group_by,
                           plot_style="whitegrid"):
     sns.set_style(plot_style)
-    return sns.lmplot(category, predicted_category, data=metadata,
+    g = sns.lmplot(category, predicted_category, data=metadata,
                       hue=group_by, fit_reg=False,
-                      scatter_kws={"marker": ".", "s": 100})
+                      scatter_kws={"marker": ".", "s": 100}, legend_out=True)
+    return g
 
 
 def boxplot_from_dataframe(metadata, category, dep, group_by,
                            plot_style="whitegrid"):
     sns.set_style(plot_style)
-    return sns.boxplot(x=category, y=dep, hue=group_by, data=metadata)
+    g = sns.boxplot(x=category, y=dep, hue=group_by, data=metadata)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    return g
 
 
 def clustermap_from_dataframe(table, metadata, group_by, category,

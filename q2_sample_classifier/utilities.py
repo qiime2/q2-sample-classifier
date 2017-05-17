@@ -358,8 +358,8 @@ def _maz_score(metadata, predicted, category, group_by, control):
     medians = {}
     for n in md_control[category].unique():
         _bin = md_control[md_control[category] == n]
-        _median = _bin[category].median()
-        _std = _bin[category].std()
+        _median = _bin[predicted].median()
+        _std = _bin[predicted].std()
         medians[n] = (_median, _std)
 
     # calculate maturity and MAZ scores in all samples
