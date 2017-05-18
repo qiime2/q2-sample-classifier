@@ -59,6 +59,11 @@ def _load_data(features_fp, targets_fp, transpose=True):
     targets = targets_fp.to_dataframe()
     targets = targets.apply(lambda x: pd.to_numeric(x, errors='ignore'))
 
+    # filter features and targets so samples match
+    merged = feature_data.join(targets, how='inner')
+    feature_data = feature_data.loc[merged.index]
+    targets = targets.loc[merged.index]
+
     return feature_data, targets
 
 
@@ -246,7 +251,7 @@ def _visualize(output_dir, estimator, cm, accuracy, importances=None,
     pd.set_option('display.max_colwidth', -1)
     result = pd.Series([str(estimator), accuracy],
                        index=['Parameters', 'Accuracy score'],
-                       name='Random forest classification results')
+                       name='Prediction results')
 
     result = result.to_frame().to_html(classes=(
         "table table-striped table-hover")).replace('border="1"', 'border="0"')

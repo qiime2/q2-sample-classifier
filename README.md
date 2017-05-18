@@ -96,5 +96,15 @@ qiime sample-classifier maturity-index --i-table feature-table-even11000-Sedimen
 
 # Troubleshooting
 Here follow some common errors and their solutions.
-```The test_size = 8 should be greater or equal to the number of classes = 12```
+```
+The test_size = 8 should be greater or equal to the number of classes = 12
+```
 This indicates that you have fewer test samples than the number of metadata classes (unique values in `category`). Increase parameter `test_size`. If you continue to get this error, you probably have either too few samples, or too few samples per class.
+```
+The number of observations cannot be determined on an empty distance matrix
+```
+Occasionally, a single feature will be chosen for model training, resulting in an empty distance matrix. This is probably not a useful model, anyway, so just run the command again and see if this changes. If you continue to get this error, you should examine your input data — ensure that you have a sufficient number of samples and many non-zero features. If you have very few samples or features (e.g., < 50), the maturity index model is probably not right for your data.
+```
+The least populated class in y has only 1 member, which is too few. The minimum number of groups for any class cannot be less than 2.
+```
+The `Category` that you selected contains some classes with only one member. Remove these classes before continuing, or choose a better category!
