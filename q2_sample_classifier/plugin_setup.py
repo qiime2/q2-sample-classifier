@@ -11,13 +11,14 @@
 from qiime2.plugin import (Int, Str, Float, Range, Bool, Plugin, Metadata,
                            Choices)
 from q2_types.feature_table import FeatureTable, Frequency
+from q2_types.sample_data import AlphaDiversity, SampleData
 from .classify import (
     classify_random_forest, regress_random_forest, classify_linearSVC,
     regress_SVR, classify_SVC, classify_kneighbors,
     regress_ridge, regress_lasso, regress_elasticnet,
     regress_kneighbors, classify_extra_trees, classify_adaboost,
     classify_gradient_boosting, regress_extra_trees, regress_adaboost,
-    regress_gradient_boosting, maturity_index)
+    regress_gradient_boosting, maturity_index, detect_outliers)
 import q2_sample_classifier
 
 
@@ -42,31 +43,37 @@ description = ('Predict {0} sample metadata classes using a {1}. Splits input '
 
 inputs = {'table': FeatureTable[Frequency]}
 
-parameters = {'metadata': Metadata,
+base_parameters = {'metadata': Metadata,
+                   'random_state': Int,
+                   'n_jobs': Int}
+
+parameters = {**base_parameters,
               'category': Str,
               'test_size': Float % Range(0.0, 1.0, inclusive_end=False,
                                          inclusive_start=False),
               'step': Float % Range(0.0, 1.0, inclusive_end=False,
                                     inclusive_start=False),
               'cv': Int % Range(1, None),
-              'random_state': Int,
-              'n_jobs': Int,
               'parameter_tuning': Bool,
               'optimize_feature_selection': Bool}
 
 input_descriptions = {'table': ('Feature table containing all features that '
                                 'should be used for target prediction.')}
 
-parameter_descriptions = {
+base_parameter_descriptions = {
     'metadata': 'Sample metadata to use as prediction targets.',
+    'random_state': 'Seed used by random number generator.',
+    'n_jobs': 'Number of jobs to run in parallel.',
+}
+
+parameter_descriptions = {
+    **base_parameter_descriptions,
     'category': 'Metadata category to use for training and prediction.',
     'test_size': ('Fraction of input samples to exclude from training set '
                   'and use for classifier testing.'),
     'step': ('If optimize_feature_selection is True, step is the '
              'percentage of features to remove at each iteration.'),
     'cv': 'Number of k-fold cross-validations to perform.',
-    'random_state': 'Seed used by random number generator.',
-    'n_jobs': 'Number of jobs to run in parallel.',
     'parameter_tuning': ('Automatically tune hyperparameters using random '
                          'grid search?'),
     'optimize_feature_selection': ('Automatically optimize input feature '
@@ -380,4 +387,71 @@ plugin.visualizers.register_function(
                  'succession during wine fermentation, or microbial community '
                  'differences along environmental gradients, as a function of '
                  'two or more different "treatment" groups.')
+)
+
+
+plugin.methods.register_function(
+    function=detect_outliers,
+    inputs=inputs,
+    parameters={**base_parameters,
+                'subset_category': Str,
+                'subset_value': Str,
+                'contamination': Float % Range(0.0, 0.5, inclusive_end=True,
+                                               inclusive_start=True),
+                **ensemble_parameters,
+                },
+    outputs=[('inliers', SampleData[AlphaDiversity])],
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **base_parameter_descriptions,
+        'subset_category': ('Metadata category to use for selecting sample '
+                            'subset for training the decision function.'),
+        'subset_value': 'Value of subset_category to use as control group.',
+        'contamination': ('The amount of expected contamination of the data '
+                          'set, i.e., the proportion of outliers in the data '
+                          'set. Used when fitting to define the threshold on '
+                          'the decision function.'),
+        **ensemble_parameter_descriptions,
+    },
+    output_descriptions={
+        'inliers': ('Vector containing inlier status of each input sample. '
+                    'Inliers have value 1, outliers have value -1.')
+    },
+    name='Predict dataset outliers and contaminants',
+    description=(
+        'Detect outlier samples within a given sample class. Applications '
+        'include but are not limited to detecting potentially contaminated '
+        'samples, detecting potentially mislabeled samples, and detecting '
+        'significant novelty, e.g., patients who responded to a treatment.\n\n'
+        'Input a feature table, possibly filtered to remove samples, '
+        'depending on the goals of this analysis. Outliers can be detected '
+        'from multiple sample types simultaneously, provided the goal is not '
+        'to detect mislabeled samples or samples cross-contaminated with '
+        'another sample type in this table. E.g., for detecting novelty or '
+        'exogenous contaminants (e.g., from reagents), many different sample '
+        'types may be tested simultaneously. Otherwise, the feature table '
+        'should be filtered to contain only one or more sample classes '
+        'between which cross-contamination is not suspected, or if these '
+        'sample classes are highly resolved and mislabeled samples are not '
+        'suspected. These assumptions may be supported by a preliminary '
+        'principal coordinates analysis or other diversity analyses to '
+        'determine how well resolved sample classes are and whether some '
+        'sample classes appear to cluster with the wrong class(es).\n\n'
+        'Inputs support two different modes: if subset_category and '
+        'subset_value are set, a subset of the input table is used as a '
+        '"gold standard" sample pool for training the model. This mode is '
+        'useful, for example, if you have a subset of "positive control" '
+        'samples that represent the known diversity of your sample types. '
+        'Otherwise, the model is trained on all samples. Regardless of the '
+        'input mode used, outlier status is predicted on all samples.\n\n'
+        'Returns a series of values documenting outlier status: inliers have '
+        'value of 1, outliers have value of -1. This series may be used to '
+        'filter a feature table, if appropriate, using '
+        'q2_feature_table.filter_samples, to remove contaminants or focus on '
+        'novelty samples.\n\nIf interested in potentially mislabeled samples, '
+        'use a sample classifier in q2_sample_classifier or principal '
+        'coordinates analysis to determine whether outliers classify as or '
+        'cluster with another sample type.\n\nFor more information on the '
+        'underlying isolation forest model, see '
+        'http://scikit-learn.org/stable/modules/outlier_detection.html')
 )

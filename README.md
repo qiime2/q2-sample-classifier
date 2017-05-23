@@ -94,6 +94,17 @@ This method calculates a "microbial maturity" index from a regression model trai
 qiime sample-classifier maturity-index --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --p-group-by Site_Name --p-control Hcanyon --p-n-jobs 4 --o-visualization maturity --p-test-size 0.4
 ```
 
+## Outlier detection
+This method detects contaminated samples and other outliers among your samples, tagging them for removal or follow-up study.
+
+```
+qiime sample-classifier detect-outliers --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-contamination 0.05 --p-n-jobs 4 --o-inliers inliers.qza
+```
+We can then filter outliers from the feature table with the following command:
+```
+qiime feature-table filter-samples --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --o-filtered-table inliers-table --m-sample-metadata-file inliers.qza --p-where "inlier='1'"
+```
+
 # Troubleshooting
 Here follow some common errors and their solutions.
 ```

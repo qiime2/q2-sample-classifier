@@ -12,7 +12,8 @@
 from sklearn.ensemble import (RandomForestRegressor, RandomForestClassifier,
                               ExtraTreesClassifier, ExtraTreesRegressor,
                               AdaBoostClassifier, GradientBoostingClassifier,
-                              AdaBoostRegressor, GradientBoostingRegressor)
+                              AdaBoostRegressor, GradientBoostingRegressor,
+                              IsolationForest)
 from sklearn.metrics import mean_squared_error
 from sklearn.svm import LinearSVC, SVR, SVC
 from sklearn.linear_model import Ridge, Lasso, ElasticNet
@@ -22,6 +23,7 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 import qiime2
 import biom
+import pandas as pd
 from scipy.stats import randint
 import warnings
 
@@ -539,8 +541,70 @@ def maturity_index(output_dir: str, table: biom.Table,
                               accuracy, output_dir, maz_stats=maz_stats)
 
 
+def detect_outliers(table: biom.Table,
+                    metadata: qiime2.Metadata, subset_category: str=None,
+                    subset_value: str=None, n_estimators: int=100,
+                    contamination: float=0.05, random_state: int=None,
+                    n_jobs: int=1) -> pd.Series:
+    '''Detect outlier samples within a given sample class. Applications include
+    but are not limited to detecting potentially contaminated samples,
+    detecting potentially mislabeled samples, and detecting significant
+    novelty, e.g., patients who responded to a treatment.
+
+    Input a feature table, possibly filtered to remove samples, depending on
+    the goals of this analysis. Outliers can be detected from multiple sample
+    types simultaneously, provided the goal is not to detect mislabeled samples
+    or samples cross-contaminated with another sample type in this table. E.g.,
+    for detecting novelty or exogenous contaminants (e.g., from reagents), many
+    different sample types may be tested simultaneously. Otherwise, the feature
+    table should be filtered to contain only one or more sample classes between
+    which cross-contamination is not suspected, or if these sample classes are
+    highly resolved and mislabeled samples are not suspected. These assumptions
+    may be supported by a preliminary principal coordinates analysis or other
+    diversity analyses to determine how well resolved sample classes are and
+    whether some sample classes appear to cluster with the wrong class(es).
+
+    Inputs support two different modes: if subset_category and subset_value are
+    set, a subset of the input table is used as a "gold standard" sample pool
+    for training the model. This mode is useful, for example, if you have a
+    subset of "positive control" samples that represent the known diversity of
+    your sample types. Otherwise, the model is trained on all samples.
+    Regardless of the input mode used, outlier status is predicted on all
+    samples.
+
+    Returns a series of values documenting outlier status: inliers have value
+    1, outliers have value -1. This series may be added to a metadata map and
+    used to filter a feature table, if appropriate, using
+    q2_feature_table.filter_samples, to remove contaminants or focus on novelty
+    samples.
+    If interested in potentially mislabeled samples, use a sample classifier in
+    q2_sample_classifier or principal coordinates analysis to determine whether
+    outliers classify as or cluster with another sample type.
+    '''
+    features, sample_md = _load_data(table, metadata, transpose=True)
+
+    # if opting to train on a subset, choose subset that fits criteria
+    if subset_category and subset_value:
+        y_train = metadata[metadata[subset_category] == subset_value]
+        X_train = table.ix[list(y_train.index.values)]
+    else:
+        X_train = features
+
+    # fit isolation tree
+    estimator = IsolationForest(n_jobs=n_jobs, n_estimators=n_estimators,
+                                contamination=contamination,
+                                random_state=random_state)
+    estimator.fit(X_train)
+
+    # predict outlier status
+    y_pred = estimator.predict(features)
+    y_pred = pd.Series(y_pred, index=features.index)
+    y_pred.name = "inlier"
+    return y_pred
+
+
 # Need to figure out how to pickle/import estimators
-def classify_new_data(table: biom.Table, estimator: Pipeline):
+def predict_new_data(table: biom.Table, estimator: Pipeline):
     '''Use trained estimator to predict values on unseen data.'''
     predictions = estimator.predict(table)
     return predictions

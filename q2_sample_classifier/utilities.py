@@ -301,7 +301,7 @@ def _visualize_maturity_index(table, metadata, group_by, category,
     g = lmplot_from_dataframe(metadata, category, predicted_category, group_by)
     g.savefig(join(output_dir, 'maz_predictions.png'), bbox_inches='tight')
     g.savefig(join(output_dir, 'maz_predictions.pdf'), bbox_inches='tight')
-    plt.close()
+    plt.close('all')
 
     # plot barplots of MAZ score vs. category (e.g., age)
     g = boxplot_from_dataframe(metadata, category, maz, group_by)
@@ -309,7 +309,7 @@ def _visualize_maturity_index(table, metadata, group_by, category,
         join(output_dir, 'maz_boxplots.png'), bbox_inches='tight')
     g.get_figure().savefig(
         join(output_dir, 'maz_boxplots.pdf'), bbox_inches='tight')
-    plt.close()
+    plt.close('all')
 
     # plot heatmap of category (e.g., age) vs. abundance of top features
     top = table[list(importances.feature)]
