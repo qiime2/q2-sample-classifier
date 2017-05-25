@@ -23,8 +23,7 @@ from .classify import (
     predict_coordinates)
 import q2_sample_classifier
 from q2_sample_classifier.sample_data._type import Coordinates
-
-import importlib
+from q2_sample_classifier.sample_data._format import CoordinatesDirectoryFormat
 
 
 plugin = Plugin(

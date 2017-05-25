@@ -11,6 +11,4 @@ from qiime2.plugin import SemanticType
 from q2_types.sample_data import SampleData
 
 
-SampleData = SemanticType('SampleData', field_names='type')
-
 Coordinates = SemanticType('Coordinates', variant_of=SampleData.field['type'])
