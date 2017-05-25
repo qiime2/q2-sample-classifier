@@ -22,6 +22,7 @@ from .classify import (
     regress_gradient_boosting, maturity_index, detect_outliers,
     predict_coordinates)
 import q2_sample_classifier
+from q2_sample_classifier.sample_data._type import Coordinates
 
 import importlib
 
@@ -34,7 +35,12 @@ plugin = Plugin(
 )
 
 
-importlib.import_module('q2_sample_classifier.sample_data._transformer')
+plugin.register_semantic_types(Coordinates)
+
+plugin.register_semantic_type_to_format(
+    SampleData[Coordinates],
+    artifact_format=CoordinatesDirectoryFormat
+)
 
 
 description = ('Predict {0} sample metadata classes using a {1}. Splits input '
@@ -464,8 +470,8 @@ plugin.methods.register_function(
 )
 
 
-plugin.methods.predict_coordinates(
-    function=detect_outliers,
+plugin.methods.register_function(
+    function=predict_coordinates,
     inputs=inputs,
     parameters={
         **{k: parameters[k] for k in parameters.keys() if k != "category"},

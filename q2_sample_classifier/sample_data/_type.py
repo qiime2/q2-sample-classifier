@@ -8,17 +8,9 @@
 
 
 from qiime2.plugin import SemanticType
-from ..plugin_setup import plugin
-from ._format import CoordinatesDirectoryFormat
+from q2_types.sample_data import SampleData
 
 
 SampleData = SemanticType('SampleData', field_names='type')
 
 Coordinates = SemanticType('Coordinates', variant_of=SampleData.field['type'])
-
-plugin.register_semantic_types(Coordinates)
-
-plugin.register_semantic_type_to_format(
-    SampleData[Coordinates],
-    artifact_format=CoordinatesDirectoryFormat
-)
