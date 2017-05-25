@@ -89,8 +89,8 @@ def extract_important_features(table, top, ascending=False):
     return imp.sort_values(by=imp.columns[1], ascending=ascending)
 
 
-def split_training_data(feature_data, targets, category, test_size=0.2,
-                        stratify=None, random_state=None):
+def _split_training_data(feature_data, targets, category, test_size=0.2,
+                         stratify=None, random_state=None):
     '''Split data sets into training and test sets.
 
     feature_data: pandas.DataFrame
@@ -110,9 +110,13 @@ def split_training_data(feature_data, targets, category, test_size=0.2,
     # Define target / predictor data
     targets = targets[category]
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        feature_data, targets, test_size=test_size, stratify=stratify,
-        random_state=random_state)
+    if test_size > 0.0:
+        X_train, X_test, y_train, y_test = train_test_split(
+            feature_data, targets, test_size=test_size, stratify=stratify,
+            random_state=random_state)
+    else:
+        X_train, X_test, y_train, y_test = (
+            feature_data, targets, feature_data, targets)
 
     return X_train, X_test, y_train, y_test
 
@@ -184,7 +188,7 @@ def split_optimize_classify(features, targets, category, estimator,
         features, targets = _load_data(features, targets, transpose=transpose)
 
     # split into training and test sets
-    X_train, X_test, y_train, y_test = split_training_data(
+    X_train, X_test, y_train, y_test = _split_training_data(
         features, targets, category, test_size, targets[category],
         random_state)
 
@@ -195,7 +199,7 @@ def split_optimize_classify(features, targets, category, estimator,
             random_state=random_state, n_jobs=n_jobs)
         rfep.savefig(join(output_dir, 'rfe_plot.png'))
         rfep.savefig(join(output_dir, 'rfe_plot.pdf'))
-        plt.close()
+        plt.close('all')
 
         X_train = X_train.loc[:, importance["feature"]]
         X_test = X_test.loc[:, importance["feature"]]

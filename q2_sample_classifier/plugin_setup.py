@@ -8,6 +8,7 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
+
 from qiime2.plugin import (Int, Str, Float, Range, Bool, Plugin, Metadata,
                            Choices)
 from q2_types.feature_table import FeatureTable, Frequency
@@ -18,8 +19,11 @@ from .classify import (
     regress_ridge, regress_lasso, regress_elasticnet,
     regress_kneighbors, classify_extra_trees, classify_adaboost,
     classify_gradient_boosting, regress_extra_trees, regress_adaboost,
-    regress_gradient_boosting, maturity_index, detect_outliers)
+    regress_gradient_boosting, maturity_index, detect_outliers,
+    predict_coordinates)
 import q2_sample_classifier
+
+import importlib
 
 
 plugin = Plugin(
@@ -28,6 +32,9 @@ plugin = Plugin(
     website="https://github.com/nbokulich/q2-sample-classifier",
     package='q2_sample_classifier'
 )
+
+
+importlib.import_module('q2_sample_classifier.sample_data._transformer')
 
 
 description = ('Predict {0} sample metadata classes using a {1}. Splits input '
@@ -454,4 +461,48 @@ plugin.methods.register_function(
         'cluster with another sample type.\n\nFor more information on the '
         'underlying isolation forest model, see '
         'http://scikit-learn.org/stable/modules/outlier_detection.html')
+)
+
+
+plugin.methods.predict_coordinates(
+    function=detect_outliers,
+    inputs=inputs,
+    parameters={
+        **{k: parameters[k] for k in parameters.keys() if k != "category"},
+        'latitude': Str,
+        'longitude': Str,
+        'estimator': Str % Choices([
+            'RandomForestRegressor', 'ExtraTreesRegressor', 'Lasso',
+            'GradientBoostingRegressor', 'SVR', 'Ridge', 'ElasticNet']),
+        **ensemble_parameters,
+    },
+    outputs=[('predictions', SampleData[Coordinates]),
+             ('accuracy', SampleData[AlphaDiversity]),
+             ('prediction_regression', SampleData[Coordinates])
+    ],
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **{k: parameter_descriptions[k] for k in parameter_descriptions.keys()
+           if k != "category"},
+        'latitude': ('Category name containing latitude or first dimension '
+                     'coordinates in sample metadata file.'),
+        'longitude': ('Category name containing longitude or second dimension '
+                      'coordinates in sample metadata file.'),
+        'estimator': 'Regression model to use for prediction.',
+        **ensemble_parameter_descriptions,
+    },
+    output_descriptions={
+        'predictions': 'Predicted coordinates for each dimension.',
+        'accuracy': 'Prediction accuracy results for each dimension.',
+        'prediction_regression': 'Regression results for each dimension.',
+    },
+    name='Predict sample geocoordinates.',
+    description=(
+        'Predict two-dimensional coordinates as a function of microbiota '
+        'composition. E.g., this function could be used to predict '
+        'latitude and longitude (2-D) or precise location within any 2-D '
+        'physical space, such as the built environment. Metadata '
+        'must be in float format, e.g., decimal degrees geocoordinates. '
+        'Ouput consists of predicted coordinates, accuracy scores for each '
+        'dimension, and linear regression results for each dimension.')
 )

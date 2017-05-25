@@ -28,7 +28,8 @@ from scipy.stats import randint
 import warnings
 
 from .utilities import (split_optimize_classify, _visualize, _load_data,
-                        tune_parameters, _maz_score, _visualize_maturity_index)
+                        tune_parameters, _maz_score, _visualize_maturity_index,
+                        _split_training_data)
 
 
 ensemble_params = {"max_depth": [4, 8, 16, None],
@@ -545,7 +546,7 @@ def detect_outliers(table: biom.Table,
                     metadata: qiime2.Metadata, subset_category: str=None,
                     subset_value: str=None, n_estimators: int=100,
                     contamination: float=0.05, random_state: int=None,
-                    n_jobs: int=1) -> pd.Series:
+                    n_jobs: int=1) -> (pd.Series):
     '''Detect outlier samples within a given sample class. Applications include
     but are not limited to detecting potentially contaminated samples,
     detecting potentially mislabeled samples, and detecting significant
@@ -601,6 +602,56 @@ def detect_outliers(table: biom.Table,
     y_pred = pd.Series(y_pred, index=features.index)
     y_pred.name = "inlier"
     return y_pred
+
+
+def predict_coordinates(table: biom.Table, metadata: qiime2.Metadata,
+                        latitude: str='latitude', longitude: str='longitude',
+                        estimator: str='RandomForestRegressor',
+                        n_estimators: int=100, test_size: float=0.2,
+                        step: float=0.05, cv: int=5, random_state: int=None,
+                        n_jobs: int=1, parameter_tuning: bool=True,
+                        optimize_feature_selection: bool=True,
+                        ) -> (pd.DataFrame, pd.Series, pd.DataFrame):
+    '''Predict and map sample coordinates in 2-Dspace, based on
+    microbiota composition. E.g., this function could be used to predict
+    latitude and longitude or precise location within 2-D physical space,
+    such as the built environment. Metadata must be in float format, e.g.,
+    decimal degrees geocoordinates.
+    '''
+    # select estimator
+    estimator, param_dist = select_estimator(estimator, n_jobs, n_estimators)
+
+    # split input data into training and test sets
+    table, metadata = _load_data(table, metadata, transpose=True)
+    X_train, X_test, y_train, y_test = _split_training_data(
+        table, metadata, categories, test_size, random_state=random_state)
+
+    # train model and predict test data for each category
+    # *** would it be better to do this as a multilabel regression?
+    # *** currently each dimension is predicted separately
+    estimators = {}
+    accuracy = {}
+    predictions = {}
+    prediction_regression = pd.DataFrame()
+    for category in categories:
+        estimator, cm, accuracy, importances = split_optimize_classify(
+            X_train, y_train[category], category, estimator, output_dir,
+            random_state=random_state, n_jobs=n_jobs, test_size=0.0,
+            step=step, cv=cv, parameter_tuning=parameter_tuning,
+            optimize_feature_selection=optimize_feature_selection,
+            param_dist=param_dist, calc_feature_importance=True,
+            load_data=False, scoring=mean_squared_error, classification=False)
+
+        y_pred = estimator.predict(X_test)
+        accuracy[category] = scoring(y_test[category], pd.DataFrame(y_pred))
+        pred = linear_regress(y_test[category], y_pred)
+        prediction_regression = pd.concat(
+            [prediction_regression, pred.rename(index={0: category})])
+        estimators[category] = estimator
+
+    predictions = pd.DataFrame(predictions, index=X_test.index)
+    accuracy = pd.Series(accuracy)
+    return predictions, accuracy, prediction_regression
 
 
 # Need to figure out how to pickle/import estimators
