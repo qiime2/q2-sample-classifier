@@ -9,7 +9,7 @@
 # Much of this type format is adapted from q2_types.sample_data, but to support
 # a pandas.DataFrame instead of pandas.Series
 import qiime2.plugin.model as model
-from ..plugin_setup import plugin
+from .plugin_setup import plugin
 
 
 class CoordinatesFormat(model.TextFileFormat):

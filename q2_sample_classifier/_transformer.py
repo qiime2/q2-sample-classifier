@@ -6,12 +6,7 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
-
-import importlib
-
-from ._format import CoordinatesFormat, CoordinatesDirectoryFormat
-from ._type import Coordinates
-
-__all__ = ['CoordinatesFormat', 'CoordinatesDirectoryFormat', 'Coordinates']
-
-importlib.import_module('q2_sample_classifier.sample_data._transformer')
+# Much of this type format is adapted from q2_types.sample_data, but to support
+# a pandas.DataFrame instead of pandas.Series
+import pandas as pd
+import qiime2
