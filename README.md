@@ -15,75 +15,75 @@ Not sure which model to use? A good starting point is [this flowchart](http://sc
 ```
 cd ~/Desktop/projects/q2-sample-classifier/q2_sample_classifier/test_data/
 
-qiime sample-classifier classify-random-forest --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization test --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
+qiime sample-classifier classify-random-forest --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-category vineyard --o-visualization test --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
 ```
 ### Extra Trees classifier
 ```
-qiime sample-classifier classify-extra-trees --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization etc --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
+qiime sample-classifier classify-extra-trees --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-category vineyard --o-visualization etc --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
 ```
 ### AdaBoost classifier
 ```
-qiime sample-classifier classify-adaboost --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization abc --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
+qiime sample-classifier classify-adaboost --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-category vineyard --o-visualization abc --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
 ```
 ### Gradient boosting classifier
 ```
-qiime sample-classifier classify-gradient-boosting --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization gbc --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
+qiime sample-classifier classify-gradient-boosting --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-category vineyard --o-visualization gbc --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
 ```
 ### K-nearest neighbors classifier
 ```
-qiime sample-classifier classify-kneighbors --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization knn --p-parameter-tuning
+qiime sample-classifier classify-kneighbors --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-category vineyard --o-visualization knn --p-parameter-tuning
 ```
 ### Linear support vector machine classifier
 ```
-qiime sample-classifier classify-linearSVC --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization lsvc --p-parameter-tuning --p-optimize-feature-selection
+qiime sample-classifier classify-linearSVC --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-category vineyard --o-visualization lsvc --p-parameter-tuning --p-optimize-feature-selection
 
-qiime sample-classifier classify-SVC --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization svcl --p-parameter-tuning --p-optimize-feature-selection --p-kernel linear
+qiime sample-classifier classify-SVC --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-category vineyard --o-visualization svcl --p-parameter-tuning --p-optimize-feature-selection --p-kernel linear
 ```
 ### Support vector machine classifier
 ```
-qiime sample-classifier classify-SVC --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category Type --o-visualization svc --p-parameter-tuning --p-optimize-feature-selection
+qiime sample-classifier classify-SVC --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-category vineyard --o-visualization svc --p-parameter-tuning --p-optimize-feature-selection
 ```
 
 ## Regression
 ### Random forest regressor
 ```
-qiime sample-classifier regress-random-forest --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization estimated_elevation --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
+qiime sample-classifier regress-random-forest --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization month --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
 ```
 ### Extra Trees regressor
 ```
-qiime sample-classifier regress-extra-trees --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization etr --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
+qiime sample-classifier regress-extra-trees --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization etr --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
 ```
 ### AdaBoost regressor
 ```
-qiime sample-classifier regress-adaboost --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization abr --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
+qiime sample-classifier regress-adaboost --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization abr --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
 ```
 ### Gradient boosting regressor
 ```
-qiime sample-classifier regress-gradient-boosting --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization gbr --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
+qiime sample-classifier regress-gradient-boosting --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization gbr --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
 ```
 ### Linear support vector machine regressor
 ```
-qiime sample-classifier regress-SVR --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization svrl --p-parameter-tuning --p-optimize-feature-selection --p-kernel linear
+qiime sample-classifier regress-SVR --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization svrl --p-parameter-tuning --p-optimize-feature-selection --p-kernel linear
 ```
 ### Support vector machine regressor
 ```
-qiime sample-classifier regress-SVR --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization svr --p-parameter-tuning --p-optimize-feature-selection
+qiime sample-classifier regress-SVR --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization svr --p-parameter-tuning --p-optimize-feature-selection
 ```
 ### Ridge linear regression
 ```
-qiime sample-classifier regress-ridge --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization ridge --p-parameter-tuning
+qiime sample-classifier regress-ridge --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization ridge --p-parameter-tuning
 ```
 ### Lasso linear regression
 ```
-qiime sample-classifier regress-lasso --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization lasso --p-parameter-tuning
+qiime sample-classifier regress-lasso --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization lasso --p-parameter-tuning
 ```
 ### Elastic Net linear regression
 ```
-qiime sample-classifier regress-elasticnet --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization elastic --p-parameter-tuning --p-optimize-feature-selection
+qiime sample-classifier regress-elasticnet --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization elastic --p-parameter-tuning --p-optimize-feature-selection
 ```
 ### K-nearest neighbors regression
 ```
-qiime sample-classifier regress-kneighbors --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --o-visualization knnr --p-parameter-tuning
+qiime sample-classifier regress-kneighbors --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization knnr --p-parameter-tuning
 ```
 
 ## "Maturity Index" prediction
@@ -91,19 +91,40 @@ qiime sample-classifier regress-kneighbors --i-table feature-table-even11000-Sed
 This method calculates a "microbial maturity" index from a regression model trained on feature data to predict a given continuous metadata category, e.g., to predict a subject's age as a function of microbiota composition. The model is trained on a subset of control group samples, then predicts the category value for all samples. This visualization computes maturity index z-scores to compare relative "maturity" between each group, as described in doi:10.1038/nature13421. This method can be used to predict between-group differences in relative trajectory across any type of continuous metadata gradient, e.g., intestinal microbiome development by age, microbial succession during wine fermentation, or microbial community differences along environmental gradients, as a function of two or more different "treatment" groups.
 
 ```
-qiime sample-classifier maturity-index --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-category estimated_elevation --p-group-by Site_Name --p-control Hcanyon --p-n-jobs 4 --o-visualization maturity --p-test-size 0.4
+qiime sample-classifier maturity-index --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --p-group-by delivery --p-control Vaginal  --p-n-jobs 4 --o-visualization maturity --p-test-size 0.4
 ```
 
 ## Outlier detection
 This method detects contaminated samples and other outliers among your samples, tagging them for removal or follow-up study.
 
 ```
-qiime sample-classifier detect-outliers --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --m-metadata-file glen-canyon-16S.tsv --p-contamination 0.05 --p-n-jobs 4 --o-inliers inliers.qza
+qiime sample-classifier detect-outliers --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-contamination 0.05 --p-n-jobs 4 --o-inliers inliers.qza
+```
+Let's view a PCoA plot of outliers vs. inliers:
+```
+qiime feature-table rarefy --i-table chardonnay.table.qza --p-sampling-depth 2000 --o-rarefied-table even_table
+qiime diversity beta --i-table even_table.qza --o-distance-matrix  distance --p-metric braycurtis
+qiime diversity pcoa --i-distance-matrix distance.qza --o-pcoa  pcoa
+qiime emperor plot --i-pcoa  pcoa.qza --o-visualization  inliers_plot --m-metadata-file inliers.qza
+
 ```
 We can then filter outliers from the feature table with the following command:
 ```
-qiime feature-table filter-samples --i-table feature-table-even11000-SedimentNoCrust-minfreq100mins5.qza --o-filtered-table inliers-table --m-sample-metadata-file inliers.qza --p-where "inlier='1'"
+qiime feature-table filter-samples --i-table chardonnay.table.qza --o-filtered-table inliers-table --m-metadata-file inliers.qza --p-where "inlier='1'"
 ```
+
+## Predicting geospatial coordinates
+The method predict-coordinates allows us to predict two continuous variables on a single set of test data, allowing us to determine how well microbial composition predicts geographical source.
+```
+qiime sample-classifier predict-coordinates --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-latitude latitude --p-longitude longitude --p-n-jobs 4 --o-predictions coord-predictions --o-prediction-regression coord-regression
+```
+This method generates a list of predicted latitude and longitude coordinates for each sample, contained in the 'predictions' artifact. The 'accuracy' artifact contains accuracy scores for each coordinate, and 'prediction-regression' contains linear regression results for predicted vs. actual coordinates.
+
+Furthermore, we can pass these results to the q2-coordinates plugin to visualize these results, mapping actual and predicted coordinates for each sample onto a map.(Note: this plugin is under LGPL license due to dependency requirements.)
+```
+qiime coordinates map-predicted-coordinates --i-predictions coord-predictions.qza --i-prediction-regression coord-regression.qza --m-metadata-file chardonnay.map.txt --p-latitude latitude --p-longitude longitude --p-pred-lat latitude --p-pred-long longitude --o-visualization prediction-map
+```
+
 
 # Troubleshooting
 Here follow some common errors and their solutions.
@@ -119,3 +140,7 @@ Occasionally, a single feature will be chosen for model training, resulting in a
 The least populated class in y has only 1 member, which is too few. The minimum number of groups for any class cannot be less than 2.
 ```
 The `Category` that you selected contains some classes with only one member. Remove these classes before continuing, or choose a better category!
+```
+Input contains NaN, infinity or a value too large for dtype('float64').
+```
+This error occurs most commonly if you have "NaN" values, e.g, empty rows, for a value you are trying to predict. Filter your sample metadata file to remove these samples before continuing!

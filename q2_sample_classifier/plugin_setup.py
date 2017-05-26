@@ -538,8 +538,7 @@ plugin.methods.register_function(
         **ensemble_parameters,
     },
     outputs=[('predictions', SampleData[Coordinates]),
-             ('accuracy', SampleData[AlphaDiversity]),
-             ('prediction_regression', SampleData[Coordinates])
+             ('prediction_regression', SampleData[Coordinates]),
     ],
     input_descriptions=input_descriptions,
     parameter_descriptions={
@@ -554,7 +553,6 @@ plugin.methods.register_function(
     },
     output_descriptions={
         'predictions': 'Predicted coordinates for each dimension.',
-        'accuracy': 'Prediction accuracy results for each dimension.',
         'prediction_regression': 'Regression results for each dimension.',
     },
     name='Predict sample geocoordinates.',

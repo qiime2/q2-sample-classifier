@@ -56,8 +56,7 @@ def _load_data(features_fp, targets_fp, transpose=True):
         feature_data = feature_data.transpose()
 
     # Load metadata, attempt to convert to numeric
-    targets = targets_fp.to_dataframe()
-    targets = targets.apply(lambda x: pd.to_numeric(x, errors='ignore'))
+    targets = metadata_to_df(targets_fp)
 
     # filter features and targets so samples match
     merged = feature_data.join(targets, how='inner')
@@ -65,6 +64,13 @@ def _load_data(features_fp, targets_fp, transpose=True):
     targets = targets.loc[merged.index]
 
     return feature_data, targets
+
+
+def metadata_to_df(metadata):
+    # Load metadata, attempt to convert to numeric
+    metadata = metadata.to_dataframe()
+    metadata = metadata.apply(lambda x: pd.to_numeric(x, errors='ignore'))
+    return metadata
 
 
 def extract_important_features(table, top, ascending=False):
@@ -90,7 +96,7 @@ def extract_important_features(table, top, ascending=False):
 
 
 def _split_training_data(feature_data, targets, category, test_size=0.2,
-                         stratify=None, random_state=None):
+                         stratify=None, random_state=None, drop_na=True):
     '''Split data sets into training and test sets.
 
     feature_data: pandas.DataFrame
@@ -110,13 +116,17 @@ def _split_training_data(feature_data, targets, category, test_size=0.2,
     # Define target / predictor data
     targets = targets[category]
 
+    if drop_na:
+        targets = targets.dropna(axis=0, how='any')
+        feature_data = feature_data.loc[targets.index]
+
     if test_size > 0.0:
         X_train, X_test, y_train, y_test = train_test_split(
             feature_data, targets, test_size=test_size, stratify=stratify,
             random_state=random_state)
     else:
         X_train, X_test, y_train, y_test = (
-            feature_data, targets, feature_data, targets)
+            feature_data, feature_data, targets, targets)
 
     return X_train, X_test, y_train, y_test
 
@@ -197,8 +207,9 @@ def split_optimize_classify(features, targets, category, estimator,
         rfecv, importance, top_feature_data, rfep = rfecv_feature_selection(
             X_train, y_train, estimator=estimator, cv=cv, step=step,
             random_state=random_state, n_jobs=n_jobs)
-        rfep.savefig(join(output_dir, 'rfe_plot.png'))
-        rfep.savefig(join(output_dir, 'rfe_plot.pdf'))
+        if output_dir:
+            rfep.savefig(join(output_dir, 'rfe_plot.png'))
+            rfep.savefig(join(output_dir, 'rfe_plot.pdf'))
         plt.close('all')
 
         X_train = X_train.loc[:, importance["feature"]]
@@ -221,10 +232,11 @@ def split_optimize_classify(features, targets, category, estimator,
     else:
         predictions = linear_regress(y_test, y_pred)
         predict_plot = regplot_from_dataframe(y_test, y_pred)
-    predict_plot.get_figure().savefig(
-        join(output_dir, 'predictions.png'), bbox_inches='tight')
-    predict_plot.get_figure().savefig(
-        join(output_dir, 'predictions.pdf'), bbox_inches='tight')
+        if output_dir:
+            predict_plot.get_figure().savefig(
+                join(output_dir, 'predictions.png'), bbox_inches='tight')
+            predict_plot.get_figure().savefig(
+                join(output_dir, 'predictions.pdf'), bbox_inches='tight')
 
     # only set calc_feature_importance=True if estimator has attributes
     # feature_importances_ or coef_ to report feature importance/weights
