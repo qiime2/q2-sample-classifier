@@ -1,1 +1,83 @@
-#SampleID	BarcodeSequence	elevation	latitude	longitude	rep	sample_site	sample_type	stage	title	variety	vineyard	winery	Description10119.MT.336	TAGGTAGG	73	38.306	-122.228	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	1	FN	MT.33610119.MT.490	TCAGTCAG	73	38.306	-122.228	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	1	FN	MT.49010119.MT.494	TGAGTGAG	73	38.306	-122.228	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	1	FN	MT.49410119.MT.506	TGAGACTC	73	38.306	-122.228	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	1	FN	MT.50610119.MT.502	TCAGTCTC	73	38.306	-122.228	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	1	FN	MT.50210119.MT.503	TCAGACTG	73	38.306	-122.228	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	1	FN	MT.50310119.MT.312	TAGGCCTA	73	38.306	-122.228	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	1	FN	MT.31210119.MT.327	TCACGAGT	76	38.212	-122.214	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	4	FN	MT.32710119.MT.329	TAGCGCTA	76	38.212	-122.214	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	4	FN	MT.32910119.MT.610	CTCAGTCT	76	38.212	-122.214	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	4	FN	MT.61010119.MT.611	CTAGTCCT	76	38.212	-122.214	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	4	FN	MT.61110119.MT.324	GTGACACT	76	38.212	-122.214	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	4	FN	MT.32410119.MT.333	GTCTGACA	76	38.212	-122.214	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	4	FN	MT.33310119.MT.322	TACGCGAT	76	38.212	-122.214	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	4	FN	MT.32210119.MT.608	CTGTCACT	76	38.212	-122.214	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	4	FN	MT.60810119.MT.605	CGTTGGTA	76	38.212	-122.214	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	4	FN	MT.60510119.MT.307	GTGATGAG	76	38.212	-122.214	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	4	FN	MT.30710119.MT.319	TCACGACA	76	38.212	-122.214	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	4	FN	MT.31910119.MT.315	GTGATGTC	76	38.212	-122.214	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	4	FN	MT.31510119.MT.311	TCACCTGT	76	38.212	-122.214	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	4	FN	MT.31110119.MT.325	GTCTCTGT	76	38.212	-122.214	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	4	FN	MT.32510119.MT.613	CTACACCT	74	38.311	-122.229	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	5	FN	MT.61310119.MT.602	CTCAGAGT	74	38.311	-122.229	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	5	FN	MT.60210119.MT.308	GTGAACTC	74	38.311	-122.229	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	5	FN	MT.30810119.MT.504	CGCGATTA	74	38.311	-122.229	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	5	FN	MT.50410119.MT.313	TAGCCGAT	74	38.311	-122.229	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	5	FN	MT.31310119.MT.338	TACGGCAT	72	38.311	-122.229	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	6	FN	MT.33810119.MT.303	TCACCTCA	72	38.311	-122.229	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	6	FN	MT.30310119.MT.304	TAGGCCAT	72	38.311	-122.229	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	6	FN	MT.30410119.MT.305	TAGCATGC	72	38.311	-122.229	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	6	FN	MT.30510119.MT.316	GTGAAGAC	72	38.311	-122.229	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	6	FN	MT.31610119.MT.320	TAGGCGAA	72	38.311	-122.229	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	6	FN	MT.32010119.MT.326	GTCAGAGA	57	38.319	-122.235	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	8	FN	MT.32610119.MT.625	CTGAGACT	57	38.319	-122.235	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	8	FN	MT.62510119.MT.627	CTAGTGCA	57	38.319	-122.235	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	8	FN	MT.62710119.MT.621	CTACACGA	57	38.319	-122.235	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	8	FN	MT.62110119.MT.612	CTACTGGA	57	38.319	-122.235	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	8	FN	MT.61210119.MT.662	GACTAGTC	57	38.319	-122.235	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	8	FN	MT.66210119.MT.335	TCACGTCT	57	38.319	-122.235	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	8	FN	MT.33510119.MT.650	GATCCTAG	57	38.319	-122.235	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	8	FN	MT.65010119.MT.651	GAGTGTCT	57	38.319	-122.235	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	8	FN	MT.65110119.MT.653	GAGAACAC	57	38.319	-122.235	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	8	FN	MT.65310119.MT.629	CTACAGCA	57	38.319	-122.235	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	8	FN	MT.62910119.MT.606	CGTATTGG	57	38.319	-122.235	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	8	FN	MT.60610119.MT.630	CGTTATCC	57	38.319	-122.235	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	8	FN	MT.63010119.MT.631	CGTACGAT	57	38.319	-122.235	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	8	FN	MT.63110119.MT.318	GTCAGACT	57	38.319	-122.235	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	8	FN	MT.31810119.MT.317	GTCTCTCA	57	38.319	-122.235	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	8	FN	MT.31710119.MT.452	TAGCTTCC	54	38.425	-122.896	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	9	NN	MT.45210119.MT.453	TACGTACG	54	38.425	-122.896	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	9	NN	MT.45310119.MT.450	TCACTCAC	54	38.425	-122.896	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	9	NN	MT.45010119.MT.451	TATAGCCG	54	38.425	-122.896	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	9	NN	MT.45110119.MT.454	TACCGGAT	54	38.425	-122.896	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	9	NN	MT.45410119.MT.449	GTCACAGT	54	38.425	-122.896	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	9	NN	MT.44910119.MT.661	GAGAACTG	94	38.419	-122.412	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	10	FN	MT.66110119.MT.665	GATGCAAG	94	38.419	-122.412	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	10	FN	MT.66510119.MT.682	CTGTTCAC	94	38.419	-122.412	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	10	FN	MT.68210119.MT.674	CTGTGTGA	94	38.419	-122.412	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	10	FN	MT.67410119.MT.675	GATGCATC	94	38.419	-122.412	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	10	FN	MT.67510119.MT.673	GACAGACA	94	38.419	-122.412	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	10	FN	MT.67310119.MT.421	GTGAGTGA	62	38.455	-122.863	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	11	NN	MT.42110119.MT.420	TACCTTGC	62	38.455	-122.863	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	11	NN	MT.42010119.MT.416	TCACAGAC	62	38.455	-122.863	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	11	NN	MT.41610119.MT.417	TAGGAAGC	62	38.455	-122.863	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	11	NN	MT.41710119.MT.415	GTCAAGTC	62	38.455	-122.863	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	11	NN	MT.41510119.MT.418	TACGTTGG	62	38.455	-122.863	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	11	NN	MT.41810119.MT.523	CGATGGAA	51	38.285	-122.322	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	12	NN	MT.52310119.MT.525	CATCTCCA	51	38.285	-122.322	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	12	NN	MT.52510119.MT.529	CACTGAGT	51	38.285	-122.322	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	12	NN	MT.52910119.MT.535	CGTTCCAT	51	38.285	-122.322	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	12	NN	MT.53510119.MT.534	CTACCATC	51	38.285	-122.322	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	12	NN	MT.53410119.MT.531	CTCATGAG	51	38.285	-122.322	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	12	NN	MT.53110119.MT.530	CTGAGTCA	51	38.285	-122.322	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	12	NN	MT.53010119.MT.533	CTAGAGGA	51	38.285	-122.322	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	12	NN	MT.53310119.MT.532	CTCAACTC	51	38.285	-122.322	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	12	NN	MT.53210119.MT.306	TACGATGC	51	38.285	-122.322	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	12	FN	MT.30610119.MT.498	TCTGCAGA	51	38.285	-122.322	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	12	FN	MT.49810119.MT.499	TCGTCTAC	51	38.285	-122.322	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	12	FN	MT.49910119.MT.542	CTAGCAAC	51	38.285	-122.322	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	12	NN	MT.54210119.MT.500	TCGAGTAC	51	38.285	-122.322	2	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	12	FN	MT.50010119.MT.314	TACGCCAA	51	38.285	-122.322	1	must	must	B	Microbiota of regional grapes and wine fermentations	Chardonnay	12	FN	MT.314
+#SampleID	Vineyard	Region	latitude	longitude
+v4.3.618	1	Coombsville	38.306	-122.228
+v4.3.642	1	Coombsville	38.306	-122.228
+v4.3.687	1	Coombsville	38.306	-122.228
+v4.3.689	1	Coombsville	38.306	-122.228
+v4.3.695	1	Coombsville	38.306	-122.228
+v4.3.696	1	Coombsville	38.306	-122.228
+v4.3.698	1	Coombsville	38.306	-122.228
+v4.3.408	2	Coombsville	38.306	-122.227
+v4.3.412	2	Coombsville	38.306	-122.227
+v4.3.637	2	Coombsville	38.306	-122.227
+v4.3.643	2	Coombsville	38.306	-122.227
+v4.3.350	3	Carneros	38.212	-122.213
+v4.3.353	3	Carneros	38.212	-122.213
+v4.3.355	3	Carneros	38.212	-122.213
+v4.3.356	3	Carneros	38.212	-122.213
+v4.3.613	3	Carneros	38.212	-122.213
+v4.3.617	3	Carneros	38.212	-122.213
+v4.3.621	3	Carneros	38.212	-122.213
+v4.3.625	3	Carneros	38.212	-122.213
+v4.3.628	3	Carneros	38.212	-122.213
+v4.3.630	3	Carneros	38.212	-122.213
+v4.3.631	3	Carneros	38.212	-122.213
+v4.3.633	3	Carneros	38.212	-122.213
+v4.3.635	3	Carneros	38.212	-122.213
+v4.3.639	3	Carneros	38.212	-122.213
+v4.3.265	4	Coombsville	38.319	-122.235
+v4.3.347	4	Coombsville	38.319	-122.235
+v4.3.358	4	Coombsville	38.319	-122.235
+v4.3.614	4	Coombsville	38.319	-122.235
+v4.3.619	4	Coombsville	38.319	-122.235
+v4.3.609	5	Coombsville	38.319	-122.235
+v4.3.611	5	Coombsville	38.319	-122.235
+v4.3.626	5	Coombsville	38.319	-122.235
+v4.3.610	5	Coombsville	38.319	-122.235
+v4.3.622	5	Coombsville	38.319	-122.235
+v4.3.351	7	Coombsville	38.319	-122.235
+v4.3.357	7	Coombsville	38.319	-122.235
+v4.3.366	7	Coombsville	38.319	-122.235
+v4.3.370	7	Coombsville	38.319	-122.235
+v4.3.372	7	Coombsville	38.319	-122.235
+v4.3.374	7	Coombsville	38.319	-122.235
+v4.3.375	7	Coombsville	38.319	-122.235
+v4.3.376	7	Coombsville	38.319	-122.235
+v4.3.394	7	Coombsville	38.319	-122.235
+v4.3.395	7	Coombsville	38.319	-122.235
+v4.3.397	7	Coombsville	38.319	-122.235
+v4.3.406	7	Coombsville	38.319	-122.235
+v4.3.623	7	Coombsville	38.319	-122.235
+v4.3.624	7	Coombsville	38.319	-122.235
+v4.3.632	7	Coombsville	38.319	-122.235
+v4.3.641	7	Coombsville	38.319	-122.235
+v4.3.405	8	Oakville	38.418	-122.412
+v4.3.409	8	Oakville	38.418	-122.412
+v4.3.415	8	Oakville	38.418	-122.412
+v4.3.416	8	Oakville	38.418	-122.412
+v4.3.417	8	Oakville	38.418	-122.412
+v4.3.424	8	Oakville	38.418	-122.412
+v4.3.612	9	Carneros	38.285	-122.322
+v4.3.620	9	Carneros	38.285	-122.322
+v4.3.692	9	Carneros	38.285	-122.322
+v4.3.693	9	Carneros	38.285	-122.322
+v4.3.694	9	Carneros	38.285	-122.322
+v4.3.600	10	Russian_River	38.424	-122.895
+v4.3.657	10	Russian_River	38.424	-122.895
+v4.3.659	10	Russian_River	38.424	-122.895
+v4.3.661	10	Russian_River	38.424	-122.895
+v4.3.584	11	Russian_River	38.455	-122.862
+v4.3.585	11	Russian_River	38.455	-122.862
+v4.3.586	11	Russian_River	38.455	-122.862
+v4.3.587	11	Russian_River	38.455	-122.862
+v4.3.588	11	Russian_River	38.455	-122.862
+v4.3.589	11	Russian_River	38.455	-122.862
+v4.3.282	9	Carneros	38.285	-122.322
+v4.3.284	9	Carneros	38.285	-122.322
+v4.3.288	9	Carneros	38.285	-122.322
+v4.3.289	9	Carneros	38.285	-122.322
+v4.3.290	9	Carneros	38.285	-122.322
+v4.3.291	9	Carneros	38.285	-122.322
+v4.3.292	9	Carneros	38.285	-122.322
+v4.3.293	9	Carneros	38.285	-122.322
+v4.3.294	9	Carneros	38.285	-122.322
+v4.3.300	9	Carneros	38.285	-122.322
