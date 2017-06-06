@@ -9,8 +9,8 @@
 # ----------------------------------------------------------------------------
 
 
-from qiime2.plugin import (Int, Str, Float, Range, Bool, Plugin, Metadata,
-                           Choices)
+from qiime2.plugin import (
+    Int, Str, Float, Range, Bool, Plugin, Metadata, Choices)
 from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.sample_data import AlphaDiversity, SampleData
 from .classify import (
@@ -22,18 +22,10 @@ from .classify import (
     regress_gradient_boosting, maturity_index, detect_outliers,
     predict_coordinates)
 import q2_sample_classifier
-#from q2_sample_classifier import Coordinates, CoordinatesDirectoryFormat
-#Coordinates = q2_sample_classifier.Coordinates
-#CoordinatesDirectoryFormat = q2_sample_classifier.CoordinatesDirectoryFormat
-
 from qiime2.plugin import SemanticType
-from q2_types.sample_data import SampleData
 import qiime2.plugin.model as model
 import pandas as pd
 import qiime2
-
-import importlib
-importlib.import_module('q2_sample_classifier._transformer')
 
 
 plugin = Plugin(
@@ -44,6 +36,7 @@ plugin = Plugin(
 )
 
 Coordinates = SemanticType('Coordinates', variant_of=SampleData.field['type'])
+
 
 class CoordinatesFormat(model.TextFileFormat):
     def sniff(self):
@@ -538,8 +531,7 @@ plugin.methods.register_function(
         **ensemble_parameters,
     },
     outputs=[('predictions', SampleData[Coordinates]),
-             ('prediction_regression', SampleData[Coordinates]),
-    ],
+             ('prediction_regression', SampleData[Coordinates])],
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **{k: parameter_descriptions[k] for k in parameter_descriptions.keys()

@@ -72,12 +72,17 @@ def clustermap_from_dataframe(table, metadata, group_by, category,
     return g
 
 
-def two_way_anova(table, metadata, dep, time, group_by):
-    '''pd.DataFrame -> pd.DataFrame of AOV and OLS summary'''
-    # Prep data
+def _filter_metadata_to_table_ids(table, metadata, dep, time, group_by):
     table = metadata[[dep, time, group_by]].merge(
         table, left_index=True, right_index=True)
     table = table[[dep, time, group_by]].dropna()
+    return table
+
+
+def two_way_anova(table, metadata, dep, time, group_by):
+    '''pd.DataFrame -> pd.DataFrame of AOV and OLS summary'''
+    # Prep data
+    table = _filter_metadata_to_table_ids(table, metadata, dep, time, group_by)
 
     # remove whitespace from column names
     table = table.rename(columns=lambda x: x.replace(' ', '_'))
@@ -92,13 +97,13 @@ def two_way_anova(table, metadata, dep, time, group_by):
     return aov_table, mod.summary2()
 
 
-def pairwise_tests(table, metadata, dep, time, group_by):
+def pairwise_stats(table, metadata, dep, time, group_by):
     '''pd.DataFrame -> pd.DataFrame
     Perform pairwise t-tests on all groups in group_by and time categories.
     '''
-    table = metadata[[dep, time, group_by]].merge(
-        table, left_index=True, right_index=True)
-    table = table[[dep, time, group_by]].dropna()
+    # Prep data
+    table = _filter_metadata_to_table_ids(table, metadata, dep, time, group_by)
+
     # find and store all valid subgroups' distributions of dependent var dep
     distributions = []
     for tp in table[time].unique():

@@ -632,7 +632,6 @@ def predict_coordinates(table: biom.Table, metadata: qiime2.Metadata,
     # *** would it be better to do this as a multilabel regression?
     # *** currently each dimension is predicted separately
     estimators = {}
-    accuracy = {}
     predictions = {}
     prediction_regression = pd.DataFrame()
     for category in [latitude, longitude]:

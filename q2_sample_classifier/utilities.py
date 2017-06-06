@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 import pkg_resources
 
 from .visuals import (linear_regress, plot_confusion_matrix, plot_RFE,
-                      pairwise_tests, two_way_anova, clustermap_from_dataframe,
+                      pairwise_stats, two_way_anova, clustermap_from_dataframe,
                       boxplot_from_dataframe, lmplot_from_dataframe,
                       regplot_from_dataframe)
 
@@ -29,6 +29,9 @@ from .visuals import (linear_regress, plot_confusion_matrix, plot_RFE,
 TEMPLATES = pkg_resources.resource_filename('q2_sample_classifier', 'assets')
 
 
+# adapted from https://github.com/biocore/biom-format/issues/622
+# more straightforward would be to import feature tables as pd.DataFrame but
+# I have yet to get this to work! So using this as a temporary patch.
 def biom_to_pandas(table):
     """biom.Table->pandas.DataFrame"""
     m = table.matrix_data
@@ -232,11 +235,11 @@ def split_optimize_classify(features, targets, category, estimator,
     else:
         predictions = linear_regress(y_test, y_pred)
         predict_plot = regplot_from_dataframe(y_test, y_pred)
-        if output_dir:
-            predict_plot.get_figure().savefig(
-                join(output_dir, 'predictions.png'), bbox_inches='tight')
-            predict_plot.get_figure().savefig(
-                join(output_dir, 'predictions.pdf'), bbox_inches='tight')
+    if output_dir is not None:
+        predict_plot.get_figure().savefig(
+            join(output_dir, 'predictions.png'), bbox_inches='tight')
+        predict_plot.get_figure().savefig(
+            join(output_dir, 'predictions.pdf'), bbox_inches='tight')
 
     # only set calc_feature_importance=True if estimator has attributes
     # feature_importances_ or coef_ to report feature importance/weights
@@ -310,7 +313,7 @@ def _visualize_maturity_index(table, metadata, group_by, category,
     if maz_stats:
         maz_aov = two_way_anova(table, metadata, maz, group_by, category)[0]
         maz_aov.to_csv(join(output_dir, 'maz_aov.tsv'), sep='\t')
-        maz_pairwise = pairwise_tests(table, metadata, maz, group_by, category)
+        maz_pairwise = pairwise_stats(table, metadata, maz, group_by, category)
         maz_pairwise.to_csv(join(output_dir, 'maz_pairwise.tsv'), sep='\t')
 
     # plot control/treatment predicted vs. actual values
