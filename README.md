@@ -22,41 +22,93 @@ All machine-learning models implemented in q2-sample-classifier support the opti
 
 ![Alt text](./examples/rfe_plot.jpg?raw=true "Recursive feature elimination plot")
 ## Classification
-In a classification problem, we are interested in predicting the class labels for a number of unlabeled samples. The visualizers show overall accuracy scores (e.g., the percentage of times that the true class label is predicted), and also generates confusion matrices, showing how frequently samples belonging to each class are predicted to be the true class or another class. For example, the following depicts how frequently grape samples are classified to the correct vineyard (94.1% of the time!):
+In a classification problem, we are interested in predicting the class labels for a number of unlabeled samples. The visualizers show overall accuracy scores (e.g., the percentage of times that the true class label is predicted), and also generates confusion matrices, showing how frequently samples belonging to each class are predicted to be the true class or another class. For example, the following depicts how frequently grape samples are classified to the correct Vineyard (94.1% of the time!):
 
-![Alt text](./examples/classify-kneighbors-vineyard.jpg?raw=true "classify k-neighbors vineyard")
+![Alt text](./examples/classify-kneighbors-Vineyard.jpg?raw=true "classify k-neighbors Vineyard")
 
 ### Random forest classifier
 ```
 cd ~/Desktop/projects/q2-sample-classifier/q2_sample_classifier/test_data/
 
-qiime sample-classifier classify-random-forest --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-category vineyard --o-visualization test --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
+qiime sample-classifier classify-random-forest \
+	--i-table chardonnay.table.qza \
+	--m-metadata-file chardonnay.map.txt \
+	--p-category Vineyard \
+	--o-visualization test \
+	--p-optimize-feature-selection \
+	--p-parameter-tuning \
+	--p-n-estimators 50
 ```
 ### Extra Trees classifier
 ```
-qiime sample-classifier classify-extra-trees --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-category vineyard --o-visualization etc --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
+qiime sample-classifier classify-extra-trees \
+	--i-table chardonnay.table.qza \
+	--m-metadata-file chardonnay.map.txt \
+	--p-category Vineyard \
+	--o-visualization etc \
+	--p-optimize-feature-selection \
+	--p-parameter-tuning \
+	--p-n-estimators 50
 ```
 ### AdaBoost classifier
 ```
-qiime sample-classifier classify-adaboost --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-category vineyard --o-visualization abc --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
+qiime sample-classifier classify-adaboost \
+	--i-table chardonnay.table.qza \
+	--m-metadata-file chardonnay.map.txt \
+	--p-category Vineyard \
+	--o-visualization abc \
+	--p-optimize-feature-selection \
+	--p-parameter-tuning \
+	--p-n-estimators 50
 ```
 ### Gradient boosting classifier
 ```
-qiime sample-classifier classify-gradient-boosting --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-category vineyard --o-visualization gbc --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
+qiime sample-classifier classify-gradient-boosting \
+	--i-table chardonnay.table.qza \
+	--m-metadata-file chardonnay.map.txt \
+	--p-category Vineyard \
+	--o-visualization gbc \
+	--p-optimize-feature-selection \
+	--p-parameter-tuning \
+	--p-n-estimators 50
 ```
 ### K-nearest neighbors classifier
 ```
-qiime sample-classifier classify-kneighbors --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-category vineyard --o-visualization knn --p-parameter-tuning
+qiime sample-classifier classify-kneighbors \
+	--i-table chardonnay.table.qza \
+	--m-metadata-file chardonnay.map.txt \
+	--p-category Vineyard \
+	--o-visualization knn \
+	--p-parameter-tuning
 ```
 ### Linear support vector machine classifier
 ```
-qiime sample-classifier classify-linearSVC --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-category vineyard --o-visualization lsvc --p-parameter-tuning --p-optimize-feature-selection
+qiime sample-classifier classify-linearSVC \
+	--i-table chardonnay.table.qza \
+	--m-metadata-file chardonnay.map.txt \
+	--p-category Vineyard \
+	--o-visualization lsvc \
+	--p-parameter-tuning \
+	--p-optimize-feature-selection
 
-qiime sample-classifier classify-SVC --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-category vineyard --o-visualization svcl --p-parameter-tuning --p-optimize-feature-selection --p-kernel linear
+qiime sample-classifier classify-SVC \
+	--i-table chardonnay.table.qza \
+	--m-metadata-file chardonnay.map.txt \
+	--p-category Vineyard \
+	--o-visualization svcl \
+	--p-parameter-tuning \
+	--p-optimize-feature-selection \
+	--p-kernel linear
 ```
 ### Support vector machine classifier
 ```
-qiime sample-classifier classify-SVC --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-category vineyard --o-visualization svc --p-parameter-tuning --p-optimize-feature-selection
+qiime sample-classifier classify-SVC \
+	--i-table chardonnay.table.qza \
+	--m-metadata-file chardonnay.map.txt \
+	--p-category Vineyard \
+	--o-visualization svc \
+	--p-parameter-tuning \
+	--p-optimize-feature-selection
 ```
 
 ## Regression
@@ -66,43 +118,105 @@ In a regression problem, we are interested in predicting numerical values for a 
 
 ### Random forest regressor
 ```
-qiime sample-classifier regress-random-forest --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization month --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
+qiime sample-classifier regress-random-forest \
+	--i-table ecam-table-maturity.qza \
+	--m-metadata-file ecam_map_maturity.txt \
+	--p-category month \
+	--o-visualization month \
+	--p-optimize-feature-selection \
+	--p-parameter-tuning \
+	--p-n-estimators 50
 ```
 ### Extra Trees regressor
 ```
-qiime sample-classifier regress-extra-trees --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization etr --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
+qiime sample-classifier regress-extra-trees \
+	--i-table ecam-table-maturity.qza \
+	--m-metadata-file ecam_map_maturity.txt \
+	--p-category month \
+	--o-visualization etr \
+	--p-optimize-feature-selection \
+	--p-parameter-tuning \
+	--p-n-estimators 50
 ```
 ### AdaBoost regressor
 ```
-qiime sample-classifier regress-adaboost --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization abr --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
+qiime sample-classifier regress-adaboost \
+	--i-table ecam-table-maturity.qza \
+	--m-metadata-file ecam_map_maturity.txt \
+	--p-category month \
+	--o-visualization abr \
+	--p-optimize-feature-selection \
+	--p-parameter-tuning \
+	--p-n-estimators 50
 ```
 ### Gradient boosting regressor
 ```
-qiime sample-classifier regress-gradient-boosting --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization gbr --p-optimize-feature-selection --p-parameter-tuning --p-n-estimators 50
+qiime sample-classifier regress-gradient-boosting \
+	--i-table ecam-table-maturity.qza \
+	--m-metadata-file ecam_map_maturity.txt \
+	--p-category month \
+	--o-visualization gbr \
+	--p-optimize-feature-selection \
+	--p-parameter-tuning \
+	--p-n-estimators 50
 ```
 ### Linear support vector machine regressor
 ```
-qiime sample-classifier regress-SVR --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization svrl --p-parameter-tuning --p-optimize-feature-selection --p-kernel linear
+qiime sample-classifier regress-SVR \
+	--i-table ecam-table-maturity.qza \
+	--m-metadata-file ecam_map_maturity.txt \
+	--p-category month \
+	--o-visualization svrl \
+	--p-parameter-tuning \
+	--p-optimize-feature-selection \
+	--p-kernel linear
 ```
 ### Support vector machine regressor
 ```
-qiime sample-classifier regress-SVR --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization svr --p-parameter-tuning --p-optimize-feature-selection
+qiime sample-classifier regress-SVR \
+	--i-table ecam-table-maturity.qza \
+	--m-metadata-file ecam_map_maturity.txt \
+	--p-category month \
+	--o-visualization svr \
+	--p-parameter-tuning \
+	--p-optimize-feature-selection
 ```
 ### Ridge linear regression
 ```
-qiime sample-classifier regress-ridge --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization ridge --p-parameter-tuning
+qiime sample-classifier regress-ridge \
+	--i-table ecam-table-maturity.qza \
+	--m-metadata-file ecam_map_maturity.txt \
+	--p-category month \
+	--o-visualization ridge \
+	--p-parameter-tuning
 ```
 ### Lasso linear regression
 ```
-qiime sample-classifier regress-lasso --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization lasso --p-parameter-tuning
+qiime sample-classifier regress-lasso \
+	--i-table ecam-table-maturity.qza \
+	--m-metadata-file ecam_map_maturity.txt \
+	--p-category month \
+	--o-visualization lasso \
+	--p-parameter-tuning
 ```
 ### Elastic Net linear regression
 ```
-qiime sample-classifier regress-elasticnet --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization elastic --p-parameter-tuning --p-optimize-feature-selection
+qiime sample-classifier regress-elasticnet \
+	--i-table ecam-table-maturity.qza \
+	--m-metadata-file ecam_map_maturity.txt \
+	--p-category month \
+	--o-visualization elastic \
+	--p-parameter-tuning \
+	--p-optimize-feature-selection
 ```
 ### K-nearest neighbors regression
 ```
-qiime sample-classifier regress-kneighbors --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --o-visualization knnr --p-parameter-tuning
+qiime sample-classifier regress-kneighbors \
+	--i-table ecam-table-maturity.qza \
+	--m-metadata-file ecam_map_maturity.txt \
+	--p-category month \
+	--o-visualization knnr \
+	--p-parameter-tuning
 ```
 
 ## "Maturity Index" prediction
@@ -124,7 +238,15 @@ The average abundances of features used for training maturity models can then be
 All of this can be done with only a single command:
 
 ```
-qiime sample-classifier maturity-index --i-table ecam-table-maturity.qza --m-metadata-file ecam_map_maturity.txt --p-category month --p-group-by delivery --p-control Vaginal  --p-n-jobs 4 --o-visualization maturity --p-test-size 0.4
+qiime sample-classifier maturity-index \
+	--i-table ecam-table-maturity.qza \
+	--m-metadata-file ecam_map_maturity.txt \
+	--p-category month \
+	--p-group-by delivery \
+	--p-control Vaginal  \
+	--p-n-jobs 4 \
+	--o-visualization maturity \
+	--p-test-size 0.4
 ```
 
 ## Outlier detection
@@ -137,27 +259,54 @@ Inputs support two different modes: if subset_category and subset_value are set,
 Returns a series of values documenting outlier status: inliers have value 1, outliers have value -1. This series may be added to a metadata map and used to filter a feature table, if appropriate, using q2_feature_table.filter_samples, to remove contaminants or focus on novelty samples. If interested in potentially mislabeled samples, use a sample classifier in q2_sample_classifier or principal coordinates analysis to determine whether outliers classify as or cluster with another sample type.
 
 ```
-qiime sample-classifier detect-outliers --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-contamination 0.05 --p-n-jobs 4 --o-inliers inliers.qza
+qiime sample-classifier detect-outliers \
+	--i-table chardonnay.table.qza \
+	--m-metadata-file chardonnay.map.txt \
+	--p-contamination 0.05 \
+	--p-n-jobs 4 \
+	--o-inliers inliers.qza
 ```
 Let's view a PCoA plot of outliers vs. inliers:
 
 ![Alt text](./examples/outliers.jpg?raw=true "Outlier PCoA plot")
 ```
-qiime feature-table rarefy --i-table chardonnay.table.qza --p-sampling-depth 2000 --o-rarefied-table even_table
-qiime diversity beta --i-table even_table.qza --o-distance-matrix  distance --p-metric braycurtis
-qiime diversity pcoa --i-distance-matrix distance.qza --o-pcoa  pcoa
-qiime emperor plot --i-pcoa  pcoa.qza --o-visualization  inliers_plot --m-metadata-file inliers.qza
+qiime feature-table rarefy \
+	--i-table chardonnay.table.qza \
+	--p-sampling-depth 2000 \
+	--o-rarefied-table even_table
+qiime diversity beta \
+	--i-table even_table.qza \
+	--o-distance-matrix  distance \
+	--p-metric braycurtis
+qiime diversity pcoa \
+	--i-distance-matrix distance.qza \
+	--o-pcoa  pcoa
+qiime emperor plot \
+	--i-pcoa  pcoa.qza \
+	--o-visualization  inliers_plot \
+	--m-metadata-file inliers.qza
 
 ```
 We can then filter outliers from the feature table with the following command:
 ```
-qiime feature-table filter-samples --i-table chardonnay.table.qza --o-filtered-table inliers-table --m-metadata-file inliers.qza --p-where "inlier='1'"
+qiime feature-table filter-samples \
+	--i-table chardonnay.table.qza \
+	--o-filtered-table inliers-table \
+	--m-metadata-file inliers.qza \
+	--p-where "inlier='1'"
 ```
 
 ## Predicting geospatial coordinates
 The method predict-coordinates allows us to predict two continuous variables on a single set of test data, allowing us to determine how well microbial composition predicts geographical source.
 ```
-qiime sample-classifier predict-coordinates --i-table chardonnay.table.qza --m-metadata-file chardonnay.map.txt --p-latitude latitude --p-longitude longitude --p-n-jobs 4 --o-predictions coord-predictions --o-prediction-regression coord-regression
+qiime sample-classifier predict-coordinates \
+	--i-table chardonnay.table.qza \
+	--m-metadata-file chardonnay.map.txt \
+	--p-latitude latitude \
+	--p-longitude longitude \
+	--p-n-jobs 4 \
+	--o-predictions coord-predictions \
+	--o-prediction-regression coord-regression
 ```
 This method generates a list of predicted latitude and longitude coordinates for each sample, contained in the 'predictions' artifact. The 'prediction-regression' contains linear regression and accuracy results for predicted vs. actual coordinates.
 
@@ -166,7 +315,15 @@ Furthermore, we can pass these results to the q2-coordinates plugin to visualize
 ![Alt text](./examples/predicted-coordinates.jpg?raw=true "Predicted coordinates plot")
 
 ```
-qiime coordinates map-predicted-coordinates --i-predictions coord-predictions.qza --i-prediction-regression coord-regression.qza --m-metadata-file chardonnay.map.txt --p-latitude latitude --p-longitude longitude --p-pred-lat latitude --p-pred-long longitude --o-visualization prediction-map
+qiime coordinates map-predicted-coordinates \
+	--i-predictions coord-predictions.qza \
+	--i-prediction-regression coord-regression.qza \
+	--m-metadata-file chardonnay.map.txt \
+	--p-latitude latitude \
+	--p-longitude longitude \
+	--p-pred-lat latitude \
+	--p-pred-long longitude \
+	--o-visualization prediction-map
 ```
 
 
