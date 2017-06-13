@@ -296,6 +296,7 @@ def _visualize(output_dir, estimator, cm, accuracy, importances=None,
     cm = cm.to_html(classes=(
         "table table-striped table-hover")).replace('border="1"', 'border="0"')
     if importances is not None:
+        pd.set_option('display.float_format', '{:.3e}'.format)
         importances.to_csv(join(
             output_dir, 'feature_importance.tsv'), sep='\t')
         importances = importances.to_html(classes=(

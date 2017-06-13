@@ -66,10 +66,10 @@
     {% if not importances.empty %}
     <h1>Feature Importance</h1>
     <div class="col-lg-12">
-      {{ importances }}
       <a href="feature_importance.tsv">
         <p>Download as tsv</p>
       </a>
+      {{ importances }}
     </div>
     {% endif %}
   </div>
