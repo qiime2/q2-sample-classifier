@@ -293,7 +293,7 @@ qiime feature-table filter-samples \
 	--i-table chardonnay.table.qza \
 	--o-filtered-table inliers-table \
 	--m-metadata-file inliers.qza \
-	--p-where "inlier='1'"
+	--p-where "outlier='False'"
 ```
 
 ## Predicting geospatial coordinates

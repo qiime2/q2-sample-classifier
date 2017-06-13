@@ -32,7 +32,8 @@ plugin = Plugin(
     name='sample-classifier',
     version=q2_sample_classifier.__version__,
     website="https://github.com/nbokulich/q2-sample-classifier",
-    package='q2_sample_classifier'
+    package='q2_sample_classifier',
+    short_description='Plugin for machine learning prediction of sample data.'
 )
 
 Coordinates = SemanticType('Coordinates', variant_of=SampleData.field['type'])
@@ -92,8 +93,8 @@ plugin.register_semantic_type_to_format(
     artifact_format=CoordinatesDirectoryFormat)
 
 description = ('Predict {0} sample metadata classes using a {1}. Splits input '
-               'data into training and test  sets. The training set is used '
-               'to train and test the  classifier using a stratified k-fold '
+               'data into training and test sets. The training set is used '
+               'to train and test the classifier using a stratified k-fold '
                'cross-validation scheme. This includes optional steps for '
                'automated feature extraction and hyperparameter optimization. '
                'The test set validates classification accuracy of the '
@@ -107,6 +108,10 @@ inputs = {'table': FeatureTable[Frequency]}
 base_parameters = {'metadata': Metadata,
                    'random_state': Int,
                    'n_jobs': Int}
+
+regressor_parameters = {
+    'stratify': Bool,
+}
 
 parameters = {**base_parameters,
               'category': Str,
@@ -142,6 +147,11 @@ parameter_descriptions = {
                                    'elimination?')
 }
 
+regressor_parameter_descriptions = {
+    'stratify': ('Evenly stratify training and test data among metadata '
+                 'categories. If True, all values in category must match at '
+                 'least two samples.'),
+}
 
 ensemble_parameters = {
     'n_estimators': Int % Range(1, None)
@@ -240,10 +250,11 @@ plugin.visualizers.register_function(
 plugin.visualizers.register_function(
     function=regress_random_forest,
     inputs=inputs,
-    parameters={**parameters, **ensemble_parameters},
+    parameters={**parameters, **ensemble_parameters, **regressor_parameters},
     input_descriptions=input_descriptions,
     parameter_descriptions={
-        **parameter_descriptions, **ensemble_parameter_descriptions},
+        **parameter_descriptions, **ensemble_parameter_descriptions,
+        **regressor_parameter_descriptions},
     name='Random forest regressor',
     description=description.format(
         'continuous', 'random forest regressor',
@@ -254,10 +265,11 @@ plugin.visualizers.register_function(
 plugin.visualizers.register_function(
     function=regress_extra_trees,
     inputs=inputs,
-    parameters={**parameters, **ensemble_parameters},
+    parameters={**parameters, **ensemble_parameters, **regressor_parameters},
     input_descriptions=input_descriptions,
     parameter_descriptions={
-        **parameter_descriptions, **ensemble_parameter_descriptions},
+        **parameter_descriptions, **ensemble_parameter_descriptions,
+        **regressor_parameter_descriptions},
     name='Extra Trees regressor',
     description=description.format(
         'continuous', 'Extra Trees regressor',
@@ -268,10 +280,11 @@ plugin.visualizers.register_function(
 plugin.visualizers.register_function(
     function=regress_adaboost,
     inputs=inputs,
-    parameters={**parameters, **ensemble_parameters},
+    parameters={**parameters, **ensemble_parameters, **regressor_parameters},
     input_descriptions=input_descriptions,
     parameter_descriptions={
-        **parameter_descriptions, **ensemble_parameter_descriptions},
+        **parameter_descriptions, **ensemble_parameter_descriptions,
+        **regressor_parameter_descriptions},
     name='AdaBoost decision tree regressor',
     description=description.format(
         'continuous', 'Adaboost regressor',
@@ -282,10 +295,11 @@ plugin.visualizers.register_function(
 plugin.visualizers.register_function(
     function=regress_gradient_boosting,
     inputs=inputs,
-    parameters={**parameters, **ensemble_parameters},
+    parameters={**parameters, **ensemble_parameters, **regressor_parameters},
     input_descriptions=input_descriptions,
     parameter_descriptions={
-        **parameter_descriptions, **ensemble_parameter_descriptions},
+        **parameter_descriptions, **ensemble_parameter_descriptions,
+        **regressor_parameter_descriptions},
     name='Gradient boosting regressor',
     description=description.format(
         'continuous', 'Gradient boosting regressor',
@@ -323,10 +337,11 @@ plugin.visualizers.register_function(
 plugin.visualizers.register_function(
     function=regress_SVR,
     inputs=inputs,
-    parameters={**parameters, **svm_parameters},
+    parameters={**parameters, **svm_parameters, **regressor_parameters},
     input_descriptions=input_descriptions,
     parameter_descriptions={
-        **parameter_descriptions, **svm_parameter_descriptions},
+        **parameter_descriptions, **svm_parameter_descriptions,
+        **regressor_parameter_descriptions},
     name='Support vector machine regressor',
     description=description.format(
         'continuous', 'support vector machine regressor',
@@ -337,11 +352,13 @@ plugin.visualizers.register_function(
 plugin.visualizers.register_function(
     function=regress_ridge,
     inputs=inputs,
-    parameters={**parameters, 'solver': Str % Choices([
-        'auto', 'svd', 'cholesky', 'sparse_cg', 'lsqr', 'sag', 'saga'])},
+    parameters={
+        **parameters, **regressor_parameters, 'solver': Str % Choices([
+            'auto', 'svd', 'cholesky', 'sparse_cg', 'lsqr', 'sag', 'saga'])},
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions,
+        **regressor_parameter_descriptions,
         "solver": ('Solver to use in computational routines. "auto" chooses '
                    'the solver automatically based on the type of data. For '
                    'details see http://scikit-learn.org/dev/modules/generated/'
@@ -357,9 +374,10 @@ plugin.visualizers.register_function(
 plugin.visualizers.register_function(
     function=regress_lasso,
     inputs=inputs,
-    parameters=parameters,
+    parameters={**parameters, **regressor_parameters},
     input_descriptions=input_descriptions,
-    parameter_descriptions=parameter_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions, **regressor_parameter_descriptions},
     name='Lasso regression',
     description=description.format(
         'continuous', 'Lasso linear regression',
@@ -370,9 +388,10 @@ plugin.visualizers.register_function(
 plugin.visualizers.register_function(
     function=regress_elasticnet,
     inputs=inputs,
-    parameters=parameters,
+    parameters={**parameters, **regressor_parameters},
     input_descriptions=input_descriptions,
-    parameter_descriptions=parameter_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions, **regressor_parameter_descriptions},
     name='Elastic Net regression',
     description=description.format(
         'continuous', 'Elastic Net linear regression',
@@ -383,9 +402,11 @@ plugin.visualizers.register_function(
 plugin.visualizers.register_function(
     function=regress_kneighbors,
     inputs=inputs,
-    parameters=neighbors_parameters,
+    parameters={**neighbors_parameters, **regressor_parameters},
     input_descriptions=input_descriptions,
-    parameter_descriptions=neighbors_parameter_descriptions,
+    parameter_descriptions={
+        **neighbors_parameter_descriptions,
+        **regressor_parameter_descriptions},
     name='K-nearest neighbors regression',
     description=description.format(
         'continuous', 'K-nearest neighbors regression',
@@ -417,6 +438,7 @@ plugin.visualizers.register_function(
                     'ElasticNet']),
                 **parameters,
                 **ensemble_parameters,
+                **regressor_parameters,
                 'maz_stats': Bool,
                 },
     input_descriptions=input_descriptions,
@@ -431,6 +453,7 @@ plugin.visualizers.register_function(
             'this group.'),
         'estimator': 'Regression model to use for prediction.',
         **ensemble_parameter_descriptions,
+        **regressor_parameter_descriptions,
         'maz_stats': 'Calculate anova and pairwise tests on MAZ scores?',
     },
     name='Microbial maturity index prediction',

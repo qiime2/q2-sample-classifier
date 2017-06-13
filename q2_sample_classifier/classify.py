@@ -187,7 +187,7 @@ def regress_random_forest(output_dir: str, table: biom.Table,
                           metadata: qiime2.Metadata, category: str,
                           test_size: float=0.2, step: float=0.05,
                           cv: int=5, random_state: int=None, n_jobs: int=1,
-                          n_estimators: int=100,
+                          n_estimators: int=100, stratify: str=False,
                           optimize_feature_selection: bool=False,
                           parameter_tuning: bool=False):
 
@@ -202,7 +202,7 @@ def regress_random_forest(output_dir: str, table: biom.Table,
         n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=True, scoring=mean_squared_error,
-        classification=False)
+        stratify=stratify, classification=False)
 
     _visualize(output_dir, estimator, cm, accuracy, importances,
                optimize_feature_selection)
@@ -212,7 +212,7 @@ def regress_extra_trees(output_dir: str, table: biom.Table,
                         metadata: qiime2.Metadata, category: str,
                         test_size: float=0.2, step: float=0.05,
                         cv: int=5, random_state: int=None, n_jobs: int=1,
-                        n_estimators: int=100,
+                        n_estimators: int=100, stratify: str=False,
                         optimize_feature_selection: bool=False,
                         parameter_tuning: bool=False):
 
@@ -227,7 +227,7 @@ def regress_extra_trees(output_dir: str, table: biom.Table,
         n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=True, scoring=mean_squared_error,
-        classification=False)
+        stratify=stratify, classification=False)
 
     _visualize(output_dir, estimator, cm, accuracy, importances,
                optimize_feature_selection)
@@ -237,7 +237,7 @@ def regress_adaboost(output_dir: str, table: biom.Table,
                      metadata: qiime2.Metadata, category: str,
                      test_size: float=0.2, step: float=0.05,
                      cv: int=5, random_state: int=None, n_jobs: int=1,
-                     n_estimators: int=100,
+                     n_estimators: int=100, stratify: str=False,
                      optimize_feature_selection: bool=False,
                      parameter_tuning: bool=False):
 
@@ -262,7 +262,7 @@ def regress_adaboost(output_dir: str, table: biom.Table,
         n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
         parameter_tuning=False, param_dist=param_dist,
         calc_feature_importance=True, scoring=mean_squared_error,
-        classification=False)
+        stratify=stratify, classification=False)
 
     _visualize(output_dir, estimator, cm, accuracy, importances,
                optimize_feature_selection)
@@ -273,6 +273,7 @@ def regress_gradient_boosting(output_dir: str, table: biom.Table,
                               test_size: float=0.2, step: float=0.05,
                               cv: int=5, random_state: int=None,
                               n_jobs: int=1, n_estimators: int=100,
+                              stratify: str=False,
                               optimize_feature_selection: bool=False,
                               parameter_tuning: bool=False):
 
@@ -288,7 +289,7 @@ def regress_gradient_boosting(output_dir: str, table: biom.Table,
         n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=True, scoring=mean_squared_error,
-        classification=False)
+        stratify=stratify, classification=False)
 
     _visualize(output_dir, estimator, cm, accuracy, importances,
                optimize_feature_selection)
@@ -348,7 +349,7 @@ def regress_SVR(output_dir: str, table: biom.Table,
                 metadata: qiime2.Metadata, category: str,
                 test_size: float=0.2, step: float=0.05,
                 cv: int=5, random_state: int=None, n_jobs: int=1,
-                parameter_tuning: bool=False,
+                stratify: str=False, parameter_tuning: bool=False,
                 optimize_feature_selection: bool=False, kernel: str='rbf'):
 
     # specify parameters and distributions to sample from for parameter tuning
@@ -366,7 +367,7 @@ def regress_SVR(output_dir: str, table: biom.Table,
         n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=calc_feature_importance,
-        scoring=mean_squared_error, classification=False)
+        scoring=mean_squared_error, stratify=stratify, classification=False)
 
     _visualize(output_dir, estimator, cm, accuracy, importances,
                optimize_feature_selection)
@@ -376,7 +377,7 @@ def regress_ridge(output_dir: str, table: biom.Table,
                   metadata: qiime2.Metadata, category: str,
                   test_size: float=0.2, step: float=0.05,
                   cv: int=5, random_state: int=None, n_jobs: int=1,
-                  parameter_tuning: bool=False,
+                  stratify: str=False, parameter_tuning: bool=False,
                   optimize_feature_selection: bool=False, solver: str='auto'):
 
     # specify parameters and distributions to sample from for parameter tuning
@@ -390,7 +391,7 @@ def regress_ridge(output_dir: str, table: biom.Table,
         n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=True, scoring=mean_squared_error,
-        classification=False)
+        stratify=stratify, classification=False)
 
     _visualize(output_dir, estimator, cm, accuracy, importances,
                optimize_feature_selection)
@@ -400,7 +401,7 @@ def regress_lasso(output_dir: str, table: biom.Table,
                   metadata: qiime2.Metadata, category: str,
                   test_size: float=0.2, step: float=0.05,
                   cv: int=5, random_state: int=None, n_jobs: int=1,
-                  optimize_feature_selection: bool=False,
+                  stratify: str=False, optimize_feature_selection: bool=False,
                   parameter_tuning: bool=False):
 
     # specify parameters and distributions to sample from for parameter tuning
@@ -414,7 +415,7 @@ def regress_lasso(output_dir: str, table: biom.Table,
         n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=True, scoring=mean_squared_error,
-        classification=False)
+        stratify=stratify, classification=False)
 
     _visualize(output_dir, estimator, cm, accuracy, importances,
                optimize_feature_selection)
@@ -425,7 +426,7 @@ def regress_elasticnet(output_dir: str, table: biom.Table,
                        test_size: float=0.2, step: float=0.05,
                        cv: int=5, random_state: int=None, n_jobs: int=1,
                        optimize_feature_selection: bool=False,
-                       parameter_tuning: bool=False):
+                       stratify: str=False, parameter_tuning: bool=False):
 
     # specify parameters and distributions to sample from for parameter tuning
     param_dist = linear_params
@@ -438,7 +439,7 @@ def regress_elasticnet(output_dir: str, table: biom.Table,
         n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=True, scoring=mean_squared_error,
-        classification=False)
+        stratify=stratify, classification=False)
 
     _visualize(output_dir, estimator, cm, accuracy, importances,
                optimize_feature_selection)
@@ -469,7 +470,8 @@ def regress_kneighbors(output_dir: str, table: biom.Table,
                        metadata: qiime2.Metadata, category: str,
                        test_size: float=0.2, step: float=0.05,
                        cv: int=5, random_state: int=None, n_jobs: int=1,
-                       parameter_tuning: bool=False, algorithm: str='auto'):
+                       stratify: str=False, parameter_tuning: bool=False,
+                       algorithm: str='auto'):
 
     # specify parameters and distributions to sample from for parameter tuning
     param_dist = neighbors_params
@@ -482,7 +484,7 @@ def regress_kneighbors(output_dir: str, table: biom.Table,
         n_jobs=n_jobs, optimize_feature_selection=False,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=False, scoring=mean_squared_error,
-        classification=False)
+        stratify=stratify, classification=False)
 
     _visualize(output_dir, estimator, cm, accuracy, importances, False)
 
@@ -493,7 +495,7 @@ def maturity_index(output_dir: str, table: biom.Table,
                    n_estimators: int=100, test_size: float=0.2,
                    step: float=0.05, cv: int=5, random_state: int=None,
                    n_jobs: int=1, parameter_tuning: bool=True,
-                   optimize_feature_selection: bool=True,
+                   optimize_feature_selection: bool=True, stratify: str=False,
                    maz_stats: bool=True):
     '''Calculate a "maturity index" to predict values of a continuous
     metadata category as a function of microbiota composition. A "normal"
@@ -525,7 +527,7 @@ def maturity_index(output_dir: str, table: biom.Table,
         step=step, cv=cv, parameter_tuning=parameter_tuning,
         optimize_feature_selection=optimize_feature_selection,
         param_dist=param_dist, calc_feature_importance=True, load_data=False,
-        scoring=mean_squared_error, classification=False)
+        scoring=mean_squared_error, stratify=stratify, classification=False)
 
     # predict treatment data
     table = table.loc[:, importances["feature"]]
@@ -601,7 +603,10 @@ def detect_outliers(table: biom.Table,
     # predict outlier status
     y_pred = estimator.predict(features)
     y_pred = pd.Series(y_pred, index=features.index)
-    y_pred.name = "inlier"
+    # predict reports whether sample is an inlier; change to outlier status
+    y_pred.str.replace(0, True)
+    y_pred.str.replace(1, False)
+    y_pred.name = "outlier"
     return y_pred
 
 
@@ -613,7 +618,7 @@ def predict_coordinates(table: biom.Table, metadata: qiime2.Metadata,
                         n_jobs: int=1, parameter_tuning: bool=True,
                         optimize_feature_selection: bool=True,
                         ) -> (pd.DataFrame, pd.DataFrame):
-    '''Predict and map sample coordinates in 2-Dspace, based on
+    '''Predict and map sample coordinates in 2-D space, based on
     microbiota composition. E.g., this function could be used to predict
     latitude and longitude or precise location within 2-D physical space,
     such as the built environment. Metadata must be in float format, e.g.,

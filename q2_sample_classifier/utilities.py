@@ -124,9 +124,22 @@ def _split_training_data(feature_data, targets, category, test_size=0.2,
         feature_data = feature_data.loc[targets.index]
 
     if test_size > 0.0:
-        X_train, X_test, y_train, y_test = train_test_split(
-            feature_data, targets, test_size=test_size, stratify=stratify,
-            random_state=random_state)
+        try:
+            X_train, X_test, y_train, y_test = train_test_split(
+                feature_data, targets, test_size=test_size, stratify=stratify,
+                random_state=random_state)
+        except ValueError:
+            raise ValueError((
+                'You have chosen to predict a metadata category that contains '
+                'one or more values that match only one sample. For proper '
+                'stratification of data into training and test sets, each '
+                'class (value) must contain at least two samples. This is a '
+                'requirement for classification problems, but stratification '
+                'can be disabled for regression by setting stratify=False. '
+                'Alternatively, remove all samples that bear a unique class '
+                'label for your chosen metadata category. Note that disabling '
+                'stratification can negatively impact predictive accuracy for '
+                'small data sets.'))
     else:
         X_train, X_test, y_train, y_test = (
             feature_data, feature_data, targets, targets)
@@ -195,14 +208,20 @@ def split_optimize_classify(features, targets, category, estimator,
                             optimize_feature_selection=False,
                             parameter_tuning=False, param_dist=None,
                             calc_feature_importance=False, load_data=True,
-                            scoring=accuracy_score, classification=True):
+                            scoring=accuracy_score, classification=True,
+                            stratify=True):
     # load data
     if load_data:
         features, targets = _load_data(features, targets, transpose=transpose)
 
     # split into training and test sets
+    if stratify:
+        strata = targets[category]
+    else:
+        strata = None
+
     X_train, X_test, y_train, y_test = _split_training_data(
-        features, targets, category, test_size, targets[category],
+        features, targets, category, test_size, strata,
         random_state)
 
     # optimize training feature count
