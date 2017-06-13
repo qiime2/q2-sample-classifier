@@ -604,8 +604,8 @@ def detect_outliers(table: biom.Table,
     y_pred = estimator.predict(features)
     y_pred = pd.Series(y_pred, index=features.index)
     # predict reports whether sample is an inlier; change to outlier status
-    y_pred.str.replace(0, True)
-    y_pred.str.replace(1, False)
+    y_pred[y_pred == -1] = 'True'
+    y_pred[y_pred == 1] = 'False'
     y_pred.name = "outlier"
     return y_pred
 

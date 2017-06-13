@@ -264,7 +264,7 @@ qiime sample-classifier detect-outliers \
 	--m-metadata-file chardonnay.map.txt \
 	--p-contamination 0.05 \
 	--p-n-jobs 4 \
-	--o-inliers inliers.qza
+	--o-inliers outliers.qza
 ```
 Let's view a PCoA plot of outliers vs. inliers:
 
@@ -283,8 +283,8 @@ qiime diversity pcoa \
 	--o-pcoa  pcoa
 qiime emperor plot \
 	--i-pcoa  pcoa.qza \
-	--o-visualization  inliers_plot \
-	--m-metadata-file inliers.qza
+	--o-visualization  outliers_plot \
+	--m-metadata-file outliers.qza
 
 ```
 We can then filter outliers from the feature table with the following command:
