@@ -12,7 +12,7 @@
 from qiime2.plugin import (
     Int, Str, Float, Range, Bool, Plugin, Metadata, Choices)
 from q2_types.feature_table import FeatureTable, Frequency
-from q2_types.sample_data import AlphaDiversity, SampleData
+from q2_types.sample_data import SampleData
 from .classify import (
     classify_random_forest, regress_random_forest, classify_linearSVC,
     regress_SVR, classify_SVC, classify_kneighbors,
@@ -64,7 +64,7 @@ def _read_dataframe(fh):
 
 
 @plugin.register_transformer
-def _1(data: pd.DataFrame) -> CoordinatesFormat:
+def _1(data: pd.DataFrame) -> (CoordinatesFormat):
     ff = CoordinatesFormat()
     with ff.open() as fh:
         data.to_csv(fh, sep='\t', header=True)
@@ -72,25 +72,69 @@ def _1(data: pd.DataFrame) -> CoordinatesFormat:
 
 
 @plugin.register_transformer
-def _2(ff: CoordinatesFormat) -> pd.DataFrame:
+def _2(ff: CoordinatesFormat) -> (pd.DataFrame):
     with ff.open() as fh:
         df = _read_dataframe(fh)
         return df.apply(lambda x: pd.to_numeric(x, errors='ignore'))
 
 
 @plugin.register_transformer
-def _3(ff: CoordinatesFormat) -> qiime2.Metadata:
+def _3(ff: CoordinatesFormat) -> (qiime2.Metadata):
     with ff.open() as fh:
         return qiime2.Metadata(_read_dataframe(fh))
 
 
-plugin.register_formats(CoordinatesFormat, CoordinatesDirectoryFormat)
+BooleanSeries = SemanticType('BooleanSeries', variant_of=SampleData.field['type'])
 
-plugin.register_semantic_types(Coordinates)
+
+class BooleanSeriesFormat(model.TextFileFormat):
+    def sniff(self):
+        with self.open() as fh:
+            line = fh.readline()
+            for line, _ in zip(fh, range(5)):
+                cells = line.strip().split('\t')
+                if len(cells) != 2 or str(cells[1]) not in ('True', 'False'):
+                    return False
+            return True
+
+
+BooleanSeriesDirectoryFormat = model.SingleFileDirectoryFormat(
+    'BooleanSeriesDirectoryFormat', 'outliers.tsv',
+    BooleanSeriesFormat)
+
+
+@plugin.register_transformer
+def _4(data: pd.Series) -> (BooleanSeriesFormat):
+    ff = BooleanSeriesFormat()
+    with ff.open() as fh:
+        data.to_csv(fh, sep='\t', header=True)
+    return ff
+
+
+@plugin.register_transformer
+def _5(ff: BooleanSeriesFormat) -> (pd.Series):
+    with ff.open() as fh:
+        return _read_dataframe(fh)
+
+
+@plugin.register_transformer
+def _6(ff: BooleanSeriesFormat) -> (qiime2.Metadata):
+    with ff.open() as fh:
+        return qiime2.Metadata(_read_dataframe(fh))
+
+
+plugin.register_formats(CoordinatesFormat, CoordinatesDirectoryFormat,
+                        BooleanSeriesFormat, BooleanSeriesDirectoryFormat)
+
+plugin.register_semantic_types(Coordinates, BooleanSeries)
 
 plugin.register_semantic_type_to_format(
     SampleData[Coordinates],
     artifact_format=CoordinatesDirectoryFormat)
+
+plugin.register_semantic_type_to_format(
+    SampleData[BooleanSeries],
+    artifact_format=BooleanSeriesDirectoryFormat)
 
 description = ('Predict {0} sample metadata classes using a {1}. Splits input '
                'data into training and test sets. The training set is used '
@@ -484,7 +528,7 @@ plugin.methods.register_function(
                                                inclusive_start=True),
                 **ensemble_parameters,
                 },
-    outputs=[('inliers', SampleData[AlphaDiversity])],
+    outputs=[('inliers', SampleData[BooleanSeries])],
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **base_parameter_descriptions,
