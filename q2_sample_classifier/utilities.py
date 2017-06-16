@@ -191,7 +191,6 @@ def rfecv_feature_selection(feature_data, targets, estimator,
 
     # Describe top features
     n_opt = rfecv.n_features_
-    print("Optimal number of features : {0}".format(n_opt))
     importance = extract_important_features(
         feature_data, rfecv.ranking_, ascending=True)[:n_opt]
     top_feature_data = feature_data.iloc[:, importance.index]
