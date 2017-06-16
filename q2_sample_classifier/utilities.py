@@ -29,37 +29,22 @@ from .visuals import (_linear_regress, _plot_confusion_matrix, _plot_RFE,
 TEMPLATES = pkg_resources.resource_filename('q2_sample_classifier', 'assets')
 
 
-# adapted from https://github.com/biocore/biom-format/issues/622
-# more straightforward would be to import feature tables as pd.DataFrame but
-# I have yet to get this to work! So using this as a temporary patch.
-def _biom_to_pandas(table):
-    """biom.Table->pandas.DataFrame"""
-    m = table.matrix_data
-    data = [pd.SparseSeries(m[i].toarray().ravel())
-            for i in np.arange(m.shape[0])]
-    out = pd.SparseDataFrame(data, index=table.ids('observation'),
-                             columns=table.ids('sample'))
-    return out
-
-
-def _load_data(features_fp, targets_fp, transpose=True):
+def _load_data(feature_data, targets_metadata, transpose=False):
     '''Load data and generate training and test sets.
 
-    features_fp: path
-        feature X sample values. Currently accepts biom tables.
-    targets: path
-        target (columns) X sample (rows) values. Currently accepts .tsv
+    feature_data: pd.DataFrame
+        feature X sample values.
+    targets_metadata: qiime2.Metadata
+        target (columns) X sample (rows) values.
     transpose: bool
-        Transpose feature data? biom tables need to be transposed
+        Transpose feature data? feature tables should be oriented
         to have features (columns) X samples (rows)
     '''
-    # convert to df
-    feature_data = biom_to_pandas(features_fp)
     if transpose is True:
         feature_data = feature_data.transpose()
 
     # Load metadata, attempt to convert to numeric
-    targets = _metadata_to_df(targets_fp)
+    targets = _metadata_to_df(targets_metadata)
 
     # filter features and targets so samples match
     merged = feature_data.join(targets, how='inner')
@@ -202,7 +187,7 @@ def _rfecv_feature_selection(feature_data, targets, estimator,
 
 
 def split_optimize_classify(features, targets, category, estimator,
-                            output_dir, transpose=True, test_size=0.2,
+                            output_dir, transpose=False, test_size=0.2,
                             step=0.05, cv=5, random_state=None, n_jobs=4,
                             optimize_feature_selection=False,
                             parameter_tuning=False, param_dist=None,

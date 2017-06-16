@@ -63,8 +63,11 @@ def _clustermap_from_dataframe(table, metadata, group_by, category,
     table = metadata[[group_by, category]].merge(
         table, left_index=True, right_index=True)
     table = table.groupby(by=[group_by, category]).median()
+
     # remove any empty columns
     table = table.loc[:, (table != 0).any(axis=0)]
+
+    # generate cluster map
     g = sns.clustermap(table, metric=metric, method=method, z_score=1,
                        row_cluster=False)
     plt.setp(g.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)

@@ -8,7 +8,6 @@
 
 import qiime2
 import pandas as pd
-import biom
 from os import mkdir
 from os.path import join
 from warnings import filterwarnings
@@ -61,10 +60,10 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     def setUp(self):
         super().setUp()
 
-        def _load_biom(table_fp):
+        def _load_df(table_fp):
             table_fp = self.get_data_path(table_fp)
             table = qiime2.Artifact.load(table_fp)
-            table = table.view(biom.Table)
+            table = table.view(pd.DataFrame)
             return table
 
         def _load_md(md_fp):
@@ -73,9 +72,9 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             md = qiime2.Metadata(md)
             return md
 
-        self.table_chard_fp = _load_biom('chardonnay.table.qza')
+        self.table_chard_fp = _load_df('chardonnay.table.qza')
         self.md_chard_fp = _load_md('chardonnay.map.txt')
-        self.table_ecam_fp = _load_biom('ecam-table-maturity.qza')
+        self.table_ecam_fp = _load_df('ecam-table-maturity.qza')
         self.md_ecam_fp = _load_md('ecam_map_maturity.txt')
 
     def test_ensemble_classifiers(self):
@@ -118,7 +117,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     def test_maturity_index(self):
         maturity_index(self.temp_dir.name, self.table_ecam_fp, self.md_ecam_fp,
                        category='month', group_by='delivery', n_jobs=-1,
-                       control='Vaginal', test_size=0.4, estimator='Lasso')
+                       control='Vaginal', test_size=0.4)
 
     def test_detect_outliers(self):
         outliers = detect_outliers(self.table_chard_fp, self.md_chard_fp,

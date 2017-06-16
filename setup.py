@@ -15,7 +15,7 @@ setup(
     version='0.0.0-dev',
     license='BSD-3-Clause',
     packages=find_packages(),
-    install_requires=['qiime2', 'biom-format', 'pandas', 'scipy',
+    install_requires=['qiime2', 'pandas', 'scipy',
                       'scikit-learn', 'scikit-bio', 'seaborn',
                       'fastcluster'],
     author="Nicholas Bokulich",

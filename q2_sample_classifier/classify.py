@@ -22,7 +22,6 @@ from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 import qiime2
-import biom
 import pandas as pd
 from scipy.stats import randint
 import warnings
@@ -74,7 +73,7 @@ linear_params = {
 }
 
 
-def classify_random_forest(output_dir: str, table: biom.Table,
+def classify_random_forest(output_dir: str, table: pd.DataFrame,
                            metadata: qiime2.Metadata, category: str,
                            test_size: float=0.2, step: float=0.05,
                            cv: int=5, random_state: int=None, n_jobs: int=1,
@@ -99,7 +98,7 @@ def classify_random_forest(output_dir: str, table: biom.Table,
                optimize_feature_selection)
 
 
-def classify_extra_trees(output_dir: str, table: biom.Table,
+def classify_extra_trees(output_dir: str, table: pd.DataFrame,
                          metadata: qiime2.Metadata, category: str,
                          test_size: float=0.2, step: float=0.05,
                          cv: int=5, random_state: int=None, n_jobs: int=1,
@@ -124,7 +123,7 @@ def classify_extra_trees(output_dir: str, table: biom.Table,
                optimize_feature_selection)
 
 
-def classify_adaboost(output_dir: str, table: biom.Table,
+def classify_adaboost(output_dir: str, table: pd.DataFrame,
                       metadata: qiime2.Metadata, category: str,
                       test_size: float=0.2, step: float=0.05,
                       cv: int=5, random_state: int=None, n_jobs: int=1,
@@ -140,7 +139,7 @@ def classify_adaboost(output_dir: str, table: biom.Table,
 
     # parameter tune base estimator
     if parameter_tuning:
-        features, targets = _load_data(table, metadata, transpose=True)
+        features, targets = _load_data(table, metadata, transpose=False)
         base_estimator = _tune_parameters(
             features, targets[category], base_estimator, param_dist,
             n_jobs=n_jobs, cv=cv, random_state=random_state)
@@ -158,7 +157,7 @@ def classify_adaboost(output_dir: str, table: biom.Table,
                optimize_feature_selection)
 
 
-def classify_gradient_boosting(output_dir: str, table: biom.Table,
+def classify_gradient_boosting(output_dir: str, table: pd.DataFrame,
                                metadata: qiime2.Metadata, category: str,
                                test_size: float=0.2, step: float=0.05,
                                cv: int=5, random_state: int=None,
@@ -183,7 +182,7 @@ def classify_gradient_boosting(output_dir: str, table: biom.Table,
                optimize_feature_selection)
 
 
-def regress_random_forest(output_dir: str, table: biom.Table,
+def regress_random_forest(output_dir: str, table: pd.DataFrame,
                           metadata: qiime2.Metadata, category: str,
                           test_size: float=0.2, step: float=0.05,
                           cv: int=5, random_state: int=None, n_jobs: int=1,
@@ -208,7 +207,7 @@ def regress_random_forest(output_dir: str, table: biom.Table,
                optimize_feature_selection)
 
 
-def regress_extra_trees(output_dir: str, table: biom.Table,
+def regress_extra_trees(output_dir: str, table: pd.DataFrame,
                         metadata: qiime2.Metadata, category: str,
                         test_size: float=0.2, step: float=0.05,
                         cv: int=5, random_state: int=None, n_jobs: int=1,
@@ -233,7 +232,7 @@ def regress_extra_trees(output_dir: str, table: biom.Table,
                optimize_feature_selection)
 
 
-def regress_adaboost(output_dir: str, table: biom.Table,
+def regress_adaboost(output_dir: str, table: pd.DataFrame,
                      metadata: qiime2.Metadata, category: str,
                      test_size: float=0.2, step: float=0.05,
                      cv: int=5, random_state: int=None, n_jobs: int=1,
@@ -249,7 +248,7 @@ def regress_adaboost(output_dir: str, table: biom.Table,
 
     # parameter tune base estimator
     if parameter_tuning:
-        features, targets = _load_data(table, metadata, transpose=True)
+        features, targets = _load_data(table, metadata, transpose=False)
         base_estimator = _tune_parameters(
             features, targets[category], base_estimator, param_dist,
             n_jobs=n_jobs, cv=cv, random_state=random_state)
@@ -268,7 +267,7 @@ def regress_adaboost(output_dir: str, table: biom.Table,
                optimize_feature_selection)
 
 
-def regress_gradient_boosting(output_dir: str, table: biom.Table,
+def regress_gradient_boosting(output_dir: str, table: pd.DataFrame,
                               metadata: qiime2.Metadata, category: str,
                               test_size: float=0.2, step: float=0.05,
                               cv: int=5, random_state: int=None,
@@ -295,7 +294,7 @@ def regress_gradient_boosting(output_dir: str, table: biom.Table,
                optimize_feature_selection)
 
 
-def classify_linearSVC(output_dir: str, table: biom.Table,
+def classify_linearSVC(output_dir: str, table: pd.DataFrame,
                        metadata: qiime2.Metadata, category: str,
                        test_size: float=0.2, step: float=0.05,
                        cv: int=5, random_state: int=None, n_jobs: int=1,
@@ -318,7 +317,7 @@ def classify_linearSVC(output_dir: str, table: biom.Table,
                optimize_feature_selection)
 
 
-def classify_SVC(output_dir: str, table: biom.Table,
+def classify_SVC(output_dir: str, table: pd.DataFrame,
                  metadata: qiime2.Metadata, category: str,
                  test_size: float=0.2, step: float=0.05,
                  cv: int=5, random_state: int=None, n_jobs: int=1,
@@ -345,7 +344,7 @@ def classify_SVC(output_dir: str, table: biom.Table,
                optimize_feature_selection)
 
 
-def regress_SVR(output_dir: str, table: biom.Table,
+def regress_SVR(output_dir: str, table: pd.DataFrame,
                 metadata: qiime2.Metadata, category: str,
                 test_size: float=0.2, step: float=0.05,
                 cv: int=5, random_state: int=None, n_jobs: int=1,
@@ -373,7 +372,7 @@ def regress_SVR(output_dir: str, table: biom.Table,
                optimize_feature_selection)
 
 
-def regress_ridge(output_dir: str, table: biom.Table,
+def regress_ridge(output_dir: str, table: pd.DataFrame,
                   metadata: qiime2.Metadata, category: str,
                   test_size: float=0.2, step: float=0.05,
                   cv: int=5, random_state: int=None, n_jobs: int=1,
@@ -397,7 +396,7 @@ def regress_ridge(output_dir: str, table: biom.Table,
                optimize_feature_selection)
 
 
-def regress_lasso(output_dir: str, table: biom.Table,
+def regress_lasso(output_dir: str, table: pd.DataFrame,
                   metadata: qiime2.Metadata, category: str,
                   test_size: float=0.2, step: float=0.05,
                   cv: int=5, random_state: int=None, n_jobs: int=1,
@@ -421,7 +420,7 @@ def regress_lasso(output_dir: str, table: biom.Table,
                optimize_feature_selection)
 
 
-def regress_elasticnet(output_dir: str, table: biom.Table,
+def regress_elasticnet(output_dir: str, table: pd.DataFrame,
                        metadata: qiime2.Metadata, category: str,
                        test_size: float=0.2, step: float=0.05,
                        cv: int=5, random_state: int=None, n_jobs: int=1,
@@ -445,7 +444,7 @@ def regress_elasticnet(output_dir: str, table: biom.Table,
                optimize_feature_selection)
 
 
-def classify_kneighbors(output_dir: str, table: biom.Table,
+def classify_kneighbors(output_dir: str, table: pd.DataFrame,
                         metadata: qiime2.Metadata, category: str,
                         test_size: float=0.2, step: float=0.05,
                         cv: int=5, random_state: int=None, n_jobs: int=1,
@@ -466,7 +465,7 @@ def classify_kneighbors(output_dir: str, table: biom.Table,
     _visualize(output_dir, estimator, cm, accuracy, importances, False)
 
 
-def regress_kneighbors(output_dir: str, table: biom.Table,
+def regress_kneighbors(output_dir: str, table: pd.DataFrame,
                        metadata: qiime2.Metadata, category: str,
                        test_size: float=0.2, step: float=0.05,
                        cv: int=5, random_state: int=None, n_jobs: int=1,
@@ -489,7 +488,7 @@ def regress_kneighbors(output_dir: str, table: biom.Table,
     _visualize(output_dir, estimator, cm, accuracy, importances, False)
 
 
-def maturity_index(output_dir: str, table: biom.Table,
+def maturity_index(output_dir: str, table: pd.DataFrame,
                    metadata: qiime2.Metadata, category: str, group_by: str,
                    control: str, estimator: str='RandomForestRegressor',
                    n_estimators: int=100, test_size: float=0.2,
@@ -516,7 +515,7 @@ def maturity_index(output_dir: str, table: biom.Table,
     estimator, param_dist = select_estimator(estimator, n_jobs, n_estimators)
 
     # split input data into control and treatment groups
-    table, metadata = _load_data(table, metadata, transpose=True)
+    table, metadata = _load_data(table, metadata, transpose=False)
     md_control = metadata[metadata[group_by] == control]
     table_control = table.ix[list(md_control.index.values)]
 
@@ -545,7 +544,7 @@ def maturity_index(output_dir: str, table: biom.Table,
                               accuracy, output_dir, maz_stats=maz_stats)
 
 
-def detect_outliers(table: biom.Table,
+def detect_outliers(table: pd.DataFrame,
                     metadata: qiime2.Metadata, subset_category: str=None,
                     subset_value: str=None, n_estimators: int=100,
                     contamination: float=0.05, random_state: int=None,
@@ -585,7 +584,7 @@ def detect_outliers(table: biom.Table,
     q2_sample_classifier or principal coordinates analysis to determine whether
     outliers classify as or cluster with another sample type.
     '''
-    features, sample_md = _load_data(table, metadata, transpose=True)
+    features, sample_md = _load_data(table, metadata, transpose=False)
 
     # if opting to train on a subset, choose subset that fits criteria
     if subset_category and subset_value:
@@ -610,7 +609,7 @@ def detect_outliers(table: biom.Table,
     return y_pred
 
 
-def predict_coordinates(table: biom.Table, metadata: qiime2.Metadata,
+def predict_coordinates(table: pd.DataFrame, metadata: qiime2.Metadata,
                         latitude: str='latitude', longitude: str='longitude',
                         estimator: str='RandomForestRegressor',
                         n_estimators: int=100, test_size: float=0.2,
@@ -628,7 +627,7 @@ def predict_coordinates(table: biom.Table, metadata: qiime2.Metadata,
     estimator, param_dist = select_estimator(estimator, n_jobs, n_estimators)
 
     # split input data into training and test sets
-    table, metadata = _load_data(table, metadata, transpose=True)
+    table, metadata = _load_data(table, metadata, transpose=False)
     X_train, X_test, y_train, y_test = _split_training_data(
         table, metadata, [latitude, longitude], test_size,
         random_state=random_state)
@@ -661,7 +660,7 @@ def predict_coordinates(table: biom.Table, metadata: qiime2.Metadata,
 
 
 # Need to figure out how to pickle/import estimators
-def predict_new_data(table: biom.Table, estimator: Pipeline):
+def predict_new_data(table: pd.DataFrame, estimator: Pipeline):
     '''Use trained estimator to predict values on unseen data.'''
     predictions = estimator.predict(table)
     return predictions
