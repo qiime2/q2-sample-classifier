@@ -28,9 +28,9 @@ from scipy.stats import randint
 import warnings
 
 from .utilities import (split_optimize_classify, _visualize, _load_data,
-                        tune_parameters, _maz_score, _visualize_maturity_index,
-                        _split_training_data)
-from .visuals import linear_regress
+                        _tune_parameters, _maz_score,
+                        _visualize_maturity_index, _split_training_data)
+from .visuals import _linear_regress
 
 
 ensemble_params = {"max_depth": [4, 8, 16, None],
@@ -141,7 +141,7 @@ def classify_adaboost(output_dir: str, table: biom.Table,
     # parameter tune base estimator
     if parameter_tuning:
         features, targets = _load_data(table, metadata, transpose=True)
-        base_estimator = tune_parameters(
+        base_estimator = _tune_parameters(
             features, targets[category], base_estimator, param_dist,
             n_jobs=n_jobs, cv=cv, random_state=random_state)
 
@@ -250,7 +250,7 @@ def regress_adaboost(output_dir: str, table: biom.Table,
     # parameter tune base estimator
     if parameter_tuning:
         features, targets = _load_data(table, metadata, transpose=True)
-        base_estimator = tune_parameters(
+        base_estimator = _tune_parameters(
             features, targets[category], base_estimator, param_dist,
             n_jobs=n_jobs, cv=cv, random_state=random_state)
 
@@ -634,7 +634,7 @@ def predict_coordinates(table: biom.Table, metadata: qiime2.Metadata,
         random_state=random_state)
 
     # train model and predict test data for each category
-    # *** would it be better to do this as a multilabel regression?
+    # *** would it be better to do this as a multioutput regression?
     # *** currently each dimension is predicted separately
     estimators = {}
     predictions = {}
@@ -650,7 +650,7 @@ def predict_coordinates(table: biom.Table, metadata: qiime2.Metadata,
 
         y_pred = estimator.predict(X_test.iloc[:, importances.index])
         predictions[category] = y_pred
-        pred = linear_regress(y_test[category], y_pred)
+        pred = _linear_regress(y_test[category], y_pred)
         prediction_regression = pd.concat(
             [prediction_regression, pred.rename(index={0: category})])
         estimators[category] = estimator

@@ -14,7 +14,7 @@ from os.path import join
 from warnings import filterwarnings
 from sklearn.exceptions import ConvergenceWarning
 from q2_sample_classifier.visuals import (
-    two_way_anova, pairwise_stats, linear_regress)
+    _two_way_anova, _pairwise_stats, _linear_regress)
 from q2_sample_classifier.classify import (
     classify_random_forest, classify_extra_trees, classify_adaboost,
     classify_gradient_boosting, regress_random_forest, regress_extra_trees,
@@ -33,20 +33,20 @@ filterwarnings("ignore", category=ConvergenceWarning)
 class VisualsTests(SampleClassifierTestPluginBase):
 
     def test_two_way_anova(self):
-        aov, mod_sum = two_way_anova(tab1, md, 'Value', 'Time', 'Group')
+        aov, mod_sum = _two_way_anova(tab1, md, 'Value', 'Time', 'Group')
         self.assertAlmostEqual(aov['PR(>F)']['Group'], 0.00013294988301061492)
         self.assertAlmostEqual(aov['PR(>F)']['Time'], 4.1672315658105502e-07)
         self.assertAlmostEqual(aov['PR(>F)']['Time:Group'], 0.0020603144625217)
 
     def test_pairwise_tests(self):
-        res = pairwise_stats(tab1, md, 'Value', 'Time', 'Group')
+        res = _pairwise_stats(tab1, md, 'Value', 'Time', 'Group')
         self.assertAlmostEqual(
             res['q-value'][(1, 'a')][(1, 'b')], 0.066766544811987918)
         self.assertAlmostEqual(
             res['q-value'][(1, 'a')][(2, 'b')], 0.00039505928148818022)
 
     def test_linear_regress(self):
-        res = linear_regress(md['Value'], md['Time'])
+        res = _linear_regress(md['Value'], md['Time'])
         self.assertAlmostEqual(res.iloc[0]['MSE'], 1.9413916666666664)
         self.assertAlmostEqual(res.iloc[0]['R'], 0.86414956372460128)
         self.assertAlmostEqual(res.iloc[0]['P-val'], 0.00028880275858705694)

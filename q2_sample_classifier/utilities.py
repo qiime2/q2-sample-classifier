@@ -20,10 +20,10 @@ from os.path import join
 import matplotlib.pyplot as plt
 import pkg_resources
 
-from .visuals import (linear_regress, plot_confusion_matrix, plot_RFE,
-                      pairwise_stats, two_way_anova, clustermap_from_dataframe,
-                      boxplot_from_dataframe, lmplot_from_dataframe,
-                      regplot_from_dataframe)
+from .visuals import (_linear_regress, _plot_confusion_matrix, _plot_RFE,
+                      _pairwise_stats, _two_way_anova, _regplot_from_dataframe,
+                      _boxplot_from_dataframe, _lmplot_from_dataframe,
+                      _clustermap_from_dataframe)
 
 
 TEMPLATES = pkg_resources.resource_filename('q2_sample_classifier', 'assets')
@@ -32,7 +32,7 @@ TEMPLATES = pkg_resources.resource_filename('q2_sample_classifier', 'assets')
 # adapted from https://github.com/biocore/biom-format/issues/622
 # more straightforward would be to import feature tables as pd.DataFrame but
 # I have yet to get this to work! So using this as a temporary patch.
-def biom_to_pandas(table):
+def _biom_to_pandas(table):
     """biom.Table->pandas.DataFrame"""
     m = table.matrix_data
     data = [pd.SparseSeries(m[i].toarray().ravel())
@@ -59,7 +59,7 @@ def _load_data(features_fp, targets_fp, transpose=True):
         feature_data = feature_data.transpose()
 
     # Load metadata, attempt to convert to numeric
-    targets = metadata_to_df(targets_fp)
+    targets = _metadata_to_df(targets_fp)
 
     # filter features and targets so samples match
     merged = feature_data.join(targets, how='inner')
@@ -69,14 +69,14 @@ def _load_data(features_fp, targets_fp, transpose=True):
     return feature_data, targets
 
 
-def metadata_to_df(metadata):
+def _metadata_to_df(metadata):
     # Load metadata, attempt to convert to numeric
     metadata = metadata.to_dataframe()
     metadata = metadata.apply(lambda x: pd.to_numeric(x, errors='ignore'))
     return metadata
 
 
-def extract_important_features(table, top, ascending=False):
+def _extract_important_features(table, top, ascending=False):
     '''Find top features, match names to indices, sort.
     table: pandas.DataFrame
         Source data table containing samples x features.
@@ -147,9 +147,9 @@ def _split_training_data(feature_data, targets, category, test_size=0.2,
     return X_train, X_test, y_train, y_test
 
 
-def rfecv_feature_selection(feature_data, targets, estimator,
-                            cv=5, step=1, scoring=None,
-                            random_state=None, n_jobs=4):
+def _rfecv_feature_selection(feature_data, targets, estimator,
+                             cv=5, step=1, scoring=None,
+                             random_state=None, n_jobs=4):
     '''Optimize feature depth by testing model accuracy at
     multiple feature depths with cross-validated recursive
     feature elimination.
@@ -191,12 +191,12 @@ def rfecv_feature_selection(feature_data, targets, estimator,
 
     # Describe top features
     n_opt = rfecv.n_features_
-    importance = extract_important_features(
+    importance = _extract_important_features(
         feature_data, rfecv.ranking_, ascending=True)[:n_opt]
     top_feature_data = feature_data.iloc[:, importance.index]
 
     # Plot RFE accuracy
-    rfep = plot_RFE(rfecv)
+    rfep = _plot_RFE(rfecv)
 
     return rfecv, importance, top_feature_data, rfep
 
@@ -225,7 +225,7 @@ def split_optimize_classify(features, targets, category, estimator,
 
     # optimize training feature count
     if optimize_feature_selection:
-        rfecv, importance, top_feature_data, rfep = rfecv_feature_selection(
+        rfecv, importance, top_feature_data, rfep = _rfecv_feature_selection(
             X_train, y_train, estimator=estimator, cv=cv, step=step,
             random_state=random_state, n_jobs=n_jobs)
         if output_dir:
@@ -239,20 +239,20 @@ def split_optimize_classify(features, targets, category, estimator,
     # optimize tuning parameters on your training set
     if parameter_tuning:
         # tune parameters
-        estimator = tune_parameters(
+        estimator = _tune_parameters(
             X_train, y_train, estimator, param_dist, n_iter_search=20,
             n_jobs=n_jobs, cv=cv, random_state=random_state)
 
     # train classifier and predict test set classes
-    estimator, accuracy, y_pred = fit_and_predict(
+    estimator, accuracy, y_pred = _fit_and_predict(
             X_train, X_test, y_train, y_test, estimator, scoring=scoring)
 
     if classification:
-        predictions, predict_plot = plot_confusion_matrix(
+        predictions, predict_plot = _plot_confusion_matrix(
             y_test, y_pred, sorted(estimator.classes_))
     else:
-        predictions = linear_regress(y_test, y_pred)
-        predict_plot = regplot_from_dataframe(y_test, y_pred)
+        predictions = _linear_regress(y_test, y_pred)
+        predict_plot = _regplot_from_dataframe(y_test, y_pred)
     if output_dir is not None:
         predict_plot.get_figure().savefig(
             join(output_dir, 'predictions.png'), bbox_inches='tight')
@@ -263,11 +263,11 @@ def split_optimize_classify(features, targets, category, estimator,
     # feature_importances_ or coef_ to report feature importance/weights
     if calc_feature_importance:
         try:
-            importances = extract_important_features(
+            importances = _extract_important_features(
                 X_train, estimator.feature_importances_)
         # is there a better way to determine whether estimator has coef_ ?
         except AttributeError:
-            importances = extract_important_features(
+            importances = _extract_important_features(
                 X_train, estimator.coef_)
     # otherwise, if optimizing feature selection, just return ranking from RFE
     elif optimize_feature_selection:
@@ -330,19 +330,21 @@ def _visualize_maturity_index(table, metadata, group_by, category,
     maz_md = metadata[[group_by, category, predicted_category, maturity, maz]]
     maz_md.to_csv(join(output_dir, 'maz_scores.tsv'), sep='\t')
     if maz_stats:
-        maz_aov = two_way_anova(table, metadata, maz, group_by, category)[0]
+        maz_aov = _two_way_anova(table, metadata, maz, group_by, category)[0]
         maz_aov.to_csv(join(output_dir, 'maz_aov.tsv'), sep='\t')
-        maz_pairwise = pairwise_stats(table, metadata, maz, group_by, category)
+        maz_pairwise = _pairwise_stats(
+            table, metadata, maz, group_by, category)
         maz_pairwise.to_csv(join(output_dir, 'maz_pairwise.tsv'), sep='\t')
 
     # plot control/treatment predicted vs. actual values
-    g = lmplot_from_dataframe(metadata, category, predicted_category, group_by)
+    g = _lmplot_from_dataframe(
+        metadata, category, predicted_category, group_by)
     g.savefig(join(output_dir, 'maz_predictions.png'), bbox_inches='tight')
     g.savefig(join(output_dir, 'maz_predictions.pdf'), bbox_inches='tight')
     plt.close('all')
 
     # plot barplots of MAZ score vs. category (e.g., age)
-    g = boxplot_from_dataframe(metadata, category, maz, group_by)
+    g = _boxplot_from_dataframe(metadata, category, maz, group_by)
     g.get_figure().savefig(
         join(output_dir, 'maz_boxplots.png'), bbox_inches='tight')
     g.get_figure().savefig(
@@ -351,7 +353,7 @@ def _visualize_maturity_index(table, metadata, group_by, category,
 
     # plot heatmap of category (e.g., age) vs. abundance of top features
     top = table[list(importances.feature)]
-    g = clustermap_from_dataframe(top, metadata, group_by, category)
+    g = _clustermap_from_dataframe(top, metadata, group_by, category)
     g.savefig(join(output_dir, 'maz_heatmaps.png'), bbox_inches='tight')
     g.savefig(join(output_dir, 'maz_heatmaps.pdf'), bbox_inches='tight')
 
@@ -369,8 +371,8 @@ def _visualize_maturity_index(table, metadata, group_by, category,
         'maturity_index': True})
 
 
-def tune_parameters(X_train, y_train, estimator, param_dist, n_iter_search=20,
-                    n_jobs=-1, cv=None, random_state=None):
+def _tune_parameters(X_train, y_train, estimator, param_dist, n_iter_search=20,
+                     n_jobs=-1, cv=None, random_state=None):
     # run randomized search
     random_search = RandomizedSearchCV(
         estimator, param_distributions=param_dist, n_iter=n_iter_search)
@@ -378,8 +380,8 @@ def tune_parameters(X_train, y_train, estimator, param_dist, n_iter_search=20,
     return random_search.best_estimator_
 
 
-def fit_and_predict(X_train, X_test, y_train, y_test, estimator,
-                    scoring=accuracy_score):
+def _fit_and_predict(X_train, X_test, y_train, y_test, estimator,
+                     scoring=accuracy_score):
     '''train and test estimators.
     scoring: str
         use accuracy_score for classification, mean_squared_error for

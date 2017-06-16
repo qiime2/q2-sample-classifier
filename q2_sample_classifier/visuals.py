@@ -22,8 +22,8 @@ from itertools import combinations
 from statsmodels.sandbox.stats.multicomp import multipletests
 
 
-def regplot_from_dataframe(x, y, plot_style="whitegrid", arb=True,
-                           color="grey"):
+def _regplot_from_dataframe(x, y, plot_style="whitegrid", arb=True,
+                            color="grey"):
     '''Seaborn regplot with true 1:1 ratio set by arb (bool).'''
     sns.set_style(plot_style)
     reg = sns.regplot(x, y, color=color)
@@ -37,8 +37,8 @@ def regplot_from_dataframe(x, y, plot_style="whitegrid", arb=True,
     return reg
 
 
-def lmplot_from_dataframe(metadata, category, predicted_category, group_by,
-                          plot_style="whitegrid"):
+def _lmplot_from_dataframe(metadata, category, predicted_category, group_by,
+                           plot_style="whitegrid"):
     sns.set_style(plot_style)
     g = sns.lmplot(category, predicted_category, data=metadata,
                       hue=group_by, fit_reg=False,
@@ -47,8 +47,8 @@ def lmplot_from_dataframe(metadata, category, predicted_category, group_by,
     return g
 
 
-def boxplot_from_dataframe(metadata, category, dep, group_by,
-                           plot_style="whitegrid"):
+def _boxplot_from_dataframe(metadata, category, dep, group_by,
+                            plot_style="whitegrid"):
     sns.set_style(plot_style)
     ax = sns.boxplot(x=category, y=dep, hue=group_by, data=metadata)
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
@@ -56,9 +56,9 @@ def boxplot_from_dataframe(metadata, category, dep, group_by,
     return ax
 
 
-def clustermap_from_dataframe(table, metadata, group_by, category,
-                              metric='correlation', method='weighted',
-                              plot_style="whitegrid"):
+def _clustermap_from_dataframe(table, metadata, group_by, category,
+                               metric='correlation', method='weighted',
+                               plot_style="whitegrid"):
     sns.set_style(plot_style)
     table = metadata[[group_by, category]].merge(
         table, left_index=True, right_index=True)
@@ -79,7 +79,7 @@ def _filter_metadata_to_table_ids(table, metadata, dep, time, group_by):
     return table
 
 
-def two_way_anova(table, metadata, dep, time, group_by):
+def _two_way_anova(table, metadata, dep, time, group_by):
     '''pd.DataFrame -> pd.DataFrame of AOV and OLS summary'''
     # Prep data
     table = _filter_metadata_to_table_ids(table, metadata, dep, time, group_by)
@@ -97,7 +97,7 @@ def two_way_anova(table, metadata, dep, time, group_by):
     return aov_table, mod.summary2()
 
 
-def pairwise_stats(table, metadata, dep, time, group_by):
+def _pairwise_stats(table, metadata, dep, time, group_by):
     '''pd.DataFrame -> pd.DataFrame
     Perform pairwise t-tests on all groups in group_by and time categories.
     '''
@@ -130,7 +130,7 @@ def pairwise_stats(table, metadata, dep, time, group_by):
     return result
 
 
-def linear_regress(actual, pred):
+def _linear_regress(actual, pred):
     '''Calculate linear regression on predicted versus expected values.
     actual: pandas.DataFrame
         Actual y-values for test samples.
@@ -144,7 +144,7 @@ def linear_regress(actual, pred):
                                  "Intercept"])
 
 
-def plot_confusion_matrix(y_test, y_pred, classes, normalize=True):
+def _plot_confusion_matrix(y_test, y_pred, classes, normalize=True):
     cm = confusion_matrix(y_test, y_pred)
     # normalize
     if normalize:
@@ -160,7 +160,7 @@ def plot_confusion_matrix(y_test, y_pred, classes, normalize=True):
     return pd.DataFrame(cm, index=classes, columns=classes), confusion
 
 
-def plot_RFE(rfecv):
+def _plot_RFE(rfecv):
     # If using fractional step, step = integer of fraction * n_features
     if rfecv.step < 1:
         rfecv.step = int(rfecv.step * len(rfecv.ranking_))
