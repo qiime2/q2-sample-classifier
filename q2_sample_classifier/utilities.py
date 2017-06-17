@@ -194,6 +194,49 @@ def split_optimize_classify(features, targets, category, estimator,
                             calc_feature_importance=False, load_data=True,
                             scoring=accuracy_score, classification=True,
                             stratify=True):
+    # Load, stratify, and split training/test data
+    X_train, X_test, y_train, y_test = _prepare_training_data(
+        features, targets, category, test_size, random_state,
+        load_data=load_data, transpose=transpose, stratify=stratify)
+
+    # optimize training feature count
+    if optimize_feature_selection:
+        X_train, X_test, importance = _optimize_feature_selection(
+            output_dir, X_train, X_test, y_train, estimator, cv, step,
+            random_state, n_jobs)
+
+    # optimize tuning parameters on your training set
+    if parameter_tuning:
+        # tune parameters
+        estimator = _tune_parameters(
+            X_train, y_train, estimator, param_dist, n_iter_search=20,
+            n_jobs=n_jobs, cv=cv, random_state=random_state)
+
+    # train classifier and predict test set classes
+    estimator, accuracy, y_pred = _fit_and_predict(
+            X_train, X_test, y_train, y_test, estimator, scoring=scoring)
+
+    # Predict test set values and plot data, as appropriate for estimator type
+    predictions, predict_plot = _predict_and_plot(
+        output_dir, y_test, y_pred, estimator, accuracy,
+        classification=classification)
+
+    # calculate feature importances, if appropriate for the estimator
+    if calc_feature_importance:
+        importances = _calculate_feature_importances(X_train, estimator)
+    # otherwise, if optimizing feature selection, just return ranking from RFE
+    elif optimize_feature_selection:
+        importances = importance
+    # otherwise, we have no weights nor selection, so features==n_features
+    else:
+        importances = None
+
+    return estimator, predictions, accuracy, importances
+
+
+def _prepare_training_data(
+    features, targets, category, test_size, random_state,
+    load_data=True, transpose=False, stratify=True):
     # load data
     if load_data:
         features, targets = _load_data(features, targets, transpose=transpose)
@@ -208,33 +251,43 @@ def split_optimize_classify(features, targets, category, estimator,
         features, targets, category, test_size, strata,
         random_state)
 
-    # optimize training feature count
-    if optimize_feature_selection:
-        rfecv, importance, top_feature_data, rfep = _rfecv_feature_selection(
-            X_train, y_train, estimator=estimator, cv=cv, step=step,
-            random_state=random_state, n_jobs=n_jobs)
-        if output_dir:
-            rfep.savefig(join(output_dir, 'rfe_plot.png'))
-            rfep.savefig(join(output_dir, 'rfe_plot.pdf'))
-        plt.close('all')
+    return X_train, X_test, y_train, y_test
 
-        X_train = X_train.loc[:, importance["feature"]]
-        X_test = X_test.loc[:, importance["feature"]]
 
-    # optimize tuning parameters on your training set
-    if parameter_tuning:
-        # tune parameters
-        estimator = _tune_parameters(
-            X_train, y_train, estimator, param_dist, n_iter_search=20,
-            n_jobs=n_jobs, cv=cv, random_state=random_state)
+def _optimize_feature_selection(output_dir, X_train, X_test, y_train,
+                                estimator, cv, step, random_state, n_jobs):
+    rfecv, importance, top_feature_data, rfep = _rfecv_feature_selection(
+        X_train, y_train, estimator=estimator, cv=cv, step=step,
+        random_state=random_state, n_jobs=n_jobs)
+    if output_dir:
+        rfep.savefig(join(output_dir, 'rfe_plot.png'))
+        rfep.savefig(join(output_dir, 'rfe_plot.pdf'))
+    plt.close('all')
 
-    # train classifier and predict test set classes
-    estimator, accuracy, y_pred = _fit_and_predict(
-            X_train, X_test, y_train, y_test, estimator, scoring=scoring)
+    X_train = X_train.loc[:, importance["feature"]]
+    X_test = X_test.loc[:, importance["feature"]]
 
+    return X_train, X_test, importance
+
+
+def _calculate_feature_importances(X_train, estimator):
+    # only set calc_feature_importance=True if estimator has attributes
+    # feature_importances_ or coef_ to report feature importance/weights
+    try:
+        importances = _extract_important_features(
+            X_train, estimator.feature_importances_)
+    # is there a better way to determine whether estimator has coef_ ?
+    except AttributeError:
+        importances = _extract_important_features(
+            X_train, estimator.coef_)
+    return importances
+
+
+def _predict_and_plot(output_dir, y_test, y_pred, estimator, accuracy,
+                      classification=True):
     if classification:
         predictions, predict_plot = _plot_confusion_matrix(
-            y_test, y_pred, sorted(estimator.classes_))
+            y_test, y_pred, sorted(estimator.classes_), accuracy)
     else:
         predictions = _linear_regress(y_test, y_pred)
         predict_plot = _regplot_from_dataframe(y_test, y_pred)
@@ -243,25 +296,7 @@ def split_optimize_classify(features, targets, category, estimator,
             join(output_dir, 'predictions.png'), bbox_inches='tight')
         predict_plot.get_figure().savefig(
             join(output_dir, 'predictions.pdf'), bbox_inches='tight')
-
-    # only set calc_feature_importance=True if estimator has attributes
-    # feature_importances_ or coef_ to report feature importance/weights
-    if calc_feature_importance:
-        try:
-            importances = _extract_important_features(
-                X_train, estimator.feature_importances_)
-        # is there a better way to determine whether estimator has coef_ ?
-        except AttributeError:
-            importances = _extract_important_features(
-                X_train, estimator.coef_)
-    # otherwise, if optimizing feature selection, just return ranking from RFE
-    elif optimize_feature_selection:
-        importances = importance
-    # otherwise, we have no weights nor selection, so features==n_features
-    else:
-        importances = None
-
-    return estimator, predictions, accuracy, importances
+    return predictions, predict_plot
 
 
 def _visualize(output_dir, estimator, cm, accuracy, importances=None,
@@ -271,9 +306,10 @@ def _visualize(output_dir, estimator, cm, accuracy, importances=None,
     # This will be possible once qiime2 support pipeline actions
 
     pd.set_option('display.max_colwidth', -1)
-    result = pd.Series([str(estimator), accuracy],
-                       index=['Parameters', 'Accuracy score'],
-                       name='Prediction results')
+
+    # summarize model accuracy and params
+    result = estimator.get_params()
+    result = pd.Series(estimator.get_params(), name='Parameter setting')
 
     result = result.to_frame().to_html(classes=(
         "table table-striped table-hover")).replace('border="1"', 'border="0"')

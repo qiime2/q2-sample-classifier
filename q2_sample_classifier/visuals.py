@@ -143,11 +143,12 @@ def _linear_regress(actual, pred):
     slope, intercept, r_value, p_value, std_err = linregress(actual, pred)
     mse = mean_squared_error(actual, pred)
     return pd.DataFrame([(mse, r_value, p_value, std_err, slope, intercept)],
-                        columns=["MSE", "R", "P-val", "Std Error", "Slope",
-                                 "Intercept"])
+                        columns=["Mean squared error", "R", "P-value",
+                                 "Std Error", "Slope", "Intercept"],
+                        index=['Score'])
 
 
-def _plot_confusion_matrix(y_test, y_pred, classes, normalize=True):
+def _plot_confusion_matrix(y_test, y_pred, classes, accuracy, normalize=True):
     cm = confusion_matrix(y_test, y_pred)
     # normalize
     if normalize:
@@ -157,10 +158,18 @@ def _plot_confusion_matrix(y_test, y_pred, classes, normalize=True):
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=90)
-    plt.yticks(tick_marks, sorted(classes, reverse=True), rotation=0)
+    confusion.set_xticklabels(classes, rotation=90, ha='center')
+    confusion.set_yticklabels(
+        sorted(classes, reverse=True), rotation=0, ha='center')
 
-    return pd.DataFrame(cm, index=classes, columns=classes), confusion
+    # generate confusion matrix as pd.DataFrame for viewing
+    predictions = pd.DataFrame(cm, index=classes, columns=classes)
+    # add empty row/column to show overall accuracy in bottom right cell
+    predictions["Overall Accuracy"] = ""
+    predictions.loc["Overall Accuracy"] = ""
+    predictions.loc["Overall Accuracy"]["Overall Accuracy"] = accuracy
+
+    return predictions, confusion
 
 
 def _plot_RFE(rfecv):
