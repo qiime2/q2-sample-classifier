@@ -32,306 +32,55 @@ from .utilities import (split_optimize_classify, _visualize, _load_data,
 from .visuals import _linear_regress
 
 
-ensemble_params = {"max_depth": [4, 8, 16, None],
-                   "max_features": [None, 'sqrt', 'log2', 0.1],
-                   "min_samples_split": [0.001, 0.01, 0.1],
-                   "min_weight_fraction_leaf": [0.0001, 0.001, 0.01],
-                   "bootstrap": [True, False]}
-
-
-linear_svm_params = {"C": [1, 0.5, 0.1, 0.9, 0.8],
-                     # should probably include penalty in grid search, but:
-                     # Unsupported set of arguments: The combination of
-                     # penalty='l1' and loss='hinge' is not supported
-                     # "penalty": ["l1", "l2"],
-                     "loss": ["hinge", "squared_hinge"],
-                     "tol": [0.00001, 0.0001, 0.001]
-                     # should probably include this in grid search, as
-                     # dual=False is preferred when samples>features. However:
-                     # Unsupported set of arguments: The combination of
-                     # penalty='l2' and loss='hinge' are not supported when
-                     # dual=False
-                     # "dual": [True, False]
-                     }
-
-
-svm_params = {"C": [1, 0.5, 0.1, 0.9, 0.8],
-              "tol": [0.00001, 0.0001, 0.001, 0.01],
-              "shrinking": [True, False]}
-
-
-neighbors_params = {
-    "n_neighbors": randint(2, 15),
-    "weights": ['uniform', 'distance'],
-    "leaf_size": randint(15, 100)
+parameters = {
+    'ensemble': {"max_depth": [4, 8, 16, None],
+                 "max_features": [None, 'sqrt', 'log2', 0.1],
+                 "min_samples_split": [0.001, 0.01, 0.1],
+                 "min_weight_fraction_leaf": [0.0001, 0.001, 0.01]},
+    'bootstrap': {"bootstrap": [True, False]},
+    'criterion': {"criterion": ["gini", "entropy"]},
+    'linear_svm': {"C": [1, 0.5, 0.1, 0.9, 0.8],
+                   # should probably include penalty in grid search, but:
+                   # Unsupported set of arguments: The combination of
+                   # penalty='l1' and loss='hinge' is not supported
+                   # "penalty": ["l1", "l2"],
+                   "loss": ["hinge", "squared_hinge"],
+                   "tol": [0.00001, 0.0001, 0.001]
+                   # should probably include this in grid search, as
+                   # dual=False is preferred when samples>features. However:
+                   # Unsupported set of arguments: The combination of
+                   # penalty='l2' and loss='hinge' are not supported when
+                   # dual=False
+                   # "dual": [True, False]
+                   },
+    'svm': {"C": [1, 0.5, 0.1, 0.9, 0.8],
+            "tol": [0.00001, 0.0001, 0.001, 0.01],
+            "shrinking": [True, False]},
+    'kneighbors': {"n_neighbors": randint(2, 15),
+                   "weights": ['uniform', 'distance'],
+                   "leaf_size": randint(15, 100)},
+    'linear': {"alpha": [0.0001, 0.01, 1.0, 10.0, 1000.0],
+               "tol": [0.00001, 0.0001, 0.001, 0.01]}
 }
 
 
-linear_params = {
-    "alpha": [0.0001, 0.01, 1.0, 10.0, 1000.0],
-    "tol": [0.00001, 0.0001, 0.001, 0.01]
-}
-
-
-def classify_random_forest(output_dir: str, table: pd.DataFrame,
-                           metadata: qiime2.Metadata, category: str,
-                           test_size: float=0.2, step: float=0.05,
-                           cv: int=5, random_state: int=None, n_jobs: int=1,
-                           n_estimators: int=100,
-                           optimize_feature_selection: bool=False,
-                           parameter_tuning: bool=False):
-
-    # specify parameters and distributions to sample from for parameter tuning
-    param_dist = {**ensemble_params, "criterion": ["gini", "entropy"]}
-
-    estimator = RandomForestClassifier(
-        n_jobs=n_jobs, n_estimators=n_estimators)
-
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, category, estimator, output_dir,
-        test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
-        parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=True)
-
-    _visualize(output_dir, estimator, cm, accuracy, importances,
-               optimize_feature_selection)
-
-
-def classify_extra_trees(output_dir: str, table: pd.DataFrame,
-                         metadata: qiime2.Metadata, category: str,
-                         test_size: float=0.2, step: float=0.05,
-                         cv: int=5, random_state: int=None, n_jobs: int=1,
-                         n_estimators: int=100,
-                         optimize_feature_selection: bool=False,
-                         parameter_tuning: bool=False):
-
-    # specify parameters and distributions to sample from for parameter tuning
-    param_dist = {**ensemble_params, "criterion": ["gini", "entropy"]}
-
-    estimator = ExtraTreesClassifier(
-        n_jobs=n_jobs, n_estimators=n_estimators)
-
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, category, estimator, output_dir,
-        test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
-        parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=True)
-
-    _visualize(output_dir, estimator, cm, accuracy, importances,
-               optimize_feature_selection)
-
-
-def classify_adaboost(output_dir: str, table: pd.DataFrame,
-                      metadata: qiime2.Metadata, category: str,
-                      test_size: float=0.2, step: float=0.05,
-                      cv: int=5, random_state: int=None, n_jobs: int=1,
-                      n_estimators: int=100,
-                      optimize_feature_selection: bool=False,
-                      parameter_tuning: bool=False):
-
-    base_estimator = DecisionTreeClassifier()
-
-    # specify parameters and distributions to sample from for parameter tuning
-    param_dist = {k: ensemble_params[k] for k in ensemble_params.keys()
-                  if k != "bootstrap"}
-
-    # parameter tune base estimator
-    if parameter_tuning:
-        features, targets = _load_data(table, metadata, transpose=False)
-        base_estimator = _tune_parameters(
-            features, targets[category], base_estimator, param_dist,
-            n_jobs=n_jobs, cv=cv, random_state=random_state)
-
-    estimator = AdaBoostClassifier(base_estimator, n_estimators)
-
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, category, estimator, output_dir,
-        test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
-        parameter_tuning=False, param_dist=param_dist,
-        calc_feature_importance=True)
-
-    _visualize(output_dir, estimator, cm, accuracy, importances,
-               optimize_feature_selection)
-
-
-def classify_gradient_boosting(output_dir: str, table: pd.DataFrame,
-                               metadata: qiime2.Metadata, category: str,
-                               test_size: float=0.2, step: float=0.05,
-                               cv: int=5, random_state: int=None,
-                               n_jobs: int=1, n_estimators: int=100,
-                               optimize_feature_selection: bool=False,
-                               parameter_tuning: bool=False):
-
-    # specify parameters and distributions to sample from for parameter tuning
-    param_dist = {k: ensemble_params[k] for k in ensemble_params.keys()
-                  if k != "bootstrap"}
-
-    estimator = GradientBoostingClassifier(n_estimators=n_estimators)
-
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, category, estimator, output_dir,
-        test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
-        parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=True)
-
-    _visualize(output_dir, estimator, cm, accuracy, importances,
-               optimize_feature_selection)
-
-
-def regress_random_forest(output_dir: str, table: pd.DataFrame,
-                          metadata: qiime2.Metadata, category: str,
-                          test_size: float=0.2, step: float=0.05,
-                          cv: int=5, random_state: int=None, n_jobs: int=1,
-                          n_estimators: int=100, stratify: str=False,
-                          optimize_feature_selection: bool=False,
-                          parameter_tuning: bool=False):
-
-    # specify parameters and distributions to sample from for parameter tuning
-    param_dist = ensemble_params
-
-    estimator = RandomForestRegressor(n_jobs=n_jobs, n_estimators=n_estimators)
-
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, category, estimator, output_dir,
-        test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
-        parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=True, scoring=mean_squared_error,
-        stratify=stratify, classification=False)
-
-    _visualize(output_dir, estimator, cm, accuracy, importances,
-               optimize_feature_selection)
-
-
-def regress_extra_trees(output_dir: str, table: pd.DataFrame,
-                        metadata: qiime2.Metadata, category: str,
-                        test_size: float=0.2, step: float=0.05,
-                        cv: int=5, random_state: int=None, n_jobs: int=1,
-                        n_estimators: int=100, stratify: str=False,
-                        optimize_feature_selection: bool=False,
-                        parameter_tuning: bool=False):
-
-    # specify parameters and distributions to sample from for parameter tuning
-    param_dist = ensemble_params
-
-    estimator = ExtraTreesRegressor(n_jobs=n_jobs, n_estimators=n_estimators)
-
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, category, estimator, output_dir,
-        test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
-        parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=True, scoring=mean_squared_error,
-        stratify=stratify, classification=False)
-
-    _visualize(output_dir, estimator, cm, accuracy, importances,
-               optimize_feature_selection)
-
-
-def regress_adaboost(output_dir: str, table: pd.DataFrame,
+def classify_samples(output_dir: str, table: pd.DataFrame,
                      metadata: qiime2.Metadata, category: str,
                      test_size: float=0.2, step: float=0.05,
                      cv: int=5, random_state: int=None, n_jobs: int=1,
-                     n_estimators: int=100, stratify: str=False,
+                     n_estimators: int=100,
+                     estimator: str='RandomForestClassifier',
                      optimize_feature_selection: bool=False,
                      parameter_tuning: bool=False):
 
-    base_estimator = DecisionTreeRegressor()
+    # disable feature selection for unsupported estimators
+    optimize_feature_selection, calc_feature_importance = \
+        _disable_feature_selection(estimator, optimize_feature_selection)
 
     # specify parameters and distributions to sample from for parameter tuning
-    param_dist = {k: ensemble_params[k] for k in ensemble_params.keys()
-                  if k != "bootstrap"}
-
-    # parameter tune base estimator
-    if parameter_tuning:
-        features, targets = _load_data(table, metadata, transpose=False)
-        base_estimator = _tune_parameters(
-            features, targets[category], base_estimator, param_dist,
-            n_jobs=n_jobs, cv=cv, random_state=random_state)
-
-    estimator = AdaBoostRegressor(base_estimator, n_estimators)
-
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, category, estimator, output_dir,
-        test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
-        parameter_tuning=False, param_dist=param_dist,
-        calc_feature_importance=True, scoring=mean_squared_error,
-        stratify=stratify, classification=False)
-
-    _visualize(output_dir, estimator, cm, accuracy, importances,
-               optimize_feature_selection)
-
-
-def regress_gradient_boosting(output_dir: str, table: pd.DataFrame,
-                              metadata: qiime2.Metadata, category: str,
-                              test_size: float=0.2, step: float=0.05,
-                              cv: int=5, random_state: int=None,
-                              n_jobs: int=1, n_estimators: int=100,
-                              stratify: str=False,
-                              optimize_feature_selection: bool=False,
-                              parameter_tuning: bool=False):
-
-    # specify parameters and distributions to sample from for parameter tuning
-    param_dist = {k: ensemble_params[k] for k in ensemble_params.keys()
-                  if k != "bootstrap"}
-
-    estimator = GradientBoostingRegressor(n_estimators=n_estimators)
-
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, category, estimator, output_dir,
-        test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
-        parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=True, scoring=mean_squared_error,
-        stratify=stratify, classification=False)
-
-    _visualize(output_dir, estimator, cm, accuracy, importances,
-               optimize_feature_selection)
-
-
-def classify_linearSVC(output_dir: str, table: pd.DataFrame,
-                       metadata: qiime2.Metadata, category: str,
-                       test_size: float=0.2, step: float=0.05,
-                       cv: int=5, random_state: int=None, n_jobs: int=1,
-                       parameter_tuning: bool=False,
-                       optimize_feature_selection: bool=False):
-
-    # specify parameters and distributions to sample from for parameter tuning
-    param_dist = linear_svm_params
-
-    estimator = LinearSVC()
-
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, category, estimator, output_dir,
-        test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
-        parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=True)
-
-    _visualize(output_dir, estimator, cm, accuracy, importances,
-               optimize_feature_selection)
-
-
-def classify_SVC(output_dir: str, table: pd.DataFrame,
-                 metadata: qiime2.Metadata, category: str,
-                 test_size: float=0.2, step: float=0.05,
-                 cv: int=5, random_state: int=None, n_jobs: int=1,
-                 parameter_tuning: bool=False,
-                 optimize_feature_selection: bool=False, kernel: str='rbf'):
-
-    # specify parameters and distributions to sample from for parameter tuning
-    param_dist = svm_params
-
-    estimator = SVC(kernel=kernel)
-
-    # linear SVC returns feature weights as coef_
-    calc_feature_importance, optimize_feature_selection = svm_set(
-        kernel, optimize_feature_selection)
+    estimator, param_dist, parameter_tuning = _set_parameters_and_estimator(
+        estimator, table, metadata, category, n_estimators, n_jobs, cv,
+        random_state, parameter_tuning, classification=True)
 
     estimator, cm, accuracy, importances = split_optimize_classify(
         table, metadata, category, estimator, output_dir,
@@ -344,21 +93,23 @@ def classify_SVC(output_dir: str, table: pd.DataFrame,
                optimize_feature_selection)
 
 
-def regress_SVR(output_dir: str, table: pd.DataFrame,
-                metadata: qiime2.Metadata, category: str,
-                test_size: float=0.2, step: float=0.05,
-                cv: int=5, random_state: int=None, n_jobs: int=1,
-                stratify: str=False, parameter_tuning: bool=False,
-                optimize_feature_selection: bool=False, kernel: str='rbf'):
+def regress_samples(output_dir: str, table: pd.DataFrame,
+                    metadata: qiime2.Metadata, category: str,
+                    test_size: float=0.2, step: float=0.05,
+                    cv: int=5, random_state: int=None, n_jobs: int=1,
+                    n_estimators: int=100,
+                    estimator: str='RandomForestRegressor',
+                    optimize_feature_selection: bool=False,
+                    stratify: str=False, parameter_tuning: bool=False):
+
+    # disable feature selection for unsupported estimators
+    optimize_feature_selection, calc_feature_importance = \
+        _disable_feature_selection(estimator, optimize_feature_selection)
 
     # specify parameters and distributions to sample from for parameter tuning
-    param_dist = {**svm_params, 'epsilon': [0.0, 0.1]}
-
-    estimator = SVR(kernel=kernel)
-
-    # linear SVR returns feature weights as coef_ , non-linear does not
-    calc_feature_importance, optimize_feature_selection = svm_set(
-        kernel, optimize_feature_selection)
+    estimator, param_dist, parameter_tuning = _set_parameters_and_estimator(
+        estimator, table, metadata, category, n_estimators, n_jobs, cv,
+        random_state, parameter_tuning, classification=True)
 
     estimator, cm, accuracy, importances = split_optimize_classify(
         table, metadata, category, estimator, output_dir,
@@ -370,122 +121,6 @@ def regress_SVR(output_dir: str, table: pd.DataFrame,
 
     _visualize(output_dir, estimator, cm, accuracy, importances,
                optimize_feature_selection)
-
-
-def regress_ridge(output_dir: str, table: pd.DataFrame,
-                  metadata: qiime2.Metadata, category: str,
-                  test_size: float=0.2, step: float=0.05,
-                  cv: int=5, random_state: int=None, n_jobs: int=1,
-                  stratify: str=False, parameter_tuning: bool=False,
-                  optimize_feature_selection: bool=False, solver: str='auto'):
-
-    # specify parameters and distributions to sample from for parameter tuning
-    param_dist = linear_params
-
-    estimator = Ridge(solver=solver)
-
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, category, estimator, output_dir,
-        test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
-        parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=True, scoring=mean_squared_error,
-        stratify=stratify, classification=False)
-
-    _visualize(output_dir, estimator, cm, accuracy, importances,
-               optimize_feature_selection)
-
-
-def regress_lasso(output_dir: str, table: pd.DataFrame,
-                  metadata: qiime2.Metadata, category: str,
-                  test_size: float=0.2, step: float=0.05,
-                  cv: int=5, random_state: int=None, n_jobs: int=1,
-                  stratify: str=False, optimize_feature_selection: bool=False,
-                  parameter_tuning: bool=False):
-
-    # specify parameters and distributions to sample from for parameter tuning
-    param_dist = linear_params
-
-    estimator = Lasso()
-
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, category, estimator, output_dir,
-        test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
-        parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=True, scoring=mean_squared_error,
-        stratify=stratify, classification=False)
-
-    _visualize(output_dir, estimator, cm, accuracy, importances,
-               optimize_feature_selection)
-
-
-def regress_elasticnet(output_dir: str, table: pd.DataFrame,
-                       metadata: qiime2.Metadata, category: str,
-                       test_size: float=0.2, step: float=0.05,
-                       cv: int=5, random_state: int=None, n_jobs: int=1,
-                       optimize_feature_selection: bool=False,
-                       stratify: str=False, parameter_tuning: bool=False):
-
-    # specify parameters and distributions to sample from for parameter tuning
-    param_dist = linear_params
-
-    estimator = ElasticNet()
-
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, category, estimator, output_dir,
-        test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
-        parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=True, scoring=mean_squared_error,
-        stratify=stratify, classification=False)
-
-    _visualize(output_dir, estimator, cm, accuracy, importances,
-               optimize_feature_selection)
-
-
-def classify_kneighbors(output_dir: str, table: pd.DataFrame,
-                        metadata: qiime2.Metadata, category: str,
-                        test_size: float=0.2, step: float=0.05,
-                        cv: int=5, random_state: int=None, n_jobs: int=1,
-                        parameter_tuning: bool=False, algorithm: str='auto'):
-
-    # specify parameters and distributions to sample from for parameter tuning
-    param_dist = neighbors_params
-
-    estimator = KNeighborsClassifier(algorithm=algorithm)
-
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, category, estimator, output_dir,
-        test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=False,
-        parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=False)
-
-    _visualize(output_dir, estimator, cm, accuracy, importances, False)
-
-
-def regress_kneighbors(output_dir: str, table: pd.DataFrame,
-                       metadata: qiime2.Metadata, category: str,
-                       test_size: float=0.2, step: float=0.05,
-                       cv: int=5, random_state: int=None, n_jobs: int=1,
-                       stratify: str=False, parameter_tuning: bool=False,
-                       algorithm: str='auto'):
-
-    # specify parameters and distributions to sample from for parameter tuning
-    param_dist = neighbors_params
-
-    estimator = KNeighborsRegressor(algorithm=algorithm)
-
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, category, estimator, output_dir,
-        test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=False,
-        parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=False, scoring=mean_squared_error,
-        stratify=stratify, classification=False)
-
-    _visualize(output_dir, estimator, cm, accuracy, importances, False)
 
 
 def maturity_index(output_dir: str, table: pd.DataFrame,
@@ -512,7 +147,7 @@ def maturity_index(output_dir: str, table: pd.DataFrame,
         Value of group_by to use as control group.
     '''
     # select estimator
-    estimator, param_dist = select_estimator(estimator, n_jobs, n_estimators)
+    param_dist, estimator = _select_estimator(estimator, n_jobs, n_estimators)
 
     # split input data into control and treatment groups
     table, metadata = _load_data(table, metadata, transpose=False)
@@ -624,7 +259,7 @@ def predict_coordinates(table: pd.DataFrame, metadata: qiime2.Metadata,
     decimal degrees geocoordinates.
     '''
     # select estimator
-    estimator, param_dist = select_estimator(estimator, n_jobs, n_estimators)
+    param_dist, estimator = _select_estimator(estimator, n_jobs, n_estimators)
 
     # split input data into training and test sets
     table, metadata = _load_data(table, metadata, transpose=False)
@@ -666,44 +301,115 @@ def predict_new_data(table: pd.DataFrame, estimator: Pipeline):
     return predictions
 
 
-def select_estimator(estimator, n_jobs, n_estimators):
+def _select_estimator(estimator, n_jobs, n_estimators):
     '''Select estimator and parameters from argument name.'''
+    # Regressors
     if estimator == 'RandomForestRegressor':
-        param_dist = ensemble_params
+        param_dist = {**parameters['ensemble'], **parameters['bootstrap']}
         estimator = RandomForestRegressor(
             n_jobs=n_jobs, n_estimators=n_estimators)
     elif estimator == 'ExtraTreesRegressor':
-        param_dist = ensemble_params
+        param_dist = {**parameters['ensemble'], **parameters['bootstrap']}
         estimator = ExtraTreesRegressor(
             n_jobs=n_jobs, n_estimators=n_estimators)
     elif estimator == 'GradientBoostingRegressor':
-        param_dist = {k: ensemble_params[k] for k in ensemble_params.keys()
-                      if k != "bootstrap"}
+        param_dist = parameters['ensemble']
         estimator = GradientBoostingRegressor(n_estimators=n_estimators)
     elif estimator == 'SVR':
-        param_dist = {**svm_params, 'epsilon': [0.0, 0.1]}
+        param_dist = {**parameters['svm'], 'epsilon': [0.0, 0.1]}
+        estimator = SVR(kernel='rbf')
+    elif estimator == 'LinearSVR':
+        param_dist = {**parameters['svm'], 'epsilon': [0.0, 0.1]}
         estimator = SVR(kernel='linear')
     elif estimator == 'Ridge':
-        param_dist = linear_params
+        param_dist = parameters['linear']
         estimator = Ridge(solver='auto')
     elif estimator == 'Lasso':
-        param_dist = linear_params
+        param_dist = parameters['linear']
         estimator = Lasso()
     elif estimator == 'ElasticNet':
-        param_dist = linear_params
+        param_dist = parameters['linear']
         estimator = ElasticNet()
-    return estimator, param_dist
+    elif estimator == 'KNeighborsRegressor':
+        param_dist = parameters['kneighbors']
+        estimator = KNeighborsRegressor(algorithm='auto')
+
+    # Classifiers
+    elif estimator == 'RandomForestClassifier':
+        param_dist = {**parameters['ensemble'], **parameters['bootstrap'],
+                      **parameters['criterion']}
+        estimator = RandomForestClassifier(
+            n_jobs=n_jobs, n_estimators=n_estimators)
+    elif estimator == 'ExtraTreesClassifier':
+        param_dist = {**parameters['ensemble'], **parameters['bootstrap'],
+                      **parameters['criterion']}
+        estimator = ExtraTreesClassifier(
+            n_jobs=n_jobs, n_estimators=n_estimators)
+    elif estimator == 'GradientBoostingClassifier':
+        param_dist = parameters['ensemble']
+        estimator = GradientBoostingClassifier(n_estimators=n_estimators)
+    elif estimator == 'LinearSVC':
+        param_dist = parameters['linear_svm']
+        estimator = LinearSVC()
+    elif estimator == 'SVC':
+        param_dist = parameters['svm']
+        estimator = SVC(kernel='rbf')
+    elif estimator == 'KNeighborsClassifier':
+        param_dist = parameters['kneighbors']
+        estimator = KNeighborsClassifier(algorithm='auto')
+
+    return param_dist, estimator
 
 
-def svm_set(kernel, optimize_feature_selection):
-    if kernel == 'linear':
-        calc_feature_importance = True
-        optimize_feature_selection = optimize_feature_selection
+def _train_adaboost_base_estimator(table, metadata, category, n_estimators,
+                                   n_jobs, cv, random_state, parameter_tuning,
+                                   classification=True):
+    param_dist = parameters['ensemble']
+    if classification:
+        base_estimator = DecisionTreeClassifier()
+        adaboost_estimator = AdaBoostClassifier
     else:
-        calc_feature_importance = False
+        base_estimator = DecisionTreeRegressor()
+        adaboost_estimator = AdaBoostRegressor
+
+    if parameter_tuning:
+        features, targets = _load_data(table, metadata, transpose=False)
+        base_estimator = _tune_parameters(
+            features, targets[category], base_estimator, param_dist,
+            n_jobs=n_jobs, cv=cv, random_state=random_state)
+
+    return adaboost_estimator(base_estimator, n_estimators)
+
+
+def _disable_feature_selection(estimator, optimize_feature_selection):
+    '''disable feature selection for unsupported classifiers.'''
+
+    unsupported = ['KNeighborsClassifier', 'SVC', 'KNeighborsRegressor', 'SVR']
+
+    if estimator in unsupported:
         optimize_feature_selection = False
+        calc_feature_importance = False
         warn_feature_selection()
-    return calc_feature_importance, optimize_feature_selection
+    else:
+        calc_feature_importance = True
+
+    return optimize_feature_selection, calc_feature_importance
+
+
+def _set_parameters_and_estimator(estimator, table, metadata, category,
+                                  n_estimators, n_jobs, cv, random_state,
+                                  parameter_tuning, classification=True):
+    # specify parameters and distributions to sample from for parameter tuning
+    if estimator in ['AdaBoostClassifier', 'AdaBoostRegressor']:
+        estimator = _train_adaboost_base_estimator(
+            table, metadata, category, n_estimators, n_jobs, cv, random_state,
+            parameter_tuning, classification=classification)
+        parameter_tuning = False
+        param_dist = None
+    else:
+        param_dist, estimator = _select_estimator(
+            estimator, n_jobs, n_estimators)
+    return estimator, param_dist, parameter_tuning
 
 
 def warn_feature_selection():

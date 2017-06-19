@@ -41,8 +41,8 @@ def _lmplot_from_dataframe(metadata, category, predicted_category, group_by,
                            plot_style="whitegrid"):
     sns.set_style(plot_style)
     g = sns.lmplot(category, predicted_category, data=metadata,
-                      hue=group_by, fit_reg=False,
-                      scatter_kws={"marker": ".", "s": 100}, legend=False)
+                   hue=group_by, fit_reg=False,
+                   scatter_kws={"marker": ".", "s": 100}, legend=False)
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     return g
 
@@ -157,7 +157,6 @@ def _plot_confusion_matrix(y_test, y_pred, classes, accuracy, normalize=True):
     confusion = sns.heatmap(cm)
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-    tick_marks = np.arange(len(classes))
     confusion.set_xticklabels(classes, rotation=90, ha='center')
     confusion.set_yticklabels(
         sorted(classes, reverse=True), rotation=0, ha='center')

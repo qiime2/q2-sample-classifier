@@ -15,7 +15,6 @@ from sklearn.feature_selection import RFECV
 
 import q2templates
 import pandas as pd
-import numpy as np
 from os.path import join
 import matplotlib.pyplot as plt
 import pkg_resources
@@ -234,9 +233,9 @@ def split_optimize_classify(features, targets, category, estimator,
     return estimator, predictions, accuracy, importances
 
 
-def _prepare_training_data(
-    features, targets, category, test_size, random_state,
-    load_data=True, transpose=False, stratify=True):
+def _prepare_training_data(features, targets, category, test_size,
+                           random_state, load_data=True, transpose=False,
+                           stratify=True):
     # load data
     if load_data:
         features, targets = _load_data(features, targets, transpose=transpose)
@@ -396,7 +395,8 @@ def _tune_parameters(X_train, y_train, estimator, param_dist, n_iter_search=20,
                      n_jobs=-1, cv=None, random_state=None):
     # run randomized search
     random_search = RandomizedSearchCV(
-        estimator, param_distributions=param_dist, n_iter=n_iter_search)
+        estimator, param_distributions=param_dist, n_iter=n_iter_search,
+        n_jobs=n_jobs, cv=cv, random_state=random_state)
     random_search.fit(X_train, y_train)
     return random_search.best_estimator_
 

@@ -15,11 +15,7 @@ from sklearn.exceptions import ConvergenceWarning
 from q2_sample_classifier.visuals import (
     _two_way_anova, _pairwise_stats, _linear_regress)
 from q2_sample_classifier.classify import (
-    classify_random_forest, classify_extra_trees, classify_adaboost,
-    classify_gradient_boosting, regress_random_forest, regress_extra_trees,
-    regress_adaboost, regress_gradient_boosting, classify_linearSVC,
-    classify_SVC, regress_SVR, regress_ridge, regress_lasso,
-    regress_elasticnet, classify_kneighbors, regress_kneighbors,
+    classify_samples, regress_samples,
     maturity_index, detect_outliers, predict_coordinates)
 
 from . import SampleClassifierTestPluginBase
@@ -46,9 +42,9 @@ class VisualsTests(SampleClassifierTestPluginBase):
 
     def test_linear_regress(self):
         res = _linear_regress(md['Value'], md['Time'])
-        self.assertAlmostEqual(res.iloc[0]['MSE'], 1.9413916666666664)
+        self.assertAlmostEqual(res.iloc[0]['Mean squared error'], 1.9413916666)
         self.assertAlmostEqual(res.iloc[0]['R'], 0.86414956372460128)
-        self.assertAlmostEqual(res.iloc[0]['P-val'], 0.00028880275858705694)
+        self.assertAlmostEqual(res.iloc[0]['P-value'], 0.00028880275858705694)
 
 
 # This test class really just makes sure that each plugin runs without error.
@@ -77,42 +73,25 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         self.table_ecam_fp = _load_df('ecam-table-maturity.qza')
         self.md_ecam_fp = _load_md('ecam_map_maturity.txt')
 
-    def test_ensemble_classifiers(self):
-        for classifier in [classify_random_forest, classify_extra_trees,
-                           classify_adaboost, classify_gradient_boosting]:
-            tmpd = join(self.temp_dir.name, classifier.__name__)
+    def test_classify_samples(self):
+        for classifier in ['RandomForestClassifier', 'ExtraTreesClassifier',
+                           'GradientBoostingClassifier', 'AdaBoostClassifier',
+                           'KNeighborsClassifier', 'LinearSVC', 'SVC']:
+            tmpd = join(self.temp_dir.name, classifier)
             mkdir(tmpd)
-            classifier(tmpd,
-                       self.table_chard_fp, self.md_chard_fp,
-                       category='Vineyard', test_size=0.5, cv=3,
-                       n_estimators=2, n_jobs=-1)
+            classify_samples(tmpd, self.table_chard_fp, self.md_chard_fp,
+                             category='Vineyard', test_size=0.5, cv=3,
+                             n_estimators=2, n_jobs=-1, estimator=classifier)
 
-    def test_other_classifiers(self):
-        for classifier in [classify_linearSVC, classify_SVC,
-                           classify_kneighbors]:
-            tmpd = join(self.temp_dir.name, classifier.__name__)
+    def test_regress_samples(self):
+        for regressor in ['RandomForestClassifier', 'ExtraTreesClassifier',
+                           'GradientBoostingClassifier', 'AdaBoostClassifier',
+                           'KNeighborsClassifier', 'LinearSVC', 'SVC']:
+            tmpd = join(self.temp_dir.name, regressor)
             mkdir(tmpd)
-            classifier(tmpd,
-                       self.table_chard_fp, self.md_chard_fp,
-                       category='Vineyard', test_size=0.5, cv=3, n_jobs=-1)
-
-    def test_ensemble_regressors(self):
-        for regressor in [regress_random_forest, regress_extra_trees,
-                          regress_adaboost, regress_gradient_boosting]:
-            tmpd = join(self.temp_dir.name, regressor.__name__)
-            mkdir(tmpd)
-            regressor(tmpd,
-                      self.table_ecam_fp, self.md_ecam_fp, category='month',
-                      test_size=0.5, cv=3, n_estimators=2, n_jobs=-1)
-
-    def test_other_regressors(self):
-        for regressor in [regress_SVR, regress_ridge, regress_lasso,
-                          regress_elasticnet, regress_kneighbors]:
-            tmpd = join(self.temp_dir.name, regressor.__name__)
-            mkdir(tmpd)
-            regressor(tmpd,
-                      self.table_ecam_fp, self.md_ecam_fp,
-                      category='month', test_size=0.5, cv=3, n_jobs=-1)
+            classify_samples(tmpd, self.table_chard_fp, self.md_chard_fp,
+                             category='Vineyard', test_size=0.5, cv=3,
+                             n_estimators=2, n_jobs=-1, estimator=regressor)
 
     def test_maturity_index(self):
         maturity_index(self.temp_dir.name, self.table_ecam_fp, self.md_ecam_fp,
