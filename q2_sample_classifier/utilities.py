@@ -27,6 +27,7 @@ from os.path import join
 import matplotlib.pyplot as plt
 import pkg_resources
 import warnings
+from scipy.stats import randint
 
 from .visuals import (_linear_regress, _plot_confusion_matrix, _plot_RFE,
                       _pairwise_stats, _two_way_anova, _regplot_from_dataframe,
