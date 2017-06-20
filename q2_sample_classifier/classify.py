@@ -23,12 +23,24 @@ from .utilities import (split_optimize_classify, _visualize, _load_data,
 from .visuals import _linear_regress
 
 
+defaults = {
+    'test_size': 0.2,
+    'step': 0.05,
+    'cv': 5,
+    'n_jobs': 1,
+    'n_estimators': 100,
+    'estimator_r': 'RandomForestClassifier',
+}
+
+
 def classify_samples(output_dir: str, table: pd.DataFrame,
                      metadata: qiime2.Metadata, category: str,
-                     test_size: float=0.2, step: float=0.05,
-                     cv: int=5, random_state: int=None, n_jobs: int=1,
-                     n_estimators: int=100,
-                     estimator: str='RandomForestClassifier',
+                     test_size: float=defaults['test_size'],
+                     step: float=defaults['step'],
+                     cv: int=defaults['cv'], random_state: int=None,
+                     n_jobs: int=defaults['n_jobs'],
+                     n_estimators: int=defaults['n_estimators'],
+                     estimator: str=defaults['estimator_r'],
                      optimize_feature_selection: bool=False,
                      parameter_tuning: bool=False):
 
@@ -54,9 +66,11 @@ def classify_samples(output_dir: str, table: pd.DataFrame,
 
 def regress_samples(output_dir: str, table: pd.DataFrame,
                     metadata: qiime2.Metadata, category: str,
-                    test_size: float=0.2, step: float=0.05,
-                    cv: int=5, random_state: int=None, n_jobs: int=1,
-                    n_estimators: int=100,
+                    test_size: float=defaults['test_size'],
+                    step: float=defaults['step'],
+                    cv: int=defaults['cv'], random_state: int=None,
+                    n_jobs: int=defaults['n_jobs'],
+                    n_estimators: int=defaults['n_estimators'],
                     estimator: str='RandomForestRegressor',
                     optimize_feature_selection: bool=False,
                     stratify: str=False, parameter_tuning: bool=False):
@@ -85,9 +99,11 @@ def regress_samples(output_dir: str, table: pd.DataFrame,
 def maturity_index(output_dir: str, table: pd.DataFrame,
                    metadata: qiime2.Metadata, category: str, group_by: str,
                    control: str, estimator: str='RandomForestRegressor',
-                   n_estimators: int=100, test_size: float=0.2,
-                   step: float=0.05, cv: int=5, random_state: int=None,
-                   n_jobs: int=1, parameter_tuning: bool=True,
+                   n_estimators: int=defaults['n_estimators'],
+                   test_size: float=defaults['test_size'],
+                   step: float=defaults['step'], cv: int=defaults['cv'],
+                   random_state: int=None,
+                   n_jobs: int=defaults['n_jobs'], parameter_tuning: bool=True,
                    optimize_feature_selection: bool=True, stratify: str=False,
                    maz_stats: bool=True):
     '''Calculate a "maturity index" to predict values of a continuous
@@ -140,9 +156,10 @@ def maturity_index(output_dir: str, table: pd.DataFrame,
 
 def detect_outliers(table: pd.DataFrame,
                     metadata: qiime2.Metadata, subset_category: str=None,
-                    subset_value: str=None, n_estimators: int=100,
+                    subset_value: str=None,
+                    n_estimators: int=defaults['n_estimators'],
                     contamination: float=0.05, random_state: int=None,
-                    n_jobs: int=1) -> (pd.Series):
+                    n_jobs: int=defaults['n_jobs']) -> (pd.Series):
     '''Detect outlier samples within a given sample class. Applications include
     but are not limited to detecting potentially contaminated samples,
     detecting potentially mislabeled samples, and detecting significant
@@ -206,9 +223,11 @@ def detect_outliers(table: pd.DataFrame,
 def predict_coordinates(table: pd.DataFrame, metadata: qiime2.Metadata,
                         latitude: str='latitude', longitude: str='longitude',
                         estimator: str='RandomForestRegressor',
-                        n_estimators: int=100, test_size: float=0.2,
-                        step: float=0.05, cv: int=5, random_state: int=None,
-                        n_jobs: int=1, parameter_tuning: bool=True,
+                        n_estimators: int=defaults['n_estimators'],
+                        test_size: float=defaults['test_size'],
+                        step: float=defaults['step'], cv: int=defaults['cv'],
+                        random_state: int=None, n_jobs: int=defaults['n_jobs'],
+                        parameter_tuning: bool=True,
                         optimize_feature_selection: bool=True,
                         ) -> (pd.DataFrame, pd.DataFrame):
     '''Predict and map sample coordinates in 2-D space, based on
