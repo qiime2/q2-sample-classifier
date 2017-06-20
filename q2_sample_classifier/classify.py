@@ -168,7 +168,7 @@ def detect_outliers(table: pd.DataFrame,
         y_train = metadata[metadata[subset_category] == subset_value]
         X_train = table.ix[list(y_train.index.values)]
     # raise error if subset_category or subset_value (but not both) are set
-    elif not subset_category == subset_value == None:
+    elif subset_category is not None or subset_value is not None:
         raise ValueError((
             'subset_category and subset_value must both be provided with a '
             'valid value to perform model training on a subset of data.'))

@@ -85,13 +85,13 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
 
     def test_regress_samples(self):
         for regressor in ['RandomForestClassifier', 'ExtraTreesClassifier',
-                           'GradientBoostingClassifier', 'AdaBoostClassifier',
-                           'KNeighborsClassifier', 'LinearSVC', 'SVC']:
+                          'GradientBoostingClassifier', 'AdaBoostClassifier',
+                          'KNeighborsClassifier', 'LinearSVC', 'SVC']:
             tmpd = join(self.temp_dir.name, regressor)
             mkdir(tmpd)
-            classify_samples(tmpd, self.table_chard_fp, self.md_chard_fp,
-                             category='Vineyard', test_size=0.5, cv=3,
-                             n_estimators=2, n_jobs=-1, estimator=regressor)
+            regress_samples(tmpd, self.table_ecam_fp, self.md_ecam_fp,
+                            category='month', test_size=0.5, cv=3,
+                            n_estimators=2, n_jobs=-1, estimator=regressor)
 
     def test_maturity_index(self):
         maturity_index(self.temp_dir.name, self.table_ecam_fp, self.md_ecam_fp,
@@ -99,8 +99,8 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                        control='Vaginal', test_size=0.4)
 
     def test_detect_outliers(self):
-        outliers = detect_outliers(self.table_chard_fp, self.md_chard_fp,
-                                   n_jobs=-1, contamination=0.05)
+        detect_outliers(self.table_chard_fp, self.md_chard_fp,
+                        n_jobs=-1, contamination=0.05)
 
     def test_predict_coordinates(self):
         pred, coords = predict_coordinates(

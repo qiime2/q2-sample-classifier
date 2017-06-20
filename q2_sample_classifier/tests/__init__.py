@@ -7,10 +7,10 @@
 # ----------------------------------------------------------------------------
 
 import tempfile
-import shutil
 import pkg_resources
 
 from qiime2.plugin.testing import TestPluginBase
+
 
 class SampleClassifierTestPluginBase(TestPluginBase):
     package = 'q2_sample_classifier.tests'

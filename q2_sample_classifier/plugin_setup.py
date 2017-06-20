@@ -175,7 +175,7 @@ parameter_descriptions = {
                 'improve predictive accuracy up to a threshold level, '
                 'but will also increase time and memory requirements. This '
                 'parameter only affects ensemble estimators, such as Random '
-                'Forest, AdaBoost, ExtraTrees, and GradientBoosting methods.')},
+                'Forest, AdaBoost, ExtraTrees, and GradientBoosting.')},
     'standard': {
         'category': 'Metadata category to use for training and prediction.',
         'test_size': ('Fraction of input samples to exclude from training set '
