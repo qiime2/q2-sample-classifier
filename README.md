@@ -1,4 +1,7 @@
 # q2-sample-classifier
+
+[![Build Status](https://travis-ci.org/nbokulich/q2-sample-classifier.svg?branch=master)](https://travis-ci.org/nbokulich/q2-sample-classifier)
+
 QIIME2 plugin for machine learning prediction of sample data.
 
 This software is currently in pre-alpha phase and the API may be subject to change without notice.
