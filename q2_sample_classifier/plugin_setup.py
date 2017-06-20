@@ -314,41 +314,10 @@ plugin.methods.register_function(
     },
     name='Predict dataset outliers and contaminants',
     description=(
-        'Detect outlier samples within a given sample class. Applications '
-        'include but are not limited to detecting potentially contaminated '
-        'samples, detecting potentially mislabeled samples, and detecting '
-        'significant novelty, e.g., patients who responded to a treatment.\n\n'
-        'Input a feature table, possibly filtered to remove samples, '
-        'depending on the goals of this analysis. Outliers can be detected '
-        'from multiple sample types simultaneously, provided the goal is not '
-        'to detect mislabeled samples or samples cross-contaminated with '
-        'another sample type in this table. E.g., for detecting novelty or '
-        'exogenous contaminants (e.g., from reagents), many different sample '
-        'types may be tested simultaneously. Otherwise, the feature table '
-        'should be filtered to contain only one or more sample classes '
-        'between which cross-contamination is not suspected, or if these '
-        'sample classes are highly resolved and mislabeled samples are not '
-        'suspected. These assumptions may be supported by a preliminary '
-        'principal coordinates analysis or other diversity analyses to '
-        'determine how well resolved sample classes are and whether some '
-        'sample classes appear to cluster with the wrong class(es).\n\n'
-        'Inputs support two different modes: if subset_category and '
-        'subset_value are set, a subset of the input table is used as a '
-        '"gold standard" sample pool for training the model. This mode is '
-        'useful, for example, if you have a subset of "positive control" '
-        'samples that represent the known diversity of your sample types. '
-        'Otherwise, the model is trained on all samples. Regardless of the '
-        'input mode used, outlier status is predicted on all samples.\n\n'
-        'Returns a series of values documenting outlier status: inliers have '
-        'value of 1, outliers have value of -1. This series may be used to '
-        'filter a feature table, if appropriate, using '
-        'q2_feature_table.filter_samples, to remove contaminants or focus on '
-        'novelty samples.\n\nIf interested in potentially mislabeled samples, '
-        'use a sample classifier in q2_sample_classifier or principal '
-        'coordinates analysis to determine whether outliers classify as or '
-        'cluster with another sample type.\n\nFor more information on the '
-        'underlying isolation forest model, see '
-        'http://scikit-learn.org/stable/modules/outlier_detection.html')
+        'Detect outlier samples within a given sample class. E.g., detecting '
+        'potentially contaminated samples, mislabeled samples, or novelty. '
+        'cluster with another sample type. For more information, see '
+        'https://github.com/nbokulich/q2-sample-classifier#outlier-detection')
 )
 
 
