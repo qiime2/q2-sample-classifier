@@ -173,7 +173,9 @@ parameter_descriptions = {
              'n_estimators': (
                 'Number of trees to grow for estimation. More trees will '
                 'improve predictive accuracy up to a threshold level, '
-                'but will also increase time and memory requirements.')},
+                'but will also increase time and memory requirements. This '
+                'parameter only affects ensemble estimators, such as Random '
+                'Forest, AdaBoost, ExtraTrees, and GradientBoosting methods.')},
     'standard': {
         'category': 'Metadata category to use for training and prediction.',
         'test_size': ('Fraction of input samples to exclude from training set '

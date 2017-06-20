@@ -12,17 +12,58 @@
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.metrics import accuracy_score
 from sklearn.feature_selection import RFECV
+from sklearn.ensemble import (RandomForestRegressor, RandomForestClassifier,
+                              ExtraTreesClassifier, ExtraTreesRegressor,
+                              AdaBoostClassifier, GradientBoostingClassifier,
+                              AdaBoostRegressor, GradientBoostingRegressor)
+from sklearn.svm import LinearSVC, SVR, SVC
+from sklearn.linear_model import Ridge, Lasso, ElasticNet
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 import q2templates
 import pandas as pd
 from os.path import join
 import matplotlib.pyplot as plt
 import pkg_resources
+import warnings
 
 from .visuals import (_linear_regress, _plot_confusion_matrix, _plot_RFE,
                       _pairwise_stats, _two_way_anova, _regplot_from_dataframe,
                       _boxplot_from_dataframe, _lmplot_from_dataframe,
                       _clustermap_from_dataframe)
+
+
+parameters = {
+    'ensemble': {"max_depth": [4, 8, 16, None],
+                 "max_features": [None, 'sqrt', 'log2', 0.1],
+                 "min_samples_split": [0.001, 0.01, 0.1],
+                 "min_weight_fraction_leaf": [0.0001, 0.001, 0.01]},
+    'bootstrap': {"bootstrap": [True, False]},
+    'criterion': {"criterion": ["gini", "entropy"]},
+    'linear_svm': {"C": [1, 0.5, 0.1, 0.9, 0.8],
+                   # should probably include penalty in grid search, but:
+                   # Unsupported set of arguments: The combination of
+                   # penalty='l1' and loss='hinge' is not supported
+                   # "penalty": ["l1", "l2"],
+                   "loss": ["hinge", "squared_hinge"],
+                   "tol": [0.00001, 0.0001, 0.001]
+                   # should probably include this in grid search, as
+                   # dual=False is preferred when samples>features. However:
+                   # Unsupported set of arguments: The combination of
+                   # penalty='l2' and loss='hinge' are not supported when
+                   # dual=False
+                   # "dual": [True, False]
+                   },
+    'svm': {"C": [1, 0.5, 0.1, 0.9, 0.8],
+            "tol": [0.00001, 0.0001, 0.001, 0.01],
+            "shrinking": [True, False]},
+    'kneighbors': {"n_neighbors": randint(2, 15),
+                   "weights": ['uniform', 'distance'],
+                   "leaf_size": randint(15, 100)},
+    'linear': {"alpha": [0.0001, 0.01, 1.0, 10.0, 1000.0],
+               "tol": [0.00001, 0.0001, 0.001, 0.01]}
+}
 
 
 TEMPLATES = pkg_resources.resource_filename('q2_sample_classifier', 'assets')
@@ -447,3 +488,122 @@ def _maz_score(metadata, predicted, category, group_by, control):
     metadata[maz] = maz_scores
 
     return metadata
+
+
+def _select_estimator(estimator, n_jobs, n_estimators):
+    '''Select estimator and parameters from argument name.'''
+    # Regressors
+    if estimator == 'RandomForestRegressor':
+        param_dist = {**parameters['ensemble'], **parameters['bootstrap']}
+        estimator = RandomForestRegressor(
+            n_jobs=n_jobs, n_estimators=n_estimators)
+    elif estimator == 'ExtraTreesRegressor':
+        param_dist = {**parameters['ensemble'], **parameters['bootstrap']}
+        estimator = ExtraTreesRegressor(
+            n_jobs=n_jobs, n_estimators=n_estimators)
+    elif estimator == 'GradientBoostingRegressor':
+        param_dist = parameters['ensemble']
+        estimator = GradientBoostingRegressor(n_estimators=n_estimators)
+    elif estimator == 'SVR':
+        param_dist = {**parameters['svm'], 'epsilon': [0.0, 0.1]}
+        estimator = SVR(kernel='rbf')
+    elif estimator == 'LinearSVR':
+        param_dist = {**parameters['svm'], 'epsilon': [0.0, 0.1]}
+        estimator = SVR(kernel='linear')
+    elif estimator == 'Ridge':
+        param_dist = parameters['linear']
+        estimator = Ridge(solver='auto')
+    elif estimator == 'Lasso':
+        param_dist = parameters['linear']
+        estimator = Lasso()
+    elif estimator == 'ElasticNet':
+        param_dist = parameters['linear']
+        estimator = ElasticNet()
+    elif estimator == 'KNeighborsRegressor':
+        param_dist = parameters['kneighbors']
+        estimator = KNeighborsRegressor(algorithm='auto')
+
+    # Classifiers
+    elif estimator == 'RandomForestClassifier':
+        param_dist = {**parameters['ensemble'], **parameters['bootstrap'],
+                      **parameters['criterion']}
+        estimator = RandomForestClassifier(
+            n_jobs=n_jobs, n_estimators=n_estimators)
+    elif estimator == 'ExtraTreesClassifier':
+        param_dist = {**parameters['ensemble'], **parameters['bootstrap'],
+                      **parameters['criterion']}
+        estimator = ExtraTreesClassifier(
+            n_jobs=n_jobs, n_estimators=n_estimators)
+    elif estimator == 'GradientBoostingClassifier':
+        param_dist = parameters['ensemble']
+        estimator = GradientBoostingClassifier(n_estimators=n_estimators)
+    elif estimator == 'LinearSVC':
+        param_dist = parameters['linear_svm']
+        estimator = LinearSVC()
+    elif estimator == 'SVC':
+        param_dist = parameters['svm']
+        estimator = SVC(kernel='rbf')
+    elif estimator == 'KNeighborsClassifier':
+        param_dist = parameters['kneighbors']
+        estimator = KNeighborsClassifier(algorithm='auto')
+
+    return param_dist, estimator
+
+
+def _train_adaboost_base_estimator(table, metadata, category, n_estimators,
+                                   n_jobs, cv, random_state, parameter_tuning,
+                                   classification=True):
+    param_dist = parameters['ensemble']
+    if classification:
+        base_estimator = DecisionTreeClassifier()
+        adaboost_estimator = AdaBoostClassifier
+    else:
+        base_estimator = DecisionTreeRegressor()
+        adaboost_estimator = AdaBoostRegressor
+
+    if parameter_tuning:
+        features, targets = _load_data(table, metadata, transpose=False)
+        base_estimator = _tune_parameters(
+            features, targets[category], base_estimator, param_dist,
+            n_jobs=n_jobs, cv=cv, random_state=random_state)
+
+    return adaboost_estimator(base_estimator, n_estimators)
+
+
+def _disable_feature_selection(estimator, optimize_feature_selection):
+    '''disable feature selection for unsupported classifiers.'''
+
+    unsupported = ['KNeighborsClassifier', 'SVC', 'KNeighborsRegressor', 'SVR']
+
+    if estimator in unsupported:
+        optimize_feature_selection = False
+        calc_feature_importance = False
+        _warn_feature_selection()
+    else:
+        calc_feature_importance = True
+
+    return optimize_feature_selection, calc_feature_importance
+
+
+def _set_parameters_and_estimator(estimator, table, metadata, category,
+                                  n_estimators, n_jobs, cv, random_state,
+                                  parameter_tuning, classification=True):
+    # specify parameters and distributions to sample from for parameter tuning
+    if estimator in ['AdaBoostClassifier', 'AdaBoostRegressor']:
+        estimator = _train_adaboost_base_estimator(
+            table, metadata, category, n_estimators, n_jobs, cv, random_state,
+            parameter_tuning, classification=classification)
+        parameter_tuning = False
+        param_dist = None
+    else:
+        param_dist, estimator = _select_estimator(
+            estimator, n_jobs, n_estimators)
+    return estimator, param_dist, parameter_tuning
+
+
+def _warn_feature_selection():
+    warning = (
+        ('This estimator does not support recursive feature extraction with '
+         'the parameter settings requested. See documentation or try a '
+         'different estimator model.'))
+    warnings.warn(warning, UserWarning)

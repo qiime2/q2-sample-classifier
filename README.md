@@ -33,11 +33,10 @@ In a classification problem, we are interested in predicting the class labels fo
 
 ![Alt text](./examples/classify-kneighbors-Vineyard.jpg?raw=true "classify k-neighbors Vineyard")
 
-### Random forest classifier
 ```
 cd ~/Desktop/projects/q2-sample-classifier/q2_sample_classifier/test_data/
 
-qiime sample-classifier classify-random-forest \
+qiime sample-classifier classify-samples \
 	--i-table chardonnay.table.qza \
 	--m-metadata-file chardonnay.map.txt \
 	--p-category Vineyard \
@@ -46,86 +45,14 @@ qiime sample-classifier classify-random-forest \
 	--p-parameter-tuning \
 	--p-n-estimators 50
 ```
-### Extra Trees classifier
-```
-qiime sample-classifier classify-extra-trees \
-	--i-table chardonnay.table.qza \
-	--m-metadata-file chardonnay.map.txt \
-	--p-category Vineyard \
-	--o-visualization etc \
-	--p-optimize-feature-selection \
-	--p-parameter-tuning \
-	--p-n-estimators 50
-```
-### AdaBoost classifier
-```
-qiime sample-classifier classify-adaboost \
-	--i-table chardonnay.table.qza \
-	--m-metadata-file chardonnay.map.txt \
-	--p-category Vineyard \
-	--o-visualization abc \
-	--p-optimize-feature-selection \
-	--p-parameter-tuning \
-	--p-n-estimators 50
-```
-### Gradient boosting classifier
-```
-qiime sample-classifier classify-gradient-boosting \
-	--i-table chardonnay.table.qza \
-	--m-metadata-file chardonnay.map.txt \
-	--p-category Vineyard \
-	--o-visualization gbc \
-	--p-optimize-feature-selection \
-	--p-parameter-tuning \
-	--p-n-estimators 50
-```
-### K-nearest neighbors classifier
-```
-qiime sample-classifier classify-kneighbors \
-	--i-table chardonnay.table.qza \
-	--m-metadata-file chardonnay.map.txt \
-	--p-category Vineyard \
-	--o-visualization knn \
-	--p-parameter-tuning
-```
-### Linear support vector machine classifier
-```
-qiime sample-classifier classify-linearSVC \
-	--i-table chardonnay.table.qza \
-	--m-metadata-file chardonnay.map.txt \
-	--p-category Vineyard \
-	--o-visualization lsvc \
-	--p-parameter-tuning \
-	--p-optimize-feature-selection
-
-qiime sample-classifier classify-SVC \
-	--i-table chardonnay.table.qza \
-	--m-metadata-file chardonnay.map.txt \
-	--p-category Vineyard \
-	--o-visualization svcl \
-	--p-parameter-tuning \
-	--p-optimize-feature-selection \
-	--p-kernel linear
-```
-### Support vector machine classifier
-```
-qiime sample-classifier classify-SVC \
-	--i-table chardonnay.table.qza \
-	--m-metadata-file chardonnay.map.txt \
-	--p-category Vineyard \
-	--o-visualization svc \
-	--p-parameter-tuning \
-	--p-optimize-feature-selection
-```
 
 ## Regression
 In a regression problem, we are interested in predicting numerical values for a number of unlabeled samples. The visualizers show overall accuracy scores (mean square error), and linear regression results (including R, P, and slope) for the predicted vs. expected test sample values. For example, the following depicts how accurately a random forests regressor predicts an infant's age as a function of it's stool microbiota composition:
 
 ![Alt text](./examples/age_regression.jpg?raw=true "Age regression")
 
-### Random forest regressor
 ```
-qiime sample-classifier regress-random-forest \
+qiime sample-classifier regress-samples \
 	--i-table ecam-table-maturity.qza \
 	--m-metadata-file ecam_map_maturity.txt \
 	--p-category month \
@@ -134,97 +61,7 @@ qiime sample-classifier regress-random-forest \
 	--p-parameter-tuning \
 	--p-n-estimators 50
 ```
-### Extra Trees regressor
-```
-qiime sample-classifier regress-extra-trees \
-	--i-table ecam-table-maturity.qza \
-	--m-metadata-file ecam_map_maturity.txt \
-	--p-category month \
-	--o-visualization etr \
-	--p-optimize-feature-selection \
-	--p-parameter-tuning \
-	--p-n-estimators 50
-```
-### AdaBoost regressor
-```
-qiime sample-classifier regress-adaboost \
-	--i-table ecam-table-maturity.qza \
-	--m-metadata-file ecam_map_maturity.txt \
-	--p-category month \
-	--o-visualization abr \
-	--p-optimize-feature-selection \
-	--p-parameter-tuning \
-	--p-n-estimators 50
-```
-### Gradient boosting regressor
-```
-qiime sample-classifier regress-gradient-boosting \
-	--i-table ecam-table-maturity.qza \
-	--m-metadata-file ecam_map_maturity.txt \
-	--p-category month \
-	--o-visualization gbr \
-	--p-optimize-feature-selection \
-	--p-parameter-tuning \
-	--p-n-estimators 50
-```
-### Linear support vector machine regressor
-```
-qiime sample-classifier regress-SVR \
-	--i-table ecam-table-maturity.qza \
-	--m-metadata-file ecam_map_maturity.txt \
-	--p-category month \
-	--o-visualization svrl \
-	--p-parameter-tuning \
-	--p-optimize-feature-selection \
-	--p-kernel linear
-```
-### Support vector machine regressor
-```
-qiime sample-classifier regress-SVR \
-	--i-table ecam-table-maturity.qza \
-	--m-metadata-file ecam_map_maturity.txt \
-	--p-category month \
-	--o-visualization svr \
-	--p-parameter-tuning \
-	--p-optimize-feature-selection
-```
-### Ridge linear regression
-```
-qiime sample-classifier regress-ridge \
-	--i-table ecam-table-maturity.qza \
-	--m-metadata-file ecam_map_maturity.txt \
-	--p-category month \
-	--o-visualization ridge \
-	--p-parameter-tuning
-```
-### Lasso linear regression
-```
-qiime sample-classifier regress-lasso \
-	--i-table ecam-table-maturity.qza \
-	--m-metadata-file ecam_map_maturity.txt \
-	--p-category month \
-	--o-visualization lasso \
-	--p-parameter-tuning
-```
-### Elastic Net linear regression
-```
-qiime sample-classifier regress-elasticnet \
-	--i-table ecam-table-maturity.qza \
-	--m-metadata-file ecam_map_maturity.txt \
-	--p-category month \
-	--o-visualization elastic \
-	--p-parameter-tuning \
-	--p-optimize-feature-selection
-```
-### K-nearest neighbors regression
-```
-qiime sample-classifier regress-kneighbors \
-	--i-table ecam-table-maturity.qza \
-	--m-metadata-file ecam_map_maturity.txt \
-	--p-category month \
-	--o-visualization knnr \
-	--p-parameter-tuning
-```
+
 
 ## "Maturity Index" prediction
 
