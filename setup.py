@@ -10,6 +10,9 @@
 
 from setuptools import find_packages, setup
 
+import versioneer
+
+
 setup(
     name='q2-sample-classifier',
     version='0.0.0-dev',
