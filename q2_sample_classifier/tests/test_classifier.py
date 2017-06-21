@@ -121,7 +121,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     def test_predict_coordinates(self):
         pred, coords = predict_coordinates(
             self.table_chard_fp, self.md_chard_fp,
-            latitude='latitude', longitude='longitude', n_jobs=-1)
+            axis1_category='latitude', axis2_category='longitude', n_jobs=-1)
 
 
 md = pd.DataFrame([(1, 'a', 0.11), (1, 'a', 0.12), (1, 'a', 0.13),
