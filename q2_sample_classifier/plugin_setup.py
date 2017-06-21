@@ -212,7 +212,7 @@ plugin.visualizers.register_function(
         **parameter_descriptions['base'],
         **parameter_descriptions['standard'],
         **parameter_descriptions['estimator']},
-    name='Supervised learning classifier',
+    name='Supervised learning classifier.',
     description=description.format(
         'categorical', 'supervised learning classifier')
 )
@@ -226,7 +226,7 @@ plugin.visualizers.register_function(
         **parameters['regressor'],
         'estimator': Str % Choices(
             ['RandomForestRegressor', 'ExtraTreesRegressor',
-             'GradientBoostingRegressor', 'AdaBoostRegressor', 'ElasticNet'
+             'GradientBoostingRegressor', 'AdaBoostRegressor', 'ElasticNet',
              'Ridge', 'Lasso', 'KNeighborsRegressor', 'LinearSVR', 'SVR'])},
     input_descriptions=input_descriptions,
     parameter_descriptions={
@@ -234,7 +234,7 @@ plugin.visualizers.register_function(
         **parameter_descriptions['standard'],
         **parameter_descriptions['regressor'],
         **parameter_descriptions['estimator']},
-    name='Supervised learning regressor',
+    name='Supervised learning regressor.',
     description=description.format(
         'continuous', 'supervised learning regressor')
 )
@@ -269,7 +269,7 @@ plugin.visualizers.register_function(
         **parameter_descriptions['regressor'],
         'maz_stats': 'Calculate anova and pairwise tests on MAZ scores?',
     },
-    name='Microbial maturity index prediction',
+    name='Microbial maturity index prediction.',
     description=('Calculates a "microbial maturity" index from a regression '
                  'model trained on feature data to predict a given continuous '
                  'metadata category, e.g., to predict age as a function of '
@@ -312,7 +312,7 @@ plugin.methods.register_function(
         'inliers': ('Vector containing inlier status of each input sample. '
                     'Inliers have value 1, outliers have value -1.')
     },
-    name='Predict dataset outliers and contaminants',
+    name='Predict dataset outliers and contaminants.',
     description=(
         'Detect outlier samples within a given sample class. E.g., detecting '
         'potentially contaminated samples, mislabeled samples, or novelty. '
