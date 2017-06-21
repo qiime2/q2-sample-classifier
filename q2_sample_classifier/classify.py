@@ -192,7 +192,8 @@ def detect_outliers(table: pd.DataFrame,
 
 
 def predict_coordinates(table: pd.DataFrame, metadata: qiime2.Metadata,
-                        latitude: str='latitude', longitude: str='longitude',
+                        axis1_category: str='latitude',
+                        axis2_category: str='longitude',
                         estimator: str='RandomForestRegressor',
                         n_estimators: int=defaults['n_estimators'],
                         test_size: float=defaults['test_size'],
@@ -213,7 +214,7 @@ def predict_coordinates(table: pd.DataFrame, metadata: qiime2.Metadata,
     # split input data into training and test sets
     table, metadata = _load_data(table, metadata, transpose=False)
     X_train, X_test, y_train, y_test = _split_training_data(
-        table, metadata, [latitude, longitude], test_size,
+        table, metadata, [axis1_category, axis2_category], test_size,
         random_state=random_state)
 
     # train model and predict test data for each category
@@ -222,7 +223,7 @@ def predict_coordinates(table: pd.DataFrame, metadata: qiime2.Metadata,
     estimators = {}
     predictions = {}
     prediction_regression = pd.DataFrame()
-    for category in [latitude, longitude]:
+    for category in [axis1_category, axis2_category]:
         estimator, cm, acc, importances = split_optimize_classify(
             X_train, y_train, category, estimator, output_dir=None,
             random_state=random_state, n_jobs=n_jobs, test_size=0.0,

@@ -327,8 +327,8 @@ plugin.methods.register_function(
     parameters={
         **{k: parameters['standard'][k] for k in parameters['standard'].keys()
            if k != "category"},
-        'latitude': Str,
-        'longitude': Str,
+        'axis1_category': Str,
+        'axis2_category': Str,
         'estimator': Str % Choices([
             'RandomForestRegressor', 'ExtraTreesRegressor', 'Lasso',
             'GradientBoostingRegressor', 'SVR', 'Ridge', 'ElasticNet']),
@@ -341,10 +341,12 @@ plugin.methods.register_function(
         **parameter_descriptions['base'],
         **{k: parameter_descriptions['standard'][k] for k in
            parameter_descriptions['standard'].keys() if k != "category"},
-        'latitude': ('Category name containing latitude or first dimension '
-                     'coordinates in sample metadata file.'),
-        'longitude': ('Category name containing longitude or second dimension '
-                      'coordinates in sample metadata file.'),
+        'axis1_category': (
+            'Category name containing first dimension (e.g., latitude)'
+            'coordinates in sample metadata file.'),
+        'axis2_category': (
+            'Category name containing second dimension (e.g., longitude)'
+            'coordinates in sample metadata file.'),
         'estimator': 'Regression model to use for prediction.',
     },
     output_descriptions={
