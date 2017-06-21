@@ -14,9 +14,13 @@ before_install:
 install:
   - conda create -q -n test-env --file https://raw.githubusercontent.com/qiime2/environment-files/master/latest/staging/qiime2-latest-conda-linux-64.txt
   - source activate test-env
+  - conda install -q pytest-cov
   - pip install .
-  - pip install flake8
+  - pip install flake8 coveralls
 script:
   - python q2_sample_classifier/tests/test_classifier.py
   - flake8 q2_sample_classifier
+  - py.test --cov=q2_demux
+after_success:
+  - coveralls
 

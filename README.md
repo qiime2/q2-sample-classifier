@@ -1,6 +1,6 @@
 # q2-sample-classifier
 
-[![Build Status](https://travis-ci.org/nbokulich/q2-sample-classifier.svg?branch=master)](https://travis-ci.org/nbokulich/q2-sample-classifier)
+[![Build Status](https://travis-ci.org/nbokulich/q2-sample-classifier.svg?branch=master)](https://travis-ci.org/nbokulich/q2-sample-classifier) [![Coverage Status](https://coveralls.io/repos/github/nbokulich/q2-sample-classifier/badge.svg?branch=master)](https://coveralls.io/github/nbokulich/q2-sample-classifier?branch=master)
 
 QIIME2 plugin for machine learning prediction of sample data.
 
