@@ -20,6 +20,7 @@ Not sure which model to use? A good starting point is [this flowchart](http://sc
 * ["Maturity index" prediction](https://github.com/nbokulich/q2-sample-classifier#maturity-index-prediction)
 * [Outlier detection](https://github.com/nbokulich/q2-sample-classifier#outlier-detection)
 * [Predicting geospatial coordinates](https://github.com/nbokulich/q2-sample-classifier#predicting-geospatial-coordinates)
+
 [Troubleshooting](https://github.com/nbokulich/q2-sample-classifier#troubleshooting)
 
 
