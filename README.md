@@ -14,6 +14,7 @@ Not sure which model to use? A good starting point is [this flowchart](http://sc
 
 # Quick links
 [Installation](https://github.com/nbokulich/q2-sample-classifier#installation)
+
 [Examples](https://github.com/nbokulich/q2-sample-classifier#examples)
 * [Sample classification](https://github.com/nbokulich/q2-sample-classifier#classification)
 * [Regression](https://github.com/nbokulich/q2-sample-classifier#regression)
