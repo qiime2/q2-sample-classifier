@@ -162,8 +162,8 @@ The method predict-coordinates allows us to predict two continuous variables on 
 qiime sample-classifier predict-coordinates \
 	--i-table chardonnay.table.qza \
 	--m-metadata-file chardonnay.map.txt \
-	--p-latitude latitude \
-	--p-longitude longitude \
+	--p-axis1-category latitude \
+	--p-axis2-category longitude \
 	--p-n-jobs 4 \
 	--o-predictions coord-predictions \
 	--o-prediction-regression coord-regression
