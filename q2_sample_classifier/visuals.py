@@ -145,7 +145,7 @@ def _linear_regress(actual, pred):
     return pd.DataFrame([(mse, r_value, p_value, std_err, slope, intercept)],
                         columns=["Mean squared error", "R", "P-value",
                                  "Std Error", "Slope", "Intercept"],
-                        index=['Score'])
+                        index=[actual.name])
 
 
 def _plot_confusion_matrix(y_test, y_pred, classes, accuracy, normalize=True):
