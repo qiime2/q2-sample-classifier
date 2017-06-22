@@ -12,6 +12,17 @@ This plugin requires QIIME2. See the [QIIME2 documentation](https://qiime2.org/)
 
 Not sure which model to use? A good starting point is [this flowchart](http://scikit-learn.org/dev/tutorial/machine_learning_map/index.html). Most of the classification and regression models shown in that chart (and a few extras) are implemented in q2-sample-classifier.
 
+# Quick links
+[Installation](https://github.com/nbokulich/q2-sample-classifier#installation)
+[Examples](https://github.com/nbokulich/q2-sample-classifier#examples)
+* [Sample classification](https://github.com/nbokulich/q2-sample-classifier#classification)
+* [Regression](https://github.com/nbokulich/q2-sample-classifier#regression)
+* ["Maturity index" prediction](https://github.com/nbokulich/q2-sample-classifier#maturity-index-prediction)
+* [Outlier detection](https://github.com/nbokulich/q2-sample-classifier#outlier-detection)
+* [Predicting geospatial coordinates](https://github.com/nbokulich/q2-sample-classifier#predicting-geospatial-coordinates)
+[Troubleshooting](https://github.com/nbokulich/q2-sample-classifier#troubleshooting)
+
+
 # Installation
 q2-sample-classifier requires the latest version of QIIME2. Install in conda using [these directions](https://docs.qiime2.org/2017.5/install/native/#install-qiime-2-within-a-conda-environment) and activate that conda environment. The install q2-sample-classifier with `pip` as follows:
 ```
