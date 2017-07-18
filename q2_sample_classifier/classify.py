@@ -11,7 +11,6 @@
 
 from sklearn.ensemble import IsolationForest
 from sklearn.metrics import mean_squared_error
-from sklearn.pipeline import Pipeline
 
 import qiime2
 import pandas as pd
@@ -187,7 +186,7 @@ def predict_coordinates(table: pd.DataFrame, metadata: qiime2.Metadata,
                         random_state: int=None, n_jobs: int=defaults['n_jobs'],
                         parameter_tuning: bool=True,
                         optimize_feature_selection: bool=True,
-                        ) -> (pd.DataFrame, pd.DataFrame) -> None:
+                        ) -> (pd.DataFrame, pd.DataFrame):
 
     # select estimator
     param_dist, estimator = _select_estimator(estimator, n_jobs, n_estimators)
