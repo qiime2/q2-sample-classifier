@@ -28,7 +28,8 @@ plugin = Plugin(
     version=q2_sample_classifier.__version__,
     website="https://github.com/nbokulich/q2-sample-classifier",
     package='q2_sample_classifier',
-    short_description='Plugin for machine learning prediction of sample data.'
+    short_description=(
+        'Plugin for machine learning prediction of sample metadata.')
 )
 
 Coordinates = SemanticType('Coordinates', variant_of=SampleData.field['type'])
@@ -132,15 +133,14 @@ plugin.register_semantic_type_to_format(
     SampleData[BooleanSeries],
     artifact_format=BooleanSeriesDirectoryFormat)
 
-description = ('Predict {0} sample metadata classes using a {1}. Splits input '
-               'data into training and test sets. The training set is used '
-               'to train and test the estimator using a stratified k-fold '
-               'cross-validation scheme. This includes optional steps for '
-               'automated feature extraction and hyperparameter optimization. '
-               'The test set validates classification accuracy of the '
-               'optimized estimator. Outputs classification results for test '
-               'set, and optionally a trained estimator to use on additional '
-               'unknown samples. For more details on the learning algorithm, '
+description = ('Predicts a {0} sample metadata category using a {1}. Splits '
+               'input data into training and test sets. The training set is '
+               'used to train and test the estimator using a stratified '
+               'k-fold cross-validation scheme. This includes optional steps '
+               'for automated feature extraction and hyperparameter '
+               'optimization. The test set validates classification accuracy '
+               'of the optimized estimator. Outputs classification results '
+               'for test set. For more details on the learning  algorithm, '
                'see http://scikit-learn.org/stable/supervised_learning.html')
 
 inputs = {'table': FeatureTable[Frequency]}
@@ -184,10 +184,10 @@ parameter_descriptions = {
                  'percentage of features to remove at each iteration.'),
         'cv': 'Number of k-fold cross-validations to perform.',
         'parameter_tuning': ('Automatically tune hyperparameters using random '
-                             'grid search?'),
+                             'grid search.'),
         'optimize_feature_selection': ('Automatically optimize input feature '
                                        'selection using recursive feature '
-                                       'elimination?')},
+                                       'elimination.')},
     'regressor': {
         'stratify': ('Evenly stratify training and test data among metadata '
                      'categories. If True, all values in category must match '
@@ -267,7 +267,7 @@ plugin.visualizers.register_function(
             'this group.'),
         'estimator': 'Regression model to use for prediction.',
         **parameter_descriptions['regressor'],
-        'maz_stats': 'Calculate anova and pairwise tests on MAZ scores?',
+        'maz_stats': 'Calculate anova and pairwise tests on MAZ scores.',
     },
     name='Microbial maturity index prediction.',
     description=('Calculates a "microbial maturity" index from a regression '
@@ -360,6 +360,6 @@ plugin.methods.register_function(
         'latitude and longitude (2-D) or precise location within any 2-D '
         'physical space, such as the built environment. Metadata '
         'must be in float format, e.g., decimal degrees geocoordinates. '
-        'Ouput consists of predicted coordinates, accuracy scores for each '
+        'Output consists of predicted coordinates, accuracy scores for each '
         'dimension, and linear regression results for each dimension.')
 )

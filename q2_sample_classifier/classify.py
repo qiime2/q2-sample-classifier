@@ -11,7 +11,6 @@
 
 from sklearn.ensemble import IsolationForest
 from sklearn.metrics import mean_squared_error
-from sklearn.pipeline import Pipeline
 
 import qiime2
 import pandas as pd
@@ -42,7 +41,7 @@ def classify_samples(output_dir: str, table: pd.DataFrame,
                      n_estimators: int=defaults['n_estimators'],
                      estimator: str=defaults['estimator_r'],
                      optimize_feature_selection: bool=False,
-                     parameter_tuning: bool=False):
+                     parameter_tuning: bool=False) -> None:
 
     # disable feature selection for unsupported estimators
     optimize_feature_selection, calc_feature_importance = \
@@ -73,7 +72,7 @@ def regress_samples(output_dir: str, table: pd.DataFrame,
                     n_estimators: int=defaults['n_estimators'],
                     estimator: str='RandomForestRegressor',
                     optimize_feature_selection: bool=False,
-                    stratify: str=False, parameter_tuning: bool=False):
+                    stratify: str=False, parameter_tuning: bool=False) -> None:
 
     # disable feature selection for unsupported estimators
     optimize_feature_selection, calc_feature_importance = \
@@ -105,27 +104,13 @@ def maturity_index(output_dir: str, table: pd.DataFrame,
                    random_state: int=None,
                    n_jobs: int=defaults['n_jobs'], parameter_tuning: bool=True,
                    optimize_feature_selection: bool=True, stratify: str=False,
-                   maz_stats: bool=True):
-    '''Calculate a "maturity index" to predict values of a continuous
-    metadata category as a function of microbiota composition. A "normal"
-    maturation profile is trained based on a set of control samples. MAZ scores
-    are then calculated for all samples. Plots predicted vs. expected values
-    for each group in category; barplots of MAZ scores for each group in
-    category; and heatmap of top feature abundance X category. CATEGORY MUST
-    BE PREVIOUSLY BINNED INTO SENSIBLE BINS, E.G., MONTHS INSTEAD OF DAYS.
+                   maz_stats: bool=True) -> None:
 
-    category: str
-        Continuous metadata category to use for estimator fitting/prediction.
-    group_by: str
-        Metadata category to use for plotting and significance testing.
-    control: str
-        Value of group_by to use as control group.
-    '''
     # select estimator
     param_dist, estimator = _select_estimator(estimator, n_jobs, n_estimators)
 
     # split input data into control and treatment groups
-    table, metadata = _load_data(table, metadata, transpose=False)
+    table, metadata = _load_data(table, metadata)
     md_control = metadata[metadata[group_by] == control]
     table_control = table.ix[list(md_control.index.values)]
 
@@ -160,8 +145,8 @@ def detect_outliers(table: pd.DataFrame,
                     n_estimators: int=defaults['n_estimators'],
                     contamination: float=0.05, random_state: int=None,
                     n_jobs: int=defaults['n_jobs']) -> (pd.Series):
-    '''Detect outlier samples within a given sample class.'''
-    features, sample_md = _load_data(table, metadata, transpose=False)
+
+    features, sample_md = _load_data(table, metadata)
 
     # if opting to train on a subset, choose subset that fits criteria
     if subset_category and subset_value:
@@ -202,17 +187,12 @@ def predict_coordinates(table: pd.DataFrame, metadata: qiime2.Metadata,
                         parameter_tuning: bool=True,
                         optimize_feature_selection: bool=True,
                         ) -> (pd.DataFrame, pd.DataFrame):
-    '''Predict and map sample coordinates in 2-D space, based on
-    microbiota composition. E.g., this function could be used to predict
-    latitude and longitude or precise location within 2-D physical space,
-    such as the built environment. Metadata must be in float format, e.g.,
-    decimal degrees geocoordinates.
-    '''
+
     # select estimator
     param_dist, estimator = _select_estimator(estimator, n_jobs, n_estimators)
 
     # split input data into training and test sets
-    table, metadata = _load_data(table, metadata, transpose=False)
+    table, metadata = _load_data(table, metadata)
     X_train, X_test, y_train, y_test = _split_training_data(
         table, metadata, [axis1_category, axis2_category], test_size,
         random_state=random_state)
@@ -242,10 +222,3 @@ def predict_coordinates(table: pd.DataFrame, metadata: qiime2.Metadata,
     predictions = pd.DataFrame(predictions, index=X_test.index)
 
     return predictions, prediction_regression
-
-
-# Need to figure out how to pickle/import estimators
-def predict_new_data(table: pd.DataFrame, estimator: Pipeline):
-    '''Use trained estimator to predict values on unseen data.'''
-    predictions = estimator.predict(table)
-    return predictions

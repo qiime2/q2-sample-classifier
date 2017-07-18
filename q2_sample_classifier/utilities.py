@@ -70,20 +70,14 @@ parameters = {
 TEMPLATES = pkg_resources.resource_filename('q2_sample_classifier', 'assets')
 
 
-def _load_data(feature_data, targets_metadata, transpose=False):
+def _load_data(feature_data, targets_metadata):
     '''Load data and generate training and test sets.
 
     feature_data: pd.DataFrame
         feature X sample values.
     targets_metadata: qiime2.Metadata
         target (columns) X sample (rows) values.
-    transpose: bool
-        Transpose feature data? feature tables should be oriented
-        to have features (columns) X samples (rows)
     '''
-    if transpose is True:
-        feature_data = feature_data.transpose()
-
     # Load metadata, attempt to convert to numeric
     targets = _metadata_to_df(targets_metadata)
 
@@ -175,7 +169,7 @@ def _split_training_data(feature_data, targets, category, test_size=0.2,
 
 def _rfecv_feature_selection(feature_data, targets, estimator,
                              cv=5, step=1, scoring=None,
-                             random_state=None, n_jobs=4):
+                             random_state=None, n_jobs=1):
     '''Optimize feature depth by testing model accuracy at
     multiple feature depths with cross-validated recursive
     feature elimination.
@@ -228,8 +222,8 @@ def _rfecv_feature_selection(feature_data, targets, estimator,
 
 
 def split_optimize_classify(features, targets, category, estimator,
-                            output_dir, transpose=False, test_size=0.2,
-                            step=0.05, cv=5, random_state=None, n_jobs=4,
+                            output_dir, test_size=0.2,
+                            step=0.05, cv=5, random_state=None, n_jobs=1,
                             optimize_feature_selection=False,
                             parameter_tuning=False, param_dist=None,
                             calc_feature_importance=False, load_data=True,
@@ -238,7 +232,7 @@ def split_optimize_classify(features, targets, category, estimator,
     # Load, stratify, and split training/test data
     X_train, X_test, y_train, y_test = _prepare_training_data(
         features, targets, category, test_size, random_state,
-        load_data=load_data, transpose=transpose, stratify=stratify)
+        load_data=load_data, stratify=stratify)
 
     # optimize training feature count
     if optimize_feature_selection:
@@ -276,11 +270,10 @@ def split_optimize_classify(features, targets, category, estimator,
 
 
 def _prepare_training_data(features, targets, category, test_size,
-                           random_state, load_data=True, transpose=False,
-                           stratify=True):
+                           random_state, load_data=True, stratify=True):
     # load data
     if load_data:
-        features, targets = _load_data(features, targets, transpose=transpose)
+        features, targets = _load_data(features, targets)
 
     # split into training and test sets
     if stratify:
@@ -434,7 +427,7 @@ def _visualize_maturity_index(table, metadata, group_by, category,
 
 
 def _tune_parameters(X_train, y_train, estimator, param_dist, n_iter_search=20,
-                     n_jobs=-1, cv=None, random_state=None):
+                     n_jobs=1, cv=None, random_state=None):
     # run randomized search
     random_search = RandomizedSearchCV(
         estimator, param_distributions=param_dist, n_iter=n_iter_search,
@@ -563,7 +556,7 @@ def _train_adaboost_base_estimator(table, metadata, category, n_estimators,
         adaboost_estimator = AdaBoostRegressor
 
     if parameter_tuning:
-        features, targets = _load_data(table, metadata, transpose=False)
+        features, targets = _load_data(table, metadata)
         base_estimator = _tune_parameters(
             features, targets[category], base_estimator, param_dist,
             n_jobs=n_jobs, cv=cv, random_state=random_state)
