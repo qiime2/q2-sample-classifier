@@ -125,7 +125,7 @@ def maturity_index(output_dir: str, table: pd.DataFrame,
     param_dist, estimator = _select_estimator(estimator, n_jobs, n_estimators)
 
     # split input data into control and treatment groups
-    table, metadata = _load_data(table, metadata, transpose=False)
+    table, metadata = _load_data(table, metadata)
     md_control = metadata[metadata[group_by] == control]
     table_control = table.ix[list(md_control.index.values)]
 
@@ -161,7 +161,7 @@ def detect_outliers(table: pd.DataFrame,
                     contamination: float=0.05, random_state: int=None,
                     n_jobs: int=defaults['n_jobs']) -> (pd.Series):
     '''Detect outlier samples within a given sample class.'''
-    features, sample_md = _load_data(table, metadata, transpose=False)
+    features, sample_md = _load_data(table, metadata)
 
     # if opting to train on a subset, choose subset that fits criteria
     if subset_category and subset_value:
@@ -212,7 +212,7 @@ def predict_coordinates(table: pd.DataFrame, metadata: qiime2.Metadata,
     param_dist, estimator = _select_estimator(estimator, n_jobs, n_estimators)
 
     # split input data into training and test sets
-    table, metadata = _load_data(table, metadata, transpose=False)
+    table, metadata = _load_data(table, metadata)
     X_train, X_test, y_train, y_test = _split_training_data(
         table, metadata, [axis1_category, axis2_category], test_size,
         random_state=random_state)
