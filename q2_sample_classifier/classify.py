@@ -42,7 +42,7 @@ def classify_samples(output_dir: str, table: pd.DataFrame,
                      n_estimators: int=defaults['n_estimators'],
                      estimator: str=defaults['estimator_r'],
                      optimize_feature_selection: bool=False,
-                     parameter_tuning: bool=False):
+                     parameter_tuning: bool=False) -> None:
 
     # disable feature selection for unsupported estimators
     optimize_feature_selection, calc_feature_importance = \
@@ -73,7 +73,7 @@ def regress_samples(output_dir: str, table: pd.DataFrame,
                     n_estimators: int=defaults['n_estimators'],
                     estimator: str='RandomForestRegressor',
                     optimize_feature_selection: bool=False,
-                    stratify: str=False, parameter_tuning: bool=False):
+                    stratify: str=False, parameter_tuning: bool=False) -> None:
 
     # disable feature selection for unsupported estimators
     optimize_feature_selection, calc_feature_importance = \
@@ -105,7 +105,7 @@ def maturity_index(output_dir: str, table: pd.DataFrame,
                    random_state: int=None,
                    n_jobs: int=defaults['n_jobs'], parameter_tuning: bool=True,
                    optimize_feature_selection: bool=True, stratify: str=False,
-                   maz_stats: bool=True):
+                   maz_stats: bool=True) -> None:
     '''Calculate a "maturity index" to predict values of a continuous
     metadata category as a function of microbiota composition. A "normal"
     maturation profile is trained based on a set of control samples. MAZ scores
@@ -201,7 +201,7 @@ def predict_coordinates(table: pd.DataFrame, metadata: qiime2.Metadata,
                         random_state: int=None, n_jobs: int=defaults['n_jobs'],
                         parameter_tuning: bool=True,
                         optimize_feature_selection: bool=True,
-                        ) -> (pd.DataFrame, pd.DataFrame):
+                        ) -> (pd.DataFrame, pd.DataFrame) -> None:
     '''Predict and map sample coordinates in 2-D space, based on
     microbiota composition. E.g., this function could be used to predict
     latitude and longitude or precise location within 2-D physical space,
@@ -242,10 +242,3 @@ def predict_coordinates(table: pd.DataFrame, metadata: qiime2.Metadata,
     predictions = pd.DataFrame(predictions, index=X_test.index)
 
     return predictions, prediction_regression
-
-
-# Need to figure out how to pickle/import estimators
-def predict_new_data(table: pd.DataFrame, estimator: Pipeline):
-    '''Use trained estimator to predict values on unseen data.'''
-    predictions = estimator.predict(table)
-    return predictions
