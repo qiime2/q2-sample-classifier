@@ -169,7 +169,7 @@ def _split_training_data(feature_data, targets, category, test_size=0.2,
 
 def _rfecv_feature_selection(feature_data, targets, estimator,
                              cv=5, step=1, scoring=None,
-                             random_state=None, n_jobs=4):
+                             random_state=None, n_jobs=1):
     '''Optimize feature depth by testing model accuracy at
     multiple feature depths with cross-validated recursive
     feature elimination.
@@ -223,7 +223,7 @@ def _rfecv_feature_selection(feature_data, targets, estimator,
 
 def split_optimize_classify(features, targets, category, estimator,
                             output_dir, test_size=0.2,
-                            step=0.05, cv=5, random_state=None, n_jobs=4,
+                            step=0.05, cv=5, random_state=None, n_jobs=1,
                             optimize_feature_selection=False,
                             parameter_tuning=False, param_dist=None,
                             calc_feature_importance=False, load_data=True,
@@ -427,7 +427,7 @@ def _visualize_maturity_index(table, metadata, group_by, category,
 
 
 def _tune_parameters(X_train, y_train, estimator, param_dist, n_iter_search=20,
-                     n_jobs=-1, cv=None, random_state=None):
+                     n_jobs=1, cv=None, random_state=None):
     # run randomized search
     random_search = RandomizedSearchCV(
         estimator, param_distributions=param_dist, n_iter=n_iter_search,
