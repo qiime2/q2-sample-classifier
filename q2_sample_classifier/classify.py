@@ -106,21 +106,7 @@ def maturity_index(output_dir: str, table: pd.DataFrame,
                    n_jobs: int=defaults['n_jobs'], parameter_tuning: bool=True,
                    optimize_feature_selection: bool=True, stratify: str=False,
                    maz_stats: bool=True) -> None:
-    '''Calculate a "maturity index" to predict values of a continuous
-    metadata category as a function of microbiota composition. A "normal"
-    maturation profile is trained based on a set of control samples. MAZ scores
-    are then calculated for all samples. Plots predicted vs. expected values
-    for each group in category; barplots of MAZ scores for each group in
-    category; and heatmap of top feature abundance X category. CATEGORY MUST
-    BE PREVIOUSLY BINNED INTO SENSIBLE BINS, E.G., MONTHS INSTEAD OF DAYS.
 
-    category: str
-        Continuous metadata category to use for estimator fitting/prediction.
-    group_by: str
-        Metadata category to use for plotting and significance testing.
-    control: str
-        Value of group_by to use as control group.
-    '''
     # select estimator
     param_dist, estimator = _select_estimator(estimator, n_jobs, n_estimators)
 
@@ -160,7 +146,7 @@ def detect_outliers(table: pd.DataFrame,
                     n_estimators: int=defaults['n_estimators'],
                     contamination: float=0.05, random_state: int=None,
                     n_jobs: int=defaults['n_jobs']) -> (pd.Series):
-    '''Detect outlier samples within a given sample class.'''
+
     features, sample_md = _load_data(table, metadata)
 
     # if opting to train on a subset, choose subset that fits criteria
@@ -202,12 +188,7 @@ def predict_coordinates(table: pd.DataFrame, metadata: qiime2.Metadata,
                         parameter_tuning: bool=True,
                         optimize_feature_selection: bool=True,
                         ) -> (pd.DataFrame, pd.DataFrame) -> None:
-    '''Predict and map sample coordinates in 2-D space, based on
-    microbiota composition. E.g., this function could be used to predict
-    latitude and longitude or precise location within 2-D physical space,
-    such as the built environment. Metadata must be in float format, e.g.,
-    decimal degrees geocoordinates.
-    '''
+
     # select estimator
     param_dist, estimator = _select_estimator(estimator, n_jobs, n_estimators)
 
