@@ -352,9 +352,9 @@ def _visualize(output_dir, estimator, cm, accuracy, importances=None,
     if importances is not None:
         pd.set_option('display.float_format', '{:.3e}'.format)
         importances.to_csv(join(
-            output_dir, 'feature_importance.tsv'), sep='\t')
+            output_dir, 'feature_importance.tsv'), sep='\t', index=False)
         importances = importances.to_html(classes=(
-            "table table-striped table-hover")).replace(
+            "table table-striped table-hover"), index=False).replace(
                 'border="1"', 'border="0"')
 
     index = join(TEMPLATES, 'index.html')
