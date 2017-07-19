@@ -377,9 +377,11 @@ def _visualize_maturity_index(table, metadata, group_by, category,
     maz = '{0} MAZ score'.format(category)
 
     # save feature importance data and convert to html
-    importances.to_csv(join(output_dir, 'feature_importance.tsv'), sep='\t')
+    importances.to_csv(
+        join(output_dir, 'feature_importance.tsv'), index=False, sep='\t')
     importance = importances.to_html(classes=(
-        "table table-striped table-hover")).replace('border="1"', 'border="0"')
+        "table table-striped table-hover"), index=False).replace(
+            'border="1"', 'border="0"')
 
     # save predicted values, maturity, and MAZ score data
     maz_md = metadata[[group_by, category, predicted_category, maturity, maz]]
