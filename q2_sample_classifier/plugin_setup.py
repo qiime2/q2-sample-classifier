@@ -14,8 +14,7 @@ from qiime2.plugin import (
 from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.sample_data import SampleData
 from .classify import (
-    classify_samples, regress_samples, maturity_index, detect_outliers,
-    predict_coordinates)
+    classify_samples, regress_samples, maturity_index)
 import q2_sample_classifier
 from qiime2.plugin import SemanticType
 import qiime2.plugin.model as model
