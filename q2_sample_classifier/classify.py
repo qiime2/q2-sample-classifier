@@ -139,6 +139,8 @@ def maturity_index(output_dir: str, table: pd.DataFrame,
                               accuracy, output_dir, maz_stats=maz_stats)
 
 
+# The following method is experimental and is not registered in the current
+# release. Any use of the API is at user's own risk.
 def detect_outliers(table: pd.DataFrame,
                     metadata: qiime2.Metadata, subset_category: str=None,
                     subset_value: str=None,
@@ -176,6 +178,8 @@ def detect_outliers(table: pd.DataFrame,
     return y_pred
 
 
+# The following method is experimental and is not registered in the current
+# release. Any use of the API is at user's own risk.
 def predict_coordinates(table: pd.DataFrame, metadata: qiime2.Metadata,
                         axis1_category: str='latitude',
                         axis2_category: str='longitude',

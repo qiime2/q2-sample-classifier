@@ -14,8 +14,7 @@ from qiime2.plugin import (
 from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.sample_data import SampleData
 from .classify import (
-    classify_samples, regress_samples, maturity_index, detect_outliers,
-    predict_coordinates)
+    classify_samples, regress_samples, maturity_index)
 import q2_sample_classifier
 from qiime2.plugin import SemanticType
 import qiime2.plugin.model as model
@@ -284,82 +283,4 @@ plugin.visualizers.register_function(
                  'succession during wine fermentation, or microbial community '
                  'differences along environmental gradients, as a function of '
                  'two or more different "treatment" groups.')
-)
-
-
-plugin.methods.register_function(
-    function=detect_outliers,
-    inputs=inputs,
-    parameters={**parameters['base'],
-                'subset_category': Str,
-                'subset_value': Str,
-                'contamination': Float % Range(0.0, 0.5, inclusive_end=True,
-                                               inclusive_start=True),
-                },
-    outputs=[('inliers', SampleData[BooleanSeries])],
-    input_descriptions=input_descriptions,
-    parameter_descriptions={
-        **parameter_descriptions['base'],
-        'subset_category': ('Metadata category to use for selecting sample '
-                            'subset for training the decision function.'),
-        'subset_value': 'Value of subset_category to use as control group.',
-        'contamination': ('The amount of expected contamination of the data '
-                          'set, i.e., the proportion of outliers in the data '
-                          'set. Used when fitting to define the threshold on '
-                          'the decision function.'),
-    },
-    output_descriptions={
-        'inliers': ('Vector containing inlier status of each input sample. '
-                    'Inliers have value 1, outliers have value -1.')
-    },
-    name='Predict dataset outliers and contaminants.',
-    description=(
-        'Detect outlier samples within a given sample class. E.g., detecting '
-        'potentially contaminated samples, mislabeled samples, or novelty. '
-        'cluster with another sample type. For more information, see '
-        'https://github.com/nbokulich/q2-sample-classifier#outlier-detection')
-)
-
-
-plugin.methods.register_function(
-    function=predict_coordinates,
-    inputs=inputs,
-    parameters={
-        **{k: parameters['standard'][k] for k in parameters['standard'].keys()
-           if k != "category"},
-        'axis1_category': Str,
-        'axis2_category': Str,
-        'estimator': Str % Choices([
-            'RandomForestRegressor', 'ExtraTreesRegressor', 'Lasso',
-            'GradientBoostingRegressor', 'SVR', 'Ridge', 'ElasticNet']),
-        **parameters['base'],
-    },
-    outputs=[('predictions', SampleData[Coordinates]),
-             ('prediction_regression', SampleData[Coordinates])],
-    input_descriptions=input_descriptions,
-    parameter_descriptions={
-        **parameter_descriptions['base'],
-        **{k: parameter_descriptions['standard'][k] for k in
-           parameter_descriptions['standard'].keys() if k != "category"},
-        'axis1_category': (
-            'Category name containing first dimension (e.g., latitude)'
-            'coordinates in sample metadata file.'),
-        'axis2_category': (
-            'Category name containing second dimension (e.g., longitude)'
-            'coordinates in sample metadata file.'),
-        'estimator': 'Regression model to use for prediction.',
-    },
-    output_descriptions={
-        'predictions': 'Predicted coordinates for each dimension.',
-        'prediction_regression': 'Regression results for each dimension.',
-    },
-    name='Predict sample geocoordinates.',
-    description=(
-        'Predict two-dimensional coordinates as a function of microbiota '
-        'composition. E.g., this function could be used to predict '
-        'latitude and longitude (2-D) or precise location within any 2-D '
-        'physical space, such as the built environment. Metadata '
-        'must be in float format, e.g., decimal degrees geocoordinates. '
-        'Output consists of predicted coordinates, accuracy scores for each '
-        'dimension, and linear regression results for each dimension.')
 )
