@@ -55,7 +55,7 @@ cd ~/Desktop/projects/q2-sample-classifier/q2_sample_classifier/test_data/
 qiime sample-classifier classify-samples \
 	--i-table chardonnay.table.qza \
 	--m-metadata-file chardonnay.map.txt \
-	--p-category Vineyard \
+	--m-metadata-category Vineyard \
 	--o-visualization test \
 	--p-optimize-feature-selection \
 	--p-parameter-tuning \
@@ -71,7 +71,7 @@ In a regression problem, we are interested in predicting numerical values for a 
 qiime sample-classifier regress-samples \
 	--i-table ecam-table-maturity.qza \
 	--m-metadata-file ecam_map_maturity.txt \
-	--p-category month \
+	--m-metadata-category month \
 	--o-visualization month \
 	--p-optimize-feature-selection \
 	--p-parameter-tuning \
@@ -110,82 +110,10 @@ qiime sample-classifier maturity-index \
 ```
 
 ## Outlier detection
-This method detects contaminated samples and other outliers among your samples, tagging them for removal or follow-up study. Applications include but are not limited to detecting potentially contaminated samples, detecting potentially mislabeled samples, and detecting significant novelty, e.g., patients who responded to a treatment.
-
-Input a feature table, possibly filtered to remove samples, depending on the goals of this analysis. Outliers can be detected from multiple sample types simultaneously, provided the goal is not to detect mislabeled samples or samples cross-contaminated with another sample type in this table. E.g., for detecting novelty or exogenous contaminants (e.g., from reagents), many different sample types may be tested simultaneously. Otherwise, the feature table should be filtered to contain only one or more sample classes between which cross-contamination is not suspected, or if these sample classes are highly resolved and mislabeled samples are not suspected. These assumptions may be supported by a preliminary principal coordinates analysis or other diversity analyses to determine how well resolved sample classes are and whether some sample classes appear to cluster with the wrong class(es).
-
-Inputs support two different modes: if subset_category and subset_value are set, a subset of the input table is used as a "gold standard" sample pool for training the model. This mode is useful, for example, if you have a subset of "positive control" samples that represent the known diversity of your sample types (should be sufficiently large to capture normal extent of variation). Otherwise, the model is trained on all samples. Regardless of the input mode used, outlier status is predicted on all samples.
-
-Returns a series of values documenting outlier status: inliers have value False, outliers have value True. This series may be input as a sample metadata file and used to filter a feature table, if appropriate, using q2_feature_table.filter_samples, to remove contaminants or focus on novelty samples. If interested in potentially mislabeled samples, use `classify_samples` or principal coordinates analysis to determine whether outliers classify as or cluster with another sample type.
-
-```
-qiime sample-classifier detect-outliers \
-	--i-table chardonnay.table.qza \
-	--m-metadata-file chardonnay.map.txt \
-	--p-contamination 0.05 \
-	--p-n-jobs 4 \
-	--o-inliers outliers.qza
-```
-Let's view a PCoA plot of outliers vs. inliers:
-
-![Alt text](./examples/outliers.jpg?raw=true "Outlier PCoA plot")
-```
-qiime feature-table rarefy \
-	--i-table chardonnay.table.qza \
-	--p-sampling-depth 2000 \
-	--o-rarefied-table even_table
-qiime diversity beta \
-	--i-table even_table.qza \
-	--o-distance-matrix  distance \
-	--p-metric braycurtis
-qiime diversity pcoa \
-	--i-distance-matrix distance.qza \
-	--o-pcoa  pcoa
-qiime emperor plot \
-	--i-pcoa  pcoa.qza \
-	--o-visualization  outliers_plot \
-	--m-metadata-file outliers.qza
-
-```
-We can then filter outliers from the feature table with the following command:
-```
-qiime feature-table filter-samples \
-	--i-table chardonnay.table.qza \
-	--o-filtered-table inliers-table \
-	--m-metadata-file inliers.qza \
-	--p-where "outlier='False'"
-```
+coming soon...
 
 ## Predicting geospatial coordinates
-The method predict-coordinates allows us to predict two continuous variables on a single set of test data, allowing us to determine how well microbial composition predicts geographical source.
-```
-qiime sample-classifier predict-coordinates \
-	--i-table chardonnay.table.qza \
-	--m-metadata-file chardonnay.map.txt \
-	--p-axis1-category latitude \
-	--p-axis2-category longitude \
-	--p-n-jobs 4 \
-	--o-predictions coord-predictions \
-	--o-prediction-regression coord-regression
-```
-This method generates a list of predicted latitude and longitude coordinates for each sample, contained in the 'predictions' artifact. The 'prediction-regression' contains linear regression and accuracy results for predicted vs. actual coordinates.
-
-Furthermore, we can pass these results to the q2-coordinates plugin to visualize these results, mapping actual and predicted coordinates for each sample onto a map.(Note: this plugin is under LGPL license due to dependency requirements.)
-
-![Alt text](./examples/predicted-coordinates.jpg?raw=true "Predicted coordinates plot")
-
-```
-qiime coordinates map-predicted-coordinates \
-	--i-predictions coord-predictions.qza \
-	--i-prediction-regression coord-regression.qza \
-	--m-metadata-file chardonnay.map.txt \
-	--p-latitude latitude \
-	--p-longitude longitude \
-	--p-pred-lat latitude \
-	--p-pred-long longitude \
-	--o-visualization prediction-map
-```
-
+coming soon...
 
 # Troubleshooting
 Here follow some common errors and their solutions.

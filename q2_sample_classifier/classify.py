@@ -33,7 +33,7 @@ defaults = {
 
 
 def classify_samples(output_dir: str, table: pd.DataFrame,
-                     metadata: qiime2.Metadata, category: str,
+                     metadata: qiime2.MetadataCategory,
                      test_size: float=defaults['test_size'],
                      step: float=defaults['step'],
                      cv: int=defaults['cv'], random_state: int=None,
@@ -42,6 +42,9 @@ def classify_samples(output_dir: str, table: pd.DataFrame,
                      estimator: str=defaults['estimator_r'],
                      optimize_feature_selection: bool=False,
                      parameter_tuning: bool=False) -> None:
+
+    # extract category name from MetadataCategory
+    category = metadata.to_series().name
 
     # disable feature selection for unsupported estimators
     optimize_feature_selection, calc_feature_importance = \
@@ -64,7 +67,7 @@ def classify_samples(output_dir: str, table: pd.DataFrame,
 
 
 def regress_samples(output_dir: str, table: pd.DataFrame,
-                    metadata: qiime2.Metadata, category: str,
+                    metadata: qiime2.MetadataCategory,
                     test_size: float=defaults['test_size'],
                     step: float=defaults['step'],
                     cv: int=defaults['cv'], random_state: int=None,
@@ -73,6 +76,9 @@ def regress_samples(output_dir: str, table: pd.DataFrame,
                     estimator: str='RandomForestRegressor',
                     optimize_feature_selection: bool=False,
                     stratify: str=False, parameter_tuning: bool=False) -> None:
+
+    # extract category name from MetadataCategory
+    category = metadata.to_series().name
 
     # disable feature selection for unsupported estimators
     optimize_feature_selection, calc_feature_importance = \
