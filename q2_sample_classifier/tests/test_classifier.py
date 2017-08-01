@@ -158,6 +158,40 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 calc_feature_importance=False, scoring=mean_squared_error)
             self.assertAlmostEqual(accuracy, seeded_results[regressor])
 
+    # test some invalid inputs/edge cases
+    def test_invalids(self):
+        estimator, pd, pt = _set_parameters_and_estimator(
+            'RandomForestClassifier', self.table_chard_fp, self.md_chard_fp,
+            'Region', n_estimators=10, n_jobs=-1, cv=1,
+            random_state=123, parameter_tuning=False, classification=True)
+        regressor, pd, pt = _set_parameters_and_estimator(
+            'RandomForestRegressor', self.table_chard_fp, self.md_chard_fp,
+            'Region', n_estimators=10, n_jobs=-1, cv=1,
+            random_state=123, parameter_tuning=False, classification=True)
+        with self.assertRaises(ValueError):
+            # zero samples (if mapping file and table have no common samples)
+            estimator, cm, accuracy, importances = split_optimize_classify(
+                self.table_ecam_fp, self.md_chard_fp, 'Region', estimator,
+                self.temp_dir.name, test_size=0.5, cv=1, random_state=123,
+                n_jobs=-1, optimize_feature_selection=False,
+                parameter_tuning=False, param_dist=None,
+                calc_feature_importance=False)
+            # too few samples to stratify
+            estimator, cm, accuracy, importances = split_optimize_classify(
+                self.table_chard_fp, self.md_chard_fp, 'Region', estimator,
+                self.temp_dir.name, test_size=0.9, cv=1, random_state=123,
+                n_jobs=-1, optimize_feature_selection=False,
+                parameter_tuning=False, param_dist=None,
+                calc_feature_importance=False)
+            # regressor chosen for classification problem
+            estimator, cm, accuracy, importances = split_optimize_classify(
+                self.table_chard_fp, self.md_chard_fp, 'Region', regressor,
+                self.temp_dir.name, test_size=0.5, cv=1, random_state=123,
+                n_jobs=-1, optimize_feature_selection=False,
+                parameter_tuning=False, param_dist=None,
+                calc_feature_importance=False)
+
+    # test experimental functions
     def test_maturity_index(self):
         maturity_index(self.temp_dir.name, self.table_ecam_fp, self.md_ecam_fp,
                        category='month', group_by='delivery', n_jobs=-1,
