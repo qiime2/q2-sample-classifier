@@ -103,7 +103,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         mkdir(tmpd)
         classify_samples(tmpd, self.table_chard_fp, self.mdc_chard_fp,
                          test_size=0.5, cv=3,
-                         n_estimators=2, n_jobs=-1,
+                         n_estimators=2, n_jobs=1,
                          estimator='RandomForestClassifier',
                          parameter_tuning=True,
                          optimize_feature_selection=True)
@@ -118,15 +118,19 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             mkdir(tmpd)
             estimator, pd, pt = _set_parameters_and_estimator(
                 classifier, self.table_chard_fp, self.md_chard_fp, 'Region',
-                n_estimators=10, n_jobs=-1, cv=1,
+                n_estimators=10, n_jobs=1, cv=1,
                 random_state=123, parameter_tuning=False, classification=True)
             estimator, cm, accuracy, importances = split_optimize_classify(
                 self.table_chard_fp, self.md_chard_fp, 'Region', estimator,
                 tmpd, test_size=0.5, cv=1, random_state=123,
-                n_jobs=-1, optimize_feature_selection=False,
+                n_jobs=1, optimize_feature_selection=False,
                 parameter_tuning=False, param_dist=None,
                 calc_feature_importance=False)
             self.assertAlmostEqual(accuracy, seeded_results[classifier])
+            self.assertAlmostEqual(
+                accuracy, seeded_results[classifier], places=4,
+                msg='Accuracy of %s classifier was %f, but expected %f' % (
+                    regressor, accuracy, seeded_results[classifier]))
 
     # test that the plugin/visualizer work
     def test_regress_samples(self):
@@ -134,7 +138,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         mkdir(tmpd)
         regress_samples(tmpd, self.table_ecam_fp, self.mdc_ecam_fp,
                         test_size=0.5, cv=3,
-                        n_estimators=2, n_jobs=-1,
+                        n_estimators=2, n_jobs=1,
                         estimator='RandomForestRegressor')
 
     # test that each regressor works and delivers an expected accuracy result
@@ -148,63 +152,68 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             mkdir(tmpd)
             estimator, pd, pt = _set_parameters_and_estimator(
                 regressor, self.table_ecam_fp, self.md_ecam_fp, 'month',
-                n_estimators=10, n_jobs=-1, cv=1,
+                n_estimators=10, n_jobs=1, cv=1,
                 random_state=123, parameter_tuning=False, classification=False)
             estimator, cm, accuracy, importances = split_optimize_classify(
                 self.table_ecam_fp, self.md_ecam_fp, 'month', estimator,
                 tmpd, test_size=0.5, cv=1, random_state=123,
-                n_jobs=-1, optimize_feature_selection=False,
+                n_jobs=1, optimize_feature_selection=False,
                 parameter_tuning=False, param_dist=None, classification=False,
                 calc_feature_importance=False, scoring=mean_squared_error)
-            self.assertAlmostEqual(accuracy, seeded_results[regressor])
+            self.assertAlmostEqual(
+                accuracy, seeded_results[regressor], places=4,
+                msg='Accuracy of %s regressor was %f, but expected %f' % (
+                    regressor, accuracy, seeded_results[regressor]))
 
     # test some invalid inputs/edge cases
     def test_invalids(self):
         estimator, pd, pt = _set_parameters_and_estimator(
             'RandomForestClassifier', self.table_chard_fp, self.md_chard_fp,
-            'Region', n_estimators=10, n_jobs=-1, cv=1,
+            'Region', n_estimators=10, n_jobs=1, cv=1,
             random_state=123, parameter_tuning=False, classification=True)
         regressor, pd, pt = _set_parameters_and_estimator(
             'RandomForestRegressor', self.table_chard_fp, self.md_chard_fp,
-            'Region', n_estimators=10, n_jobs=-1, cv=1,
+            'Region', n_estimators=10, n_jobs=1, cv=1,
             random_state=123, parameter_tuning=False, classification=True)
-        with self.assertRaises(ValueError):
-            # zero samples (if mapping file and table have no common samples)
+        # zero samples (if mapping file and table have no common samples)
+        with self.assertRaisesRegex(ValueError, "metadata"):
             estimator, cm, accuracy, importances = split_optimize_classify(
                 self.table_ecam_fp, self.md_chard_fp, 'Region', estimator,
                 self.temp_dir.name, test_size=0.5, cv=1, random_state=123,
-                n_jobs=-1, optimize_feature_selection=False,
+                n_jobs=1, optimize_feature_selection=False,
                 parameter_tuning=False, param_dist=None,
                 calc_feature_importance=False)
-            # too few samples to stratify
+        # too few samples to stratify
+        with self.assertRaises(ValueError, "metadata"):
             estimator, cm, accuracy, importances = split_optimize_classify(
                 self.table_chard_fp, self.md_chard_fp, 'Region', estimator,
                 self.temp_dir.name, test_size=0.9, cv=1, random_state=123,
-                n_jobs=-1, optimize_feature_selection=False,
+                n_jobs=1, optimize_feature_selection=False,
                 parameter_tuning=False, param_dist=None,
                 calc_feature_importance=False)
-            # regressor chosen for classification problem
+        # regressor chosen for classification problem
+        with self.assertRaises(ValueError, "convert"):
             estimator, cm, accuracy, importances = split_optimize_classify(
                 self.table_chard_fp, self.md_chard_fp, 'Region', regressor,
                 self.temp_dir.name, test_size=0.5, cv=1, random_state=123,
-                n_jobs=-1, optimize_feature_selection=False,
+                n_jobs=1, optimize_feature_selection=False,
                 parameter_tuning=False, param_dist=None,
                 calc_feature_importance=False)
 
     # test experimental functions
     def test_maturity_index(self):
         maturity_index(self.temp_dir.name, self.table_ecam_fp, self.md_ecam_fp,
-                       category='month', group_by='delivery', n_jobs=-1,
+                       category='month', group_by='delivery', n_jobs=1,
                        control='Vaginal', test_size=0.4)
 
     def test_detect_outliers(self):
         detect_outliers(self.table_chard_fp, self.md_chard_fp,
-                        n_jobs=-1, contamination=0.05)
+                        n_jobs=1, contamination=0.05)
 
     def test_predict_coordinates(self):
         pred, coords = predict_coordinates(
             self.table_chard_fp, self.md_chard_fp,
-            axis1_category='latitude', axis2_category='longitude', n_jobs=-1)
+            axis1_category='latitude', axis2_category='longitude', n_jobs=1)
 
 
 md = pd.DataFrame([(1, 'a', 0.11), (1, 'a', 0.12), (1, 'a', 0.13),
