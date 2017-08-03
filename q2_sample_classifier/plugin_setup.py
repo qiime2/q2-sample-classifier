@@ -27,6 +27,10 @@ plugin = Plugin(
     version=q2_sample_classifier.__version__,
     website="https://github.com/nbokulich/q2-sample-classifier",
     package='q2_sample_classifier',
+    description=(
+        'This QIIME 2 plugin supports methods for supervised classification '
+        'and regression of sample metadata, and other supervised machine '
+        'learning methods.'),
     short_description=(
         'Plugin for machine learning prediction of sample metadata.')
 )
