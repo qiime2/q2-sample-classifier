@@ -91,7 +91,11 @@ def _load_data(feature_data, targets_metadata):
 
 def _metadata_to_df(metadata):
     # Load metadata, attempt to convert to numeric
-    metadata = metadata.to_dataframe()
+    try:
+        metadata = metadata.to_dataframe()
+    # metadata category has no attribute to_dataframe()
+    except AttributeError:
+        metadata = metadata.to_series().to_frame()
     metadata = metadata.apply(lambda x: pd.to_numeric(x, errors='ignore'))
     return metadata
 
@@ -168,8 +172,7 @@ def _split_training_data(feature_data, targets, category, test_size=0.2,
 
 
 def _rfecv_feature_selection(feature_data, targets, estimator,
-                             cv=5, step=1, scoring=None,
-                             random_state=None, n_jobs=1):
+                             cv=5, step=1, scoring=None, n_jobs=1):
     '''Optimize feature depth by testing model accuracy at
     multiple feature depths with cross-validated recursive
     feature elimination.
@@ -237,8 +240,7 @@ def split_optimize_classify(features, targets, category, estimator,
     # optimize training feature count
     if optimize_feature_selection:
         X_train, X_test, importance = _optimize_feature_selection(
-            output_dir, X_train, X_test, y_train, estimator, cv, step,
-            random_state, n_jobs)
+            output_dir, X_train, X_test, y_train, estimator, cv, step, n_jobs)
 
     # optimize tuning parameters on your training set
     if parameter_tuning:
@@ -289,10 +291,9 @@ def _prepare_training_data(features, targets, category, test_size,
 
 
 def _optimize_feature_selection(output_dir, X_train, X_test, y_train,
-                                estimator, cv, step, random_state, n_jobs):
+                                estimator, cv, step, n_jobs):
     rfecv, importance, top_feature_data, rfep = _rfecv_feature_selection(
-        X_train, y_train, estimator=estimator, cv=cv, step=step,
-        random_state=random_state, n_jobs=n_jobs)
+        X_train, y_train, estimator=estimator, cv=cv, step=step, n_jobs=n_jobs)
     if output_dir:
         rfep.savefig(join(output_dir, 'rfe_plot.png'))
         rfep.savefig(join(output_dir, 'rfe_plot.pdf'))
@@ -486,20 +487,23 @@ def _maz_score(metadata, predicted, category, group_by, control):
     return metadata
 
 
-def _select_estimator(estimator, n_jobs, n_estimators):
+def _select_estimator(estimator, n_jobs, n_estimators, random_state=None):
     '''Select estimator and parameters from argument name.'''
     # Regressors
     if estimator == 'RandomForestRegressor':
         param_dist = {**parameters['ensemble'], **parameters['bootstrap']}
         estimator = RandomForestRegressor(
-            n_jobs=n_jobs, n_estimators=n_estimators)
+            n_jobs=n_jobs, n_estimators=n_estimators,
+            random_state=random_state)
     elif estimator == 'ExtraTreesRegressor':
         param_dist = {**parameters['ensemble'], **parameters['bootstrap']}
         estimator = ExtraTreesRegressor(
-            n_jobs=n_jobs, n_estimators=n_estimators)
+            n_jobs=n_jobs, n_estimators=n_estimators,
+            random_state=random_state)
     elif estimator == 'GradientBoostingRegressor':
         param_dist = parameters['ensemble']
-        estimator = GradientBoostingRegressor(n_estimators=n_estimators)
+        estimator = GradientBoostingRegressor(
+            n_estimators=n_estimators, random_state=random_state)
     elif estimator == 'SVR':
         param_dist = {**parameters['svm'], 'epsilon': [0.0, 0.1]}
         estimator = SVR(kernel='rbf')
@@ -508,13 +512,13 @@ def _select_estimator(estimator, n_jobs, n_estimators):
         estimator = SVR(kernel='linear')
     elif estimator == 'Ridge':
         param_dist = parameters['linear']
-        estimator = Ridge(solver='auto')
+        estimator = Ridge(solver='auto', random_state=random_state)
     elif estimator == 'Lasso':
         param_dist = parameters['linear']
-        estimator = Lasso()
+        estimator = Lasso(random_state=random_state)
     elif estimator == 'ElasticNet':
         param_dist = parameters['linear']
-        estimator = ElasticNet()
+        estimator = ElasticNet(random_state=random_state)
     elif estimator == 'KNeighborsRegressor':
         param_dist = parameters['kneighbors']
         estimator = KNeighborsRegressor(algorithm='auto')
@@ -524,21 +528,24 @@ def _select_estimator(estimator, n_jobs, n_estimators):
         param_dist = {**parameters['ensemble'], **parameters['bootstrap'],
                       **parameters['criterion']}
         estimator = RandomForestClassifier(
-            n_jobs=n_jobs, n_estimators=n_estimators)
+            n_jobs=n_jobs, n_estimators=n_estimators,
+            random_state=random_state)
     elif estimator == 'ExtraTreesClassifier':
         param_dist = {**parameters['ensemble'], **parameters['bootstrap'],
                       **parameters['criterion']}
         estimator = ExtraTreesClassifier(
-            n_jobs=n_jobs, n_estimators=n_estimators)
+            n_jobs=n_jobs, n_estimators=n_estimators,
+            random_state=random_state)
     elif estimator == 'GradientBoostingClassifier':
         param_dist = parameters['ensemble']
-        estimator = GradientBoostingClassifier(n_estimators=n_estimators)
+        estimator = GradientBoostingClassifier(
+            n_estimators=n_estimators, random_state=random_state)
     elif estimator == 'LinearSVC':
         param_dist = parameters['linear_svm']
-        estimator = LinearSVC()
+        estimator = LinearSVC(random_state=random_state)
     elif estimator == 'SVC':
         param_dist = parameters['svm']
-        estimator = SVC(kernel='rbf')
+        estimator = SVC(kernel='rbf', random_state=random_state)
     elif estimator == 'KNeighborsClassifier':
         param_dist = parameters['kneighbors']
         estimator = KNeighborsClassifier(algorithm='auto')
@@ -547,7 +554,8 @@ def _select_estimator(estimator, n_jobs, n_estimators):
 
 
 def _train_adaboost_base_estimator(table, metadata, category, n_estimators,
-                                   n_jobs, cv, random_state, parameter_tuning,
+                                   n_jobs, cv, random_state=None,
+                                   parameter_tuning=False,
                                    classification=True):
     param_dist = parameters['ensemble']
     if classification:
@@ -563,7 +571,8 @@ def _train_adaboost_base_estimator(table, metadata, category, n_estimators,
             features, targets[category], base_estimator, param_dist,
             n_jobs=n_jobs, cv=cv, random_state=random_state)
 
-    return adaboost_estimator(base_estimator, n_estimators)
+    return adaboost_estimator(
+        base_estimator, n_estimators, random_state=random_state)
 
 
 def _disable_feature_selection(estimator, optimize_feature_selection):
@@ -593,7 +602,7 @@ def _set_parameters_and_estimator(estimator, table, metadata, category,
         param_dist = None
     else:
         param_dist, estimator = _select_estimator(
-            estimator, n_jobs, n_estimators)
+            estimator, n_jobs, n_estimators, random_state)
     return estimator, param_dist, parameter_tuning
 
 

@@ -10,7 +10,7 @@
 
 
 from qiime2.plugin import (
-    Int, Str, Float, Range, Bool, Plugin, Metadata, Choices)
+    Int, Str, Float, Range, Bool, Plugin, Metadata, Choices, MetadataCategory)
 from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.sample_data import SampleData
 from .classify import (
@@ -154,7 +154,6 @@ parameters = {
         'n_jobs': Int,
         'n_estimators': Int % Range(1, None)},
     'standard': {
-        'category': Str,
         'test_size': Float % Range(0.0, 1.0, inclusive_end=False,
                                    inclusive_start=False),
         'step': Float % Range(0.0, 1.0, inclusive_end=False,
@@ -162,12 +161,15 @@ parameters = {
         'cv': Int % Range(1, None),
         'parameter_tuning': Bool,
         'optimize_feature_selection': Bool},
+    'standard_metadata': {'metadata': MetadataCategory},
+    'modified_metadata': {
+        'metadata': Metadata,
+        'category': Str},
     'regressor': {'stratify': Bool}
 }
 
 parameter_descriptions = {
-    'base': {'metadata': 'Sample metadata to use as prediction targets.',
-             'random_state': 'Seed used by random number generator.',
+    'base': {'random_state': 'Seed used by random number generator.',
              'n_jobs': 'Number of jobs to run in parallel.',
              'n_estimators': (
                 'Number of trees to grow for estimation. More trees will '
@@ -176,7 +178,6 @@ parameter_descriptions = {
                 'parameter only affects ensemble estimators, such as Random '
                 'Forest, AdaBoost, ExtraTrees, and GradientBoosting.')},
     'standard': {
-        'category': 'Metadata category to use for training and prediction.',
         'test_size': ('Fraction of input samples to exclude from training set '
                       'and use for classifier testing.'),
         'step': ('If optimize_feature_selection is True, step is the '
@@ -191,6 +192,11 @@ parameter_descriptions = {
         'stratify': ('Evenly stratify training and test data among metadata '
                      'categories. If True, all values in category must match '
                      'at least two samples.')},
+    'standard_metadata': {
+        'metadata': 'Sample metadata category to use as prediction target.'},
+    'modified_metadata': {
+        'metadata': 'Sample metadata to use as prediction targets.',
+        'category': 'Metadata category to use for training and prediction.'},
     'estimator': {
         'estimator': 'Estimator method to use for sample prediction.'}
 }
@@ -202,6 +208,7 @@ plugin.visualizers.register_function(
     parameters={
         **parameters['base'],
         **parameters['standard'],
+        **parameters['standard_metadata'],
         'estimator': Str % Choices(
             ['RandomForestClassifier', 'ExtraTreesClassifier',
              'GradientBoostingClassifier', 'AdaBoostClassifier',
@@ -210,6 +217,7 @@ plugin.visualizers.register_function(
     parameter_descriptions={
         **parameter_descriptions['base'],
         **parameter_descriptions['standard'],
+        **parameter_descriptions['standard_metadata'],
         **parameter_descriptions['estimator']},
     name='Supervised learning classifier.',
     description=description.format(
@@ -222,6 +230,7 @@ plugin.visualizers.register_function(
     parameters={
         **parameters['base'],
         **parameters['standard'],
+        **parameters['standard_metadata'],
         **parameters['regressor'],
         'estimator': Str % Choices(
             ['RandomForestRegressor', 'ExtraTreesRegressor',
@@ -232,6 +241,7 @@ plugin.visualizers.register_function(
         **parameter_descriptions['base'],
         **parameter_descriptions['standard'],
         **parameter_descriptions['regressor'],
+        **parameter_descriptions['standard_metadata'],
         **parameter_descriptions['estimator']},
     name='Supervised learning regressor.',
     description=description.format(
@@ -250,6 +260,7 @@ plugin.visualizers.register_function(
                     'ElasticNet']),
                 **parameters['base'],
                 **parameters['standard'],
+                **parameters['modified_metadata'],
                 **parameters['regressor'],
                 'maz_stats': Bool,
                 },
@@ -257,6 +268,7 @@ plugin.visualizers.register_function(
     parameter_descriptions={
         **parameter_descriptions['base'],
         **parameter_descriptions['standard'],
+        **parameter_descriptions['modified_metadata'],
         'group_by': ('Metadata category to use for plotting and significance '
                      'testing between main treatment groups.'),
         'control': (
