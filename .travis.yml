@@ -18,7 +18,6 @@ install:
   - pip install .
   - pip install flake8 coveralls
 script:
-  - python q2_sample_classifier/tests/test_classifier.py
   - flake8 q2_sample_classifier
   - py.test --cov=q2_sample_classifier
 after_success:
