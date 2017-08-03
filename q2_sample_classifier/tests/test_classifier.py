@@ -184,7 +184,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 parameter_tuning=False, param_dist=None,
                 calc_feature_importance=False)
         # too few samples to stratify
-        with self.assertRaises(ValueError, "metadata"):
+        with self.assertRaisesRegex(ValueError, "metadata"):
             estimator, cm, accuracy, importances = split_optimize_classify(
                 self.table_chard_fp, self.md_chard_fp, 'Region', estimator,
                 self.temp_dir.name, test_size=0.9, cv=1, random_state=123,
@@ -192,7 +192,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 parameter_tuning=False, param_dist=None,
                 calc_feature_importance=False)
         # regressor chosen for classification problem
-        with self.assertRaises(ValueError, "convert"):
+        with self.assertRaisesRegex(ValueError, "convert"):
             estimator, cm, accuracy, importances = split_optimize_classify(
                 self.table_chard_fp, self.md_chard_fp, 'Region', regressor,
                 self.temp_dir.name, test_size=0.5, cv=1, random_state=123,
