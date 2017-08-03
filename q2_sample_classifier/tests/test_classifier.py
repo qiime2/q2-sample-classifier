@@ -130,7 +130,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             self.assertAlmostEqual(
                 accuracy, seeded_results[classifier], places=4,
                 msg='Accuracy of %s classifier was %f, but expected %f' % (
-                    regressor, accuracy, seeded_results[classifier]))
+                    classifier, accuracy, seeded_results[classifier]))
 
     # test that the plugin/visualizer work
     def test_regress_samples(self):
