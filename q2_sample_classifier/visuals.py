@@ -148,13 +148,17 @@ def _linear_regress(actual, pred):
                         index=[actual.name])
 
 
-def _plot_confusion_matrix(y_test, y_pred, classes, accuracy, normalize=True):
+def _plot_confusion_matrix(y_test, y_pred, classes, accuracy, normalize=True,
+                           palette='Default'):
+    if palette == 'Default':
+        palette = sns.cubehelix_palette(dark=0.15, light=0.95, as_cmap=True)
+
     cm = confusion_matrix(y_test, y_pred)
     # normalize
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
-    confusion = sns.heatmap(cm)
+    confusion = sns.heatmap(cm, cmap=palette)
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     confusion.set_xticklabels(classes, rotation=90, ha='center')
