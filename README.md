@@ -1,34 +1,34 @@
 # q2-sample-classifier
 
-[![Build Status](https://travis-ci.org/nbokulich/q2-sample-classifier.svg?branch=master)](https://travis-ci.org/nbokulich/q2-sample-classifier) [![Coverage Status](https://coveralls.io/repos/github/nbokulich/q2-sample-classifier/badge.svg?branch=master)](https://coveralls.io/github/nbokulich/q2-sample-classifier?branch=master)
+[![Build Status](https://travis-ci.org/qiime2/q2-sample-classifier.svg?branch=master)](https://travis-ci.org/qiime2/q2-sample-classifier) [![Coverage Status](https://coveralls.io/repos/github/qiime2/q2-sample-classifier/badge.svg?branch=master)](https://coveralls.io/github/qiime2/q2-sample-classifier?branch=master)
 
 QIIME2 plugin for machine learning prediction of sample data.
 
 This software is currently in pre-alpha phase and the API may be subject to change without notice.
 
-If you use any of the code contained in this repository, please cite: https://github.com/nbokulich/q2-sample-classifier
+If you use any of the code contained in this repository, please cite: https://github.com/qiime2/q2-sample-classifier
 
 This plugin requires QIIME2. See the [QIIME2 documentation](https://qiime2.org/) for installation and use of the QIIME2 framework.
 
 Not sure which model to use? A good starting point is [this flowchart](http://scikit-learn.org/dev/tutorial/machine_learning_map/index.html). Most of the classification and regression models shown in that chart (and a few extras) are implemented in q2-sample-classifier.
 
 # Quick links
-[Installation](https://github.com/nbokulich/q2-sample-classifier#installation)
+[Installation](https://github.com/qiime2/q2-sample-classifier#installation)
 
-[Examples](https://github.com/nbokulich/q2-sample-classifier#examples)
-* [Sample classification](https://github.com/nbokulich/q2-sample-classifier#classification)
-* [Regression](https://github.com/nbokulich/q2-sample-classifier#regression)
-* ["Maturity index" prediction](https://github.com/nbokulich/q2-sample-classifier#maturity-index-prediction)
-* [Outlier detection](https://github.com/nbokulich/q2-sample-classifier#outlier-detection)
-* [Predicting geospatial coordinates](https://github.com/nbokulich/q2-sample-classifier#predicting-geospatial-coordinates)
+[Examples](https://github.com/qiime2/q2-sample-classifier#examples)
+* [Sample classification](https://github.com/qiime2/q2-sample-classifier#classification)
+* [Regression](https://github.com/qiime2/q2-sample-classifier#regression)
+* ["Maturity index" prediction](https://github.com/qiime2/q2-sample-classifier#maturity-index-prediction)
+* [Outlier detection](https://github.com/qiime2/q2-sample-classifier#outlier-detection)
+* [Predicting geospatial coordinates](https://github.com/qiime2/q2-sample-classifier#predicting-geospatial-coordinates)
 
-[Troubleshooting](https://github.com/nbokulich/q2-sample-classifier#troubleshooting)
+[Troubleshooting](https://github.com/qiime2/q2-sample-classifier#troubleshooting)
 
 
 # Installation
 q2-sample-classifier requires the latest version of QIIME2. Install in conda using [these directions](https://docs.qiime2.org/2017.5/install/native/#install-qiime-2-within-a-conda-environment) and activate that conda environment. The install q2-sample-classifier with `pip` as follows:
 ```
-pip install https://github.com/nbokulich/q2-sample-classifier/archive/master.zip
+pip install https://github.com/qiime2/q2-sample-classifier/archive/master.zip
 ```
 
 
