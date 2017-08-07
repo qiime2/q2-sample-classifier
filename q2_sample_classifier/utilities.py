@@ -100,7 +100,7 @@ def _metadata_to_df(metadata):
     return metadata
 
 
-def _extract_important_features(table, top, ascending=False):
+def _extract_important_features(table, top):
     '''Find top features, match names to indices, sort.
     table: pandas.DataFrame
         Source data table containing samples x features.
@@ -119,7 +119,7 @@ def _extract_important_features(table, top, ascending=False):
     else:
         imp = pd.DataFrame([i for i in zip(table.columns, top)],
                            columns=["feature", "importance"])
-    return imp.sort_values(by=imp.columns[1], ascending=ascending)
+    return imp
 
 
 def _split_training_data(feature_data, targets, category, test_size=0.2,
@@ -214,8 +214,8 @@ def _rfecv_feature_selection(feature_data, targets, estimator,
 
     # Describe top features
     n_opt = rfecv.n_features_
-    importance = _extract_important_features(
-        feature_data, rfecv.ranking_, ascending=True)[:n_opt]
+    importance = _extract_important_features(feature_data, rfecv.ranking_)
+    importance = sort_importances(importance, ascending=True)[:n_opt]
     top_feature_data = feature_data.iloc[:, importance.index]
 
     # Plot RFE accuracy
@@ -334,6 +334,11 @@ def _predict_and_plot(output_dir, y_test, y_pred, estimator, accuracy,
     return predictions, predict_plot
 
 
+def sort_importances(importances, ascending=False):
+    return importances.sort_values(
+        by=importances.columns[1], ascending=ascending)
+
+
 def _visualize(output_dir, estimator, cm, accuracy, importances=None,
                optimize_feature_selection=True):
 
@@ -343,14 +348,14 @@ def _visualize(output_dir, estimator, cm, accuracy, importances=None,
     pd.set_option('display.max_colwidth', -1)
 
     # summarize model accuracy and params
-    result = estimator.get_params()
     result = pd.Series(estimator.get_params(), name='Parameter setting')
-
     result = result.to_frame().to_html(classes=(
         "table table-striped table-hover")).replace('border="1"', 'border="0"')
+
     cm = cm.to_html(classes=(
         "table table-striped table-hover")).replace('border="1"', 'border="0"')
     if importances is not None:
+        importances = sort_importances(importances)
         pd.set_option('display.float_format', '{:.3e}'.format)
         importances.to_csv(join(
             output_dir, 'feature_importance.tsv'), sep='\t', index=False)
@@ -378,6 +383,7 @@ def _visualize_maturity_index(table, metadata, group_by, category,
     maz = '{0} MAZ score'.format(category)
 
     # save feature importance data and convert to html
+    importances = sort_importances(importances)
     importances.to_csv(
         join(output_dir, 'feature_importance.tsv'), index=False, sep='\t')
     importance = importances.to_html(classes=(
@@ -415,9 +421,10 @@ def _visualize_maturity_index(table, metadata, group_by, category,
     g.savefig(join(output_dir, 'maz_heatmaps.png'), bbox_inches='tight')
     g.savefig(join(output_dir, 'maz_heatmaps.pdf'), bbox_inches='tight')
 
-    result = pd.Series([str(estimator), accuracy],
-                       index=['Parameters', 'Accuracy score'],
-                       name='Random forest classification results')
+    result = pd.Series(estimator.get_params(), name='Parameter setting')
+    result.append(pd.Series([accuracy], index=['Accuracy score']))
+    result = result.to_frame().to_html(classes=(
+        "table table-striped table-hover")).replace('border="1"', 'border="0"')
 
     index = join(TEMPLATES, 'index.html')
     q2templates.render(index, output_dir, context={

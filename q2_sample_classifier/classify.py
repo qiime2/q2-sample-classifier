@@ -118,7 +118,7 @@ def maturity_index(output_dir: str, table: pd.DataFrame,
     # split input data into control and treatment groups
     table, metadata = _load_data(table, metadata)
     md_control = metadata[metadata[group_by] == control]
-    table_control = table.ix[list(md_control.index.values)]
+    table_control = table.loc[list(md_control.index.values)]
 
     # train model on control data
     estimator, cm, accuracy, importances = split_optimize_classify(
@@ -159,7 +159,7 @@ def detect_outliers(table: pd.DataFrame,
     # if opting to train on a subset, choose subset that fits criteria
     if subset_category and subset_value:
         y_train = metadata[metadata[subset_category] == subset_value]
-        X_train = table.ix[list(y_train.index.values)]
+        X_train = table.loc[list(y_train.index.values)]
     # raise error if subset_category or subset_value (but not both) are set
     elif subset_category is not None or subset_value is not None:
         raise ValueError((
