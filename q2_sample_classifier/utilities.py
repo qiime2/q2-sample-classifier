@@ -231,7 +231,7 @@ def split_optimize_classify(features, targets, category, estimator,
                             parameter_tuning=False, param_dist=None,
                             calc_feature_importance=False, load_data=True,
                             scoring=accuracy_score, classification=True,
-                            stratify=True):
+                            stratify=True, palette='Default'):
     # Load, stratify, and split training/test data
     X_train, X_test, y_train, y_test = _prepare_training_data(
         features, targets, category, test_size, random_state,
@@ -256,7 +256,7 @@ def split_optimize_classify(features, targets, category, estimator,
     # Predict test set values and plot data, as appropriate for estimator type
     predictions, predict_plot = _predict_and_plot(
         output_dir, y_test, y_pred, estimator, accuracy,
-        classification=classification)
+        classification=classification, palette=palette)
 
     # calculate feature importances, if appropriate for the estimator
     if calc_feature_importance:
@@ -319,10 +319,11 @@ def _calculate_feature_importances(X_train, estimator):
 
 
 def _predict_and_plot(output_dir, y_test, y_pred, estimator, accuracy,
-                      classification=True):
+                      classification=True, palette='Default'):
     if classification:
         predictions, predict_plot = _plot_confusion_matrix(
-            y_test, y_pred, sorted(estimator.classes_), accuracy)
+            y_test, y_pred, sorted(estimator.classes_), accuracy,
+            palette=palette)
     else:
         predictions = _linear_regress(y_test, y_pred)
         predict_plot = _regplot_from_dataframe(y_test, y_pred)

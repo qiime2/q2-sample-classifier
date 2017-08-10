@@ -29,6 +29,7 @@ defaults = {
     'n_jobs': 1,
     'n_estimators': 100,
     'estimator_r': 'RandomForestClassifier',
+    'palette': 'Default'
 }
 
 
@@ -41,7 +42,8 @@ def classify_samples(output_dir: str, table: pd.DataFrame,
                      n_estimators: int=defaults['n_estimators'],
                      estimator: str=defaults['estimator_r'],
                      optimize_feature_selection: bool=False,
-                     parameter_tuning: bool=False) -> None:
+                     parameter_tuning: bool=False,
+                     palette: str=defaults['palette']) -> None:
 
     # extract category name from MetadataCategory
     category = metadata.to_series().name
@@ -60,7 +62,7 @@ def classify_samples(output_dir: str, table: pd.DataFrame,
         test_size=test_size, step=step, cv=cv, random_state=random_state,
         n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=calc_feature_importance)
+        calc_feature_importance=calc_feature_importance, palette=palette)
 
     _visualize(output_dir, estimator, cm, accuracy, importances,
                optimize_feature_selection)

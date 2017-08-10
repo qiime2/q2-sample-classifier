@@ -216,13 +216,21 @@ plugin.visualizers.register_function(
         'estimator': Str % Choices(
             ['RandomForestClassifier', 'ExtraTreesClassifier',
              'GradientBoostingClassifier', 'AdaBoostClassifier',
-             'KNeighborsClassifier', 'LinearSVC', 'SVC'])},
+             'KNeighborsClassifier', 'LinearSVC', 'SVC']),
+        'palette': Str % Choices(
+            ['Default', 'Greys', 'Purples', 'Blues', 'Greens', 'Oranges',
+             'Reds', 'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu',
+             'GnBu', 'PuBu', 'YlGn', 'bone_r', 'pink_r', 'summer_r', 'cool',
+             'hot_r', 'copper_r', 'gist_earth_r', 'terrain_r', 'gnuplot2_r',
+             'cubehelix_r', 'jet_r', 'viridis_r', 'plasma_r', 'inferno_r',
+             'magma_r'])},
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions['base'],
         **parameter_descriptions['standard'],
         **parameter_descriptions['standard_metadata'],
-        **parameter_descriptions['estimator']},
+        **parameter_descriptions['estimator'],
+        'palette': 'The color palette to use for plotting.'},
     name='Supervised learning classifier.',
     description=description.format(
         'categorical', 'supervised learning classifier')
