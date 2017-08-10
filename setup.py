@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # ----------------------------------------------------------------------------
 # Copyright (c) 2017--, q2-sample-classifier development team.
 #
@@ -19,9 +17,6 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     license='BSD-3-Clause',
     packages=find_packages(),
-    install_requires=['qiime2', 'pandas', 'scipy',
-                      'scikit-learn', 'scikit-bio', 'seaborn',
-                      'fastcluster'],
     author="Nicholas Bokulich",
     author_email="nbokulich@gmail.com",
     description="Machine learning classification and regression tools.",
@@ -31,7 +26,7 @@ setup(
         ['q2-sample-classifier=q2_sample_classifier.plugin_setup:plugin']
     },
     package_data={
-        'q2_sample_classifier.tests': ['test_data/*'],
+        'q2_sample_classifier.tests': ['data/*'],
         'q2_sample_classifier': ['assets/index.html'],
     },
     zip_safe=False,

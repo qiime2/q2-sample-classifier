@@ -1,0 +1,40 @@
+{% set data = load_setup_py_data() %}
+{% set version = data.get('version') or 'placehold' %}
+{% set release = '.'.join(version.split('.')[:2]) %}
+
+package:
+  name: q2_sample_classifier
+  version: {{ version }}
+
+source:
+  path: ../..
+
+build:
+  script: python setup.py install
+
+requirements:
+  build:
+    - python 3.5*
+    - setuptools
+
+  run:
+    - python 3.5*
+    - setuptools
+    - pandas
+    - scipy
+    - scikit-learn
+    - scikit-bio
+    - seaborn
+    - fastcluster
+    - qiime2 {{ release }}.*
+    - q2-types {{ release }}.*
+
+test:
+  imports:
+    - q2_sample_classifier
+    - qiime2.plugins.sample_classifier
+
+about:
+  home: https://qiime2.org
+  license: BSD-3-Clause
+  license_family: BSD
