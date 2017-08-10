@@ -168,9 +168,19 @@ def _plot_confusion_matrix(y_test, y_pred, classes, accuracy, normalize=True,
     # generate confusion matrix as pd.DataFrame for viewing
     predictions = pd.DataFrame(cm, index=classes, columns=classes)
     # add empty row/column to show overall accuracy in bottom right cell
+    # baseline error = error rate for a classifier that always guesses the
+    # most common class
+    n_samples = len(y_test)
+    n_samples_largest_class = y_test.value_counts().iloc[0]
+    basline_error = 1 - n_samples_largest_class / n_samples
+    error_ratio = basline_error / (1 - accuracy)
     predictions["Overall Accuracy"] = ""
     predictions.loc["Overall Accuracy"] = ""
+    predictions.loc["Baseline Error"] = ""
+    predictions.loc["Accuracy Ratio"] = ""
     predictions.loc["Overall Accuracy"]["Overall Accuracy"] = accuracy
+    predictions.loc["Baseline Error"]["Overall Accuracy"] = basline_error
+    predictions.loc["Accuracy Ratio"]["Overall Accuracy"] = error_ratio
 
     return predictions, confusion
 
