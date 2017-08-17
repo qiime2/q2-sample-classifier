@@ -1,13 +1,10 @@
-#!/usr/bin/env python
-
 # ----------------------------------------------------------------------------
-# Copyright (c) 2017--, q2-sample-classifier development team.
+# Copyright (c) 2017, QIIME 2 development team.
 #
 # Distributed under the terms of the Modified BSD License.
 #
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
-
 
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.metrics import accuracy_score

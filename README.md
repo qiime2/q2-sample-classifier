@@ -33,7 +33,7 @@ pip install https://github.com/qiime2/q2-sample-classifier/archive/master.zip
 
 
 # Examples
-In the examples below, any visualizations (QZV) files can be viewed in [view.qiime2.org](https://view.qiime2.org/). All example QZVs are located [here](.q2_sample_classifier/test_data/).
+In the examples below, any visualizations (QZV) files can be viewed in [view.qiime2.org](https://view.qiime2.org/). All example QZVs are located [here](./examples/test_data/).
 
 Supervised classification models predict sample data (e.g., metadata values) as a function of other sample data (e.g., microbiota composition). The predicted targets may be discrete sample classes (for classification problems) or continuous values (for regression problems). Any other data may be used as predictive features, but for the purposes of q2-sample-classifier this will most commonly be microbial sequence variant, operational taxonomic unit (OTU), or taxonomic composition. However, any features contained in a feature table may be used — for non-microbial data, just convert your observation tables to biom format and [import to qiime2](https://docs.qiime2.org/2017.5/tutorials/importing/#feature-table-data).
 
