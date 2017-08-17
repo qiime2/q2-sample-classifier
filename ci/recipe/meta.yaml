@@ -3,7 +3,7 @@
 {% set release = '.'.join(version.split('.')[:2]) %}
 
 package:
-  name: q2_sample_classifier
+  name: q2-sample-classifier
   version: {{ version }}
 
 source:
