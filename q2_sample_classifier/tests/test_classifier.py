@@ -18,7 +18,9 @@ from q2_sample_classifier.classify import (
     classify_samples, regress_samples,
     maturity_index, detect_outliers, predict_coordinates)
 from q2_sample_classifier.utilities import (
-    split_optimize_classify, _set_parameters_and_estimator)
+    split_optimize_classify, _set_parameters_and_estimator,
+    _prepare_training_data, _optimize_feature_selection, _fit_and_predict,
+    _calculate_feature_importances)
 import tempfile
 import pkg_resources
 from qiime2.plugin.testing import TestPluginBase
@@ -164,6 +166,38 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 accuracy, seeded_results[regressor], places=4,
                 msg='Accuracy of %s regressor was %f, but expected %f' % (
                     regressor, accuracy, seeded_results[regressor]))
+
+    # test feature ordering
+    # this bug emerged in maturity_index, where feature sorting was being
+    # performed inadvertently during feature extraction (now fixed).
+    # The issue was that scikit-learn handles dataframes of target data as
+    # arrays without header information; hence, dataframes passed to an
+    # estimator in different orders will cause misclassification. Here we
+    # ensure that the labels in training and testing sets are passed in the
+    # same order during split_optimize_classify (the following replicates a
+    # minimal version of that function).
+    def test_feature_ordering(self):
+        # replicate minimal split_optimize_classify to extract importances
+        estimator, pd, pt = _set_parameters_and_estimator(
+            'RandomForestRegressor', self.table_ecam_fp, self.md_ecam_fp,
+            'month', n_estimators=10, n_jobs=1, cv=1,
+            random_state=123, parameter_tuning=False, classification=False)
+        X_train, X_test, y_train, y_test = _prepare_training_data(
+            self.table_ecam_fp, self.md_ecam_fp, 'month',
+            test_size=0.1, random_state=123, load_data=True, stratify=False)
+        X_train, X_test, importance = _optimize_feature_selection(
+            self.temp_dir.name, X_train, X_test, y_train, estimator, cv=3,
+            step=0.2, n_jobs=1)
+        estimator, accuracy, y_pred = _fit_and_predict(
+            X_train, X_test, y_train, y_test, estimator,
+            scoring=mean_squared_error)
+        # pull important features from a different dataframe
+        importances = _calculate_feature_importances(X_train, estimator)
+        table = self.table_ecam_fp.loc[:, importances["feature"]]
+        # confirm ordering of feature (column) names
+        ca = list(X_train.columns.values)
+        cb = list(table.columns.values)
+        self.assertEqual(ca, cb)
 
     # test some invalid inputs/edge cases
     def test_invalids(self):
