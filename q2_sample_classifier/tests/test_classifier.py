@@ -13,7 +13,8 @@ from os.path import join
 from warnings import filterwarnings
 from sklearn.exceptions import ConvergenceWarning
 from q2_sample_classifier.visuals import (
-    _two_way_anova, _pairwise_stats, _linear_regress)
+    _two_way_anova, _pairwise_stats, _linear_regress,
+    _calculate_baseline_accuracy)
 from q2_sample_classifier.classify import (
     classify_samples, regress_samples,
     maturity_index, detect_outliers, predict_coordinates)
@@ -65,6 +66,14 @@ class VisualsTests(SampleClassifierTestPluginBase):
         self.assertAlmostEqual(res.iloc[0]['Mean squared error'], 1.9413916666)
         self.assertAlmostEqual(res.iloc[0]['R'], 0.86414956372460128)
         self.assertAlmostEqual(res.iloc[0]['P-value'], 0.00028880275858705694)
+
+    def test_calculate_baseline_accuracy(self):
+        accuracy = 0.9
+        y_test = pd.Series(['a', 'a', 'a', 'b', 'b', 'b'], name="class")
+        classifier_accuracy = _calculate_baseline_accuracy(y_test, accuracy)
+        expected_results = (6, 3, 0.5, 1.8)
+        for i in zip(classifier_accuracy, expected_results):
+            self.assertEqual(i[0], i[1])
 
 
 class EstimatorsTests(SampleClassifierTestPluginBase):
