@@ -165,11 +165,27 @@ def _plot_confusion_matrix(y_test, y_pred, classes, accuracy, normalize=True,
     # generate confusion matrix as pd.DataFrame for viewing
     predictions = pd.DataFrame(cm, index=classes, columns=classes)
     # add empty row/column to show overall accuracy in bottom right cell
+    # baseline error = error rate for a classifier that always guesses the
+    # most common class
+    n_samples, n_samples_largest_class, basline_accuracy, accuracy_ratio = \
+        _calculate_baseline_accuracy(y_test, accuracy)
     predictions["Overall Accuracy"] = ""
     predictions.loc["Overall Accuracy"] = ""
+    predictions.loc["Baseline Accuracy"] = ""
+    predictions.loc["Accuracy Ratio"] = ""
     predictions.loc["Overall Accuracy"]["Overall Accuracy"] = accuracy
+    predictions.loc["Baseline Accuracy"]["Overall Accuracy"] = basline_accuracy
+    predictions.loc["Accuracy Ratio"]["Overall Accuracy"] = accuracy_ratio
 
     return predictions, confusion
+
+
+def _calculate_baseline_accuracy(y_test, accuracy):
+    n_samples = len(y_test)
+    n_samples_largest_class = y_test.value_counts().iloc[0]
+    basline_accuracy = n_samples_largest_class / n_samples
+    accuracy_ratio = accuracy / basline_accuracy
+    return n_samples, n_samples_largest_class, basline_accuracy, accuracy_ratio
 
 
 def _plot_RFE(rfecv):

@@ -45,7 +45,7 @@ All machine-learning models implemented in q2-sample-classifier support the opti
 
 ![Alt text](./examples/rfe_plot.jpg?raw=true "Recursive feature elimination plot")
 ## Classification
-In a classification problem, we are interested in predicting the class labels for a number of unlabeled samples. The visualizers show overall accuracy scores (e.g., the percentage of times that the true class label is predicted), and also generates confusion matrices, showing how frequently samples belonging to each class are predicted to be the true class or another class. For example, the following depicts how frequently grape samples are classified to the correct Vineyard (94.1% of the time!):
+In a classification problem, we are interested in predicting the class labels for a number of unlabeled samples. The visualizers show overall accuracy scores (e.g., the percentage of times that the true class label is predicted), baseline accuracy (the accuracy rate for a classifier than always guesses the most common class), and accuracy ratio (the n-fold improvement of the trained classifier over baseline accuracy). It also generates confusion matrices, showing how frequently samples belonging to each class are predicted to be the true class or another class. For example, the following depicts how frequently grape samples are classified to the correct Vineyard (94.1% of the time!):
 
 ![Alt text](./examples/classify-kneighbors-vineyard.jpg?raw=true "classify k-neighbors Vineyard")
 
