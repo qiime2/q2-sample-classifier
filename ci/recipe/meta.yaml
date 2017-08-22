@@ -24,7 +24,7 @@ requirements:
     - scipy
     - scikit-learn
     - scikit-bio
-    - seaborn
+    - seaborn >=0.8
     - fastcluster
     - qiime2 {{ release }}.*
     - q2-types {{ release }}.*
