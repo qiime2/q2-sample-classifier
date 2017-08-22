@@ -160,7 +160,7 @@ def _plot_confusion_matrix(y_test, y_pred, classes, accuracy, normalize=True,
     plt.xlabel('Predicted label')
     confusion.set_xticklabels(classes, rotation=90, ha='center')
     confusion.set_yticklabels(
-        sorted(classes, reverse=True), rotation=0, ha='right')
+        sorted(classes), rotation=0, ha='right')
 
     # generate confusion matrix as pd.DataFrame for viewing
     predictions = pd.DataFrame(cm, index=classes, columns=classes)
