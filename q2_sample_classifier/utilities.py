@@ -347,19 +347,15 @@ def _visualize(output_dir, estimator, cm, accuracy, importances=None,
 
     # summarize model accuracy and params
     result = pd.Series(estimator.get_params(), name='Parameter setting')
-    result = result.to_frame().to_html(classes=(
-        "table table-striped table-hover")).replace('border="1"', 'border="0"')
+    result = q2templates.df_to_html(result.to_frame())
 
-    cm = cm.to_html(classes=(
-        "table table-striped table-hover")).replace('border="1"', 'border="0"')
+    cm = q2templates.df_to_html(cm)
     if importances is not None:
         importances = sort_importances(importances)
         pd.set_option('display.float_format', '{:.3e}'.format)
         importances.to_csv(join(
             output_dir, 'feature_importance.tsv'), sep='\t', index=False)
-        importances = importances.to_html(classes=(
-            "table table-striped table-hover"), index=False).replace(
-                'border="1"', 'border="0"')
+        importances = q2templates.df_to_html(importances, index=False)
 
     index = join(TEMPLATES, 'index.html')
     q2templates.render(index, output_dir, context={
@@ -384,9 +380,7 @@ def _visualize_maturity_index(table, metadata, group_by, category,
     importances = sort_importances(importances)
     importances.to_csv(
         join(output_dir, 'feature_importance.tsv'), index=False, sep='\t')
-    importance = importances.to_html(classes=(
-        "table table-striped table-hover"), index=False).replace(
-            'border="1"', 'border="0"')
+    importance = q2templates.df_to_html(importances, index=False)
 
     # save predicted values, maturity, and MAZ score data
     maz_md = metadata[[group_by, category, predicted_category, maturity, maz]]
@@ -421,8 +415,7 @@ def _visualize_maturity_index(table, metadata, group_by, category,
 
     result = pd.Series(estimator.get_params(), name='Parameter setting')
     result.append(pd.Series([accuracy], index=['Accuracy score']))
-    result = result.to_frame().to_html(classes=(
-        "table table-striped table-hover")).replace('border="1"', 'border="0"')
+    result = q2templates.df_to_html(result.to_frame())
 
     index = join(TEMPLATES, 'index.html')
     q2templates.render(index, output_dir, context={
