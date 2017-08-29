@@ -246,17 +246,18 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     # test experimental functions
     def test_maturity_index(self):
         maturity_index(self.temp_dir.name, self.table_ecam_fp, self.md_ecam_fp,
-                       category='month', group_by='delivery', n_jobs=1,
-                       control='Vaginal', test_size=0.4)
+                       category='month', group_by='delivery', random_state=123,
+                       n_jobs=1, control='Vaginal', test_size=0.4)
 
     def test_detect_outliers(self):
         detect_outliers(self.table_chard_fp, self.md_chard_fp,
-                        n_jobs=1, contamination=0.05)
+                        random_state=123, n_jobs=1, contamination=0.05)
 
     def test_predict_coordinates(self):
         pred, coords = predict_coordinates(
             self.table_chard_fp, self.md_chard_fp,
-            axis1_category='latitude', axis2_category='longitude', n_jobs=1)
+            axis1_category='latitude', axis2_category='longitude',
+            random_state=123, n_jobs=1)
 
 
 md = pd.DataFrame([(1, 'a', 0.11), (1, 'a', 0.12), (1, 'a', 0.13),
