@@ -8,6 +8,7 @@
 
 import qiime2
 import pandas as pd
+import numpy as np
 from os import mkdir
 from os.path import join
 from warnings import filterwarnings
@@ -21,12 +22,14 @@ from q2_sample_classifier.classify import (
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator,
     _prepare_training_data, _optimize_feature_selection, _fit_and_predict,
-    _calculate_feature_importances)
+    _calculate_feature_importances, _extract_important_features,
+    _train_adaboost_base_estimator, _disable_feature_selection)
 import tempfile
 import pkg_resources
 from qiime2.plugin.testing import TestPluginBase
 from sklearn.metrics import mean_squared_error
-
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.svm import LinearSVC
 
 filterwarnings("ignore", category=UserWarning)
 filterwarnings("ignore", category=Warning)
@@ -46,6 +49,55 @@ class SampleClassifierTestPluginBase(TestPluginBase):
     def get_data_path(self, filename):
         return pkg_resources.resource_filename(self.package,
                                                'data/%s' % filename)
+
+
+class UtilitiesTests(SampleClassifierTestPluginBase):
+
+    def setUp(self):
+        super().setUp()
+
+        self.exp_rf = pd.DataFrame(
+            {'feature': ['a', 'b', 'c'], 'importance': [0.1, 0.2, 0.3]})
+
+        self.exp_svm = pd.DataFrame(
+            {'feature': ['a', 'b', 'c'], 'importance0': [0.1, 0.2, 0.3],
+             'importance1': [0.4, 0.5, 0.6]})
+
+        self.exp_lsvm = pd.DataFrame(
+            {'feature': ['a', 'b', 'c'],
+             'importance0': [-0.048794, -0.048794, -0.048794]})
+
+        self.features = pd.DataFrame(
+            {'a': [1, 1, 1, 1, 1], 'b': [1, 1, 1, 1, 1], 'c': [1, 1, 1, 1, 1]})
+
+        self.targets = pd.Series(['a', 'a', 'b', 'b', 'a'], name='bullseye')
+
+    def test_extract_important_features_1d_array(self):
+        importances = _extract_important_features(
+            self.features, np.ndarray((3,), buffer=np.array([0.1, 0.2, 0.3])))
+        self.assertEqual(sorted(self.exp_rf), sorted(importances))
+
+    def test_extract_important_features_2d_array(self):
+        importances = _extract_important_features(
+            self.features, np.ndarray((2, 3),
+            buffer=np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])))
+        self.assertEqual(sorted(self.exp_svm), sorted(importances))
+
+    # test feature importance calculation with main classifier types
+    def test_calculate_feature_importances_ensemble(self):
+        estimator = RandomForestClassifier().fit(self.features, self.targets)
+        fi = _calculate_feature_importances(self.features, estimator)
+        self.assertEqual(sorted(self.exp_rf), sorted(fi))
+
+    def test_calculate_feature_importances_svm(self):
+        estimator = LinearSVC().fit(self.features, self.targets)
+        fi = _calculate_feature_importances(self.features, estimator)
+        self.assertEqual(sorted(self.exp_lsvm), sorted(fi))
+
+    # confirm that feature selection incompatibility warnings work
+    def test_disable_feature_selection_unsupported(self):
+        with self.assertWarnsRegex(UserWarning, "does not support recursive"):
+            _disable_feature_selection('KNeighborsClassifier', False)
 
 
 class VisualsTests(SampleClassifierTestPluginBase):
@@ -127,7 +179,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                            'LinearSVC', 'SVC', 'KNeighborsClassifier']:
             tmpd = join(self.temp_dir.name, classifier)
             mkdir(tmpd)
-            estimator, pd, pt = _set_parameters_and_estimator(
+            estimator, pad, pt = _set_parameters_and_estimator(
                 classifier, self.table_chard_fp, self.md_chard_fp, 'Region',
                 n_estimators=10, n_jobs=1, cv=1,
                 random_state=123, parameter_tuning=False, classification=True)
@@ -161,7 +213,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                           'KNeighborsRegressor', 'LinearSVR', 'SVR']:
             tmpd = join(self.temp_dir.name, regressor)
             mkdir(tmpd)
-            estimator, pd, pt = _set_parameters_and_estimator(
+            estimator, pad, pt = _set_parameters_and_estimator(
                 regressor, self.table_ecam_fp, self.md_ecam_fp, 'month',
                 n_estimators=10, n_jobs=1, cv=1,
                 random_state=123, parameter_tuning=False, classification=False)
@@ -187,7 +239,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     # minimal version of that function).
     def test_feature_ordering(self):
         # replicate minimal split_optimize_classify to extract importances
-        estimator, pd, pt = _set_parameters_and_estimator(
+        estimator, pad, pt = _set_parameters_and_estimator(
             'RandomForestRegressor', self.table_ecam_fp, self.md_ecam_fp,
             'month', n_estimators=10, n_jobs=1, cv=1,
             random_state=123, parameter_tuning=False, classification=False)
@@ -208,13 +260,21 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         cb = list(table.columns.values)
         self.assertEqual(ca, cb)
 
+    # test adaboost base estimator trainer
+    def test_train_adaboost_base_estimator(self):
+        abe = _train_adaboost_base_estimator(
+            self.table_chard_fp, self.mdc_chard_fp, 'Region',
+            n_estimators=10, n_jobs=1, cv=3, random_state=None,
+            parameter_tuning=True, classification=True)
+        self.assertEqual(type(abe), AdaBoostClassifier)
+
     # test some invalid inputs/edge cases
     def test_invalids(self):
-        estimator, pd, pt = _set_parameters_and_estimator(
+        estimator, pad, pt = _set_parameters_and_estimator(
             'RandomForestClassifier', self.table_chard_fp, self.md_chard_fp,
             'Region', n_estimators=10, n_jobs=1, cv=1,
             random_state=123, parameter_tuning=False, classification=True)
-        regressor, pd, pt = _set_parameters_and_estimator(
+        regressor, pad, pt = _set_parameters_and_estimator(
             'RandomForestRegressor', self.table_chard_fp, self.md_chard_fp,
             'Region', n_estimators=10, n_jobs=1, cv=1,
             random_state=123, parameter_tuning=False, classification=True)
@@ -252,6 +312,21 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     def test_detect_outliers(self):
         detect_outliers(self.table_chard_fp, self.md_chard_fp,
                         random_state=123, n_jobs=1, contamination=0.05)
+
+    def test_detect_outliers_with_subsets(self):
+        detect_outliers(self.table_chard_fp, self.md_chard_fp,
+                        random_state=123, n_jobs=1, contamination=0.05,
+                        subset_category='Vineyard', subset_value=1)
+
+    def test_detect_outliers_raise_error_on_missing_subset_data(self):
+        with self.assertRaisesRegex(ValueError, "must both be provided"):
+            detect_outliers(self.table_chard_fp, self.md_chard_fp,
+                            random_state=123, n_jobs=1, contamination=0.05,
+                            subset_category='Vineyard', subset_value=None)
+        with self.assertRaisesRegex(ValueError, "must both be provided"):
+            detect_outliers(self.table_chard_fp, self.md_chard_fp,
+                            random_state=123, n_jobs=1, contamination=0.05,
+                            subset_category=None, subset_value=1)
 
     def test_predict_coordinates(self):
         pred, coords = predict_coordinates(
