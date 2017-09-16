@@ -133,6 +133,7 @@ plugin.register_semantic_type_to_format(
     SampleData[BooleanSeries],
     artifact_format=BooleanSeriesDirectoryFormat)
 
+
 description = ('Predicts a {0} sample metadata category using a {1}. Splits '
                'input data into training and test sets. The training set is '
                'used to train and test the estimator using a stratified '

@@ -24,7 +24,12 @@ from q2_sample_classifier.utilities import (
     _prepare_training_data, _optimize_feature_selection, _fit_and_predict,
     _calculate_feature_importances, _extract_important_features,
     _train_adaboost_base_estimator, _disable_feature_selection)
+from q2_sample_classifier.plugin_setup import (
+    CoordinatesFormat, CoordinatesDirectoryFormat, Coordinates,
+    BooleanSeriesFormat, BooleanSeriesDirectoryFormat, BooleanSeries)
+from q2_types.sample_data import SampleData
 import tempfile
+import shutil
 import pkg_resources
 from qiime2.plugin.testing import TestPluginBase
 from sklearn.metrics import mean_squared_error
@@ -128,6 +133,96 @@ class VisualsTests(SampleClassifierTestPluginBase):
         expected_results = (6, 3, 0.5, 1.8)
         for i in zip(classifier_accuracy, expected_results):
             self.assertEqual(i[0], i[1])
+
+
+class TestSemanticTypes(SampleClassifierTestPluginBase):
+
+    def test_boolean_series_format_validate_positive(self):
+        filepath = self.get_data_path('outliers.tsv')
+        format = BooleanSeriesFormat(filepath, mode='r')
+
+        format.validate()
+
+    def test_boolean_series_format_validate_negative(self):
+        filepath = self.get_data_path('coordinates.tsv')
+        format = BooleanSeriesFormat(filepath, mode='r')
+        with self.assertRaisesRegex(ValueError, 'BooleanSeriesFormat'):
+            format.validate()
+
+    def test_boolean_series_dir_fmt_validate_positive(self):
+        filepath = self.get_data_path('outliers.tsv')
+        shutil.copy(filepath, self.temp_dir.name)
+        format = BooleanSeriesDirectoryFormat(self.temp_dir.name, mode='r')
+        format.validate()
+
+    def test_boolean_series_semantic_type_registration(self):
+        self.assertRegisteredSemanticType(BooleanSeries)
+
+    def test_sample_data_boolean_series_to_boolean_dir_fmt_registration(self):
+        self.assertSemanticTypeRegisteredToFormat(
+            SampleData[BooleanSeries], BooleanSeriesFormat)
+
+    def test_pd_series_to_boolean_format(self):
+        transformer = self.get_transformer(pd.Series, BooleanSeriesFormat)
+        exp_index = pd.Index(['a', 'b', 'c', 'd'], dtype=object)
+        exp = pd.Series(['True', 'False', 'True', 'False'],
+                        name='outlier', index=exp_index)
+        obs = transformer(exp)
+        obs = pd.Series.from_csv(str(obs), sep='\t', header=0)
+        self.assertEqual(sorted(exp), sorted(obs))
+
+    def test_boolean_format_to_pd_series(self):
+        _, obs = self.transform_format(
+            BooleanSeriesFormat, pd.Series, 'outliers.tsv')
+        exp_index = pd.Index(['a', 'b', 'c', 'd'], dtype=object)
+        exp = pd.Series(['True', 'False', 'True', 'False'],
+                        name='outlier', index=exp_index)
+        self.assertEqual(sorted(exp), sorted(obs))
+
+    def test_boolean_format_to_metadata(self):
+        _, obs = self.transform_format(
+            BooleanSeriesFormat, qiime2.Metadata, 'outliers.tsv')
+        obs_category = obs.get_category('outlier')
+
+        exp_index = pd.Index(['a', 'b', 'c', 'd'], dtype=object)
+        exp = pd.Series(['True', 'False', 'True', 'False'],
+                        name='outlier', index=exp_index)
+        self.assertEqual(sorted(exp), sorted(obs_category.to_series()))
+
+    def test_non_boolean(self):
+        filename = 'coordinates.tsv'
+        with self.assertRaisesRegex(ValueError, 'Unable to parse string'):
+            self.transform_format(BooleanSeriesFormat, pd.Series, filename)
+
+
+
+
+    def test_coordinates_format_validate_positive(self):
+        filepath = self.get_data_path('coordinates.tsv')
+        format = CoordinatesFormat(filepath, mode='r')
+
+        format.validate()
+
+    def test_coordinates_format_validate_negative(self):
+        filepath = self.get_data_path('false-coordinates.tsv')
+        format = CoordinatesFormat(filepath, mode='r')
+
+        with self.assertRaisesRegex(ValueError, 'CoordinatesFormat'):
+            format.validate()
+
+    def test_coordinates_dir_fmt_validate_positive(self):
+        filepath = self.get_data_path('coordinates.tsv')
+        shutil.copy(filepath, self.temp_dir.name)
+        format = CoordinatesDirectoryFormat(self.temp_dir.name, mode='r')
+
+        format.validate()
+
+    def test_coordinates_semantic_type_registration(self):
+        self.assertRegisteredSemanticType(Coordinates)
+
+    def test_sample_data_coordinates_to_coordinates_dir_fmt_registration(self):
+        self.assertSemanticTypeRegisteredToFormat(
+            SampleData[Coordinates], CoordinatesDirectoryFormat)
 
 
 class EstimatorsTests(SampleClassifierTestPluginBase):
