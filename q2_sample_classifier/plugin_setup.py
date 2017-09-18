@@ -111,7 +111,8 @@ def _4(data: pd.Series) -> (BooleanSeriesFormat):
 @plugin.register_transformer
 def _5(ff: BooleanSeriesFormat) -> (pd.Series):
     with ff.open() as fh:
-        return _read_dataframe(fh)
+        df = _read_dataframe(fh)
+        return df.iloc[:, 0]
 
 
 @plugin.register_transformer
