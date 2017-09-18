@@ -86,8 +86,8 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
 
     def test_extract_important_features_2d_array(self):
         importances = _extract_important_features(
-            self.features, np.ndarray((2, 3),
-            buffer=np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])))
+            self.features, np.ndarray(
+                (2, 3), buffer=np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])))
         self.assertEqual(sorted(self.exp_svm), sorted(importances))
 
     # test feature importance calculation with main classifier types
@@ -228,7 +228,7 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         exp = pd.DataFrame(
             {'Latitude': (38.306, 38.306, 38.306, 38.306),
              'Longitude': (-122.228, -122.228, -122.228, -122.228)},
-             index=['a', 'b', 'c', 'd'])
+            index=['a', 'b', 'c', 'd'])
         self.assertEqual(sorted(exp), sorted(obs))
 
     def test_coordinates_format_to_metadata(self):
