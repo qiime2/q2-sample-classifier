@@ -25,7 +25,7 @@ from q2_sample_classifier.utilities import (
     _calculate_feature_importances, _extract_important_features,
     _train_adaboost_base_estimator, _disable_feature_selection)
 from q2_sample_classifier.plugin_setup import (
-    plugin, CoordinatesFormat, CoordinatesDirectoryFormat, Coordinates,
+    CoordinatesFormat, CoordinatesDirectoryFormat, Coordinates,
     BooleanSeriesFormat, BooleanSeriesDirectoryFormat, BooleanSeries)
 from q2_types.sample_data import SampleData
 import tempfile
@@ -45,10 +45,9 @@ class SampleClassifierTestPluginBase(TestPluginBase):
     package = 'q2_sample_classifier.tests'
 
     def setUp(self):
+        super().setUp()
         self.temp_dir = tempfile.TemporaryDirectory(
             prefix='q2-sample-classifier-test-temp-')
-
-        self.plugin = plugin
 
     def tearDown(self):
         self.temp_dir.cleanup()
