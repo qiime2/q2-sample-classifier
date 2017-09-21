@@ -338,7 +338,7 @@ def sort_importances(importances, ascending=False):
 
 
 def _visualize(output_dir, estimator, cm, accuracy, importances=None,
-               optimize_feature_selection=True):
+               optimize_feature_selection=True, title='results'):
 
     # Need to sort out how to save estimator as sklearn.pipeline
     # This will be possible once qiime2 support pipeline actions
@@ -359,6 +359,7 @@ def _visualize(output_dir, estimator, cm, accuracy, importances=None,
 
     index = join(TEMPLATES, 'index.html')
     q2templates.render(index, output_dir, context={
+        'title': title,
         'result': result,
         'predictions': cm,
         'importances': importances,
@@ -419,6 +420,7 @@ def _visualize_maturity_index(table, metadata, group_by, category,
 
     index = join(TEMPLATES, 'index.html')
     q2templates.render(index, output_dir, context={
+        'title': 'maturity index predictions',
         'result': result,
         'predictions': None,
         'importances': importance,
