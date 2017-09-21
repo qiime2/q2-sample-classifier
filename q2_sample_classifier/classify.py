@@ -63,7 +63,7 @@ def classify_samples(output_dir: str, table: pd.DataFrame,
         calc_feature_importance=calc_feature_importance, palette=palette)
 
     _visualize(output_dir, estimator, cm, accuracy, importances,
-               optimize_feature_selection)
+               optimize_feature_selection, title='classification predictions')
 
 
 def regress_samples(output_dir: str, table: pd.DataFrame,
@@ -98,7 +98,7 @@ def regress_samples(output_dir: str, table: pd.DataFrame,
         scoring=mean_squared_error, stratify=stratify, classification=False)
 
     _visualize(output_dir, estimator, cm, accuracy, importances,
-               optimize_feature_selection)
+               optimize_feature_selection, title='regression predictions')
 
 
 def maturity_index(output_dir: str, table: pd.DataFrame,
