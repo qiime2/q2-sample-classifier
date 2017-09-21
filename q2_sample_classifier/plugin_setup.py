@@ -111,7 +111,8 @@ def _4(data: pd.Series) -> (BooleanSeriesFormat):
 @plugin.register_transformer
 def _5(ff: BooleanSeriesFormat) -> (pd.Series):
     with ff.open() as fh:
-        return _read_dataframe(fh)
+        df = _read_dataframe(fh)
+        return df.iloc[:, 0]
 
 
 @plugin.register_transformer
@@ -132,6 +133,7 @@ plugin.register_semantic_type_to_format(
 plugin.register_semantic_type_to_format(
     SampleData[BooleanSeries],
     artifact_format=BooleanSeriesDirectoryFormat)
+
 
 description = ('Predicts a {0} sample metadata category using a {1}. Splits '
                'input data into training and test sets. The training set is '

@@ -158,7 +158,7 @@ def detect_outliers(table: pd.DataFrame,
 
     # if opting to train on a subset, choose subset that fits criteria
     if subset_category and subset_value:
-        y_train = metadata[metadata[subset_category] == subset_value]
+        y_train = sample_md[sample_md[subset_category] == subset_value]
         X_train = table.loc[list(y_train.index.values)]
     # raise error if subset_category or subset_value (but not both) are set
     elif subset_category is not None or subset_value is not None:
