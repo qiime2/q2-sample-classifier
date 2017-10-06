@@ -142,19 +142,19 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
     def test_boolean_series_format_validate_positive(self):
         filepath = self.get_data_path('outliers.tsv')
         format = BooleanSeriesFormat(filepath, mode='r')
-        format._validate_()
+        format.validate()
 
     def test_boolean_series_format_validate_negative(self):
         filepath = self.get_data_path('coordinates.tsv')
         format = BooleanSeriesFormat(filepath, mode='r')
         with self.assertRaisesRegex(ValidationError, 'BooleanSeriesFormat'):
-            format._validate_()
+            format.validate()
 
     def test_boolean_series_dir_fmt_validate_positive(self):
         filepath = self.get_data_path('outliers.tsv')
         shutil.copy(filepath, self.temp_dir.name)
         format = BooleanSeriesDirectoryFormat(self.temp_dir.name, mode='r')
-        format._validate_()
+        format.validate()
 
     def test_boolean_series_semantic_type_registration(self):
         self.assertRegisteredSemanticType(BooleanSeries)
@@ -193,19 +193,19 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
     def test_coordinates_format_validate_positive(self):
         filepath = self.get_data_path('coordinates.tsv')
         format = CoordinatesFormat(filepath, mode='r')
-        format._validate_()
+        format.validate()
 
     def test_coordinates_format_validate_negative(self):
         filepath = self.get_data_path('false-coordinates.tsv')
         format = CoordinatesFormat(filepath, mode='r')
         with self.assertRaisesRegex(ValidationError, 'CoordinatesFormat'):
-            format._validate_()
+            format.validate()
 
     def test_coordinates_dir_fmt_validate_positive(self):
         filepath = self.get_data_path('coordinates.tsv')
         shutil.copy(filepath, self.temp_dir.name)
         format = CoordinatesDirectoryFormat(self.temp_dir.name, mode='r')
-        format._validate_()
+        format.validate()
 
     def test_coordinates_semantic_type_registration(self):
         self.assertRegisteredSemanticType(Coordinates)
