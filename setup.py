@@ -20,7 +20,7 @@ setup(
     author="Nicholas Bokulich",
     author_email="nbokulich@gmail.com",
     description="Machine learning classification and regression tools.",
-    url="https://github.com/nbokulich/q2-sample-classifier",
+    url="https://github.com/qiime2/q2-sample-classifier",
     entry_points={
         'qiime2.plugins':
         ['q2-sample-classifier=q2_sample_classifier.plugin_setup:plugin']

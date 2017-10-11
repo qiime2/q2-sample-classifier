@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/qiime2/q2-sample-classifier.svg?branch=master)](https://travis-ci.org/qiime2/q2-sample-classifier) [![Coverage Status](https://coveralls.io/repos/github/qiime2/q2-sample-classifier/badge.svg?branch=master)](https://coveralls.io/github/qiime2/q2-sample-classifier?branch=master)
 
-QIIME2 plugin for machine learning prediction of sample data.
+QIIME 2 plugin for machine learning prediction of sample data.
 
 This is a QIIME 2 plugin. For details on QIIME 2 and tutorials demonstrating how to use this plugin, see the [QIIME2 documentation](https://qiime2.org/).
 
