@@ -12,6 +12,7 @@ from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.sample_data import SampleData
 from .classify import (
     classify_samples, regress_samples, maturity_index)
+from .visuals import _custom_palettes
 import q2_sample_classifier
 from qiime2.plugin import SemanticType
 import qiime2.plugin.model as model
@@ -217,12 +218,7 @@ plugin.visualizers.register_function(
              'GradientBoostingClassifier', 'AdaBoostClassifier',
              'KNeighborsClassifier', 'LinearSVC', 'SVC']),
         'palette': Str % Choices(
-            ['Default', 'Greys', 'Purples', 'Blues', 'Greens', 'Oranges',
-             'Reds', 'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu',
-             'GnBu', 'PuBu', 'YlGn', 'bone_r', 'pink_r', 'summer_r', 'cool',
-             'hot_r', 'copper_r', 'gist_earth_r', 'terrain_r', 'gnuplot2_r',
-             'cubehelix_r', 'jet_r', 'viridis_r', 'plasma_r', 'inferno_r',
-             'magma_r'])},
+            ['Default', *_custom_palettes().keys()])},
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions['base'],
