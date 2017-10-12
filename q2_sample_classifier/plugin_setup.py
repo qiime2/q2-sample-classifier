@@ -22,7 +22,7 @@ import qiime2
 plugin = Plugin(
     name='sample-classifier',
     version=q2_sample_classifier.__version__,
-    website="https://github.com/nbokulich/q2-sample-classifier",
+    website="https://github.com/qiime2/q2-sample-classifier",
     package='q2_sample_classifier',
     description=(
         'This QIIME 2 plugin supports methods for supervised classification '
