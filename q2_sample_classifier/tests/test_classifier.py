@@ -125,7 +125,8 @@ class VisualsTests(SampleClassifierTestPluginBase):
     def test_linear_regress(self):
         res = _linear_regress(md['Value'], md['Time'])
         self.assertAlmostEqual(res.iloc[0]['Mean squared error'], 1.9413916666)
-        self.assertAlmostEqual(res.iloc[0]['R'], 0.86414956372460128)
+        self.assertAlmostEqual(res.iloc[0]['r-value'], 0.86414956372460128)
+        self.assertAlmostEqual(res.iloc[0]['r-squared'], 0.74675446848541871)
         self.assertAlmostEqual(res.iloc[0]['P-value'], 0.00028880275858705694)
 
     def test_calculate_baseline_accuracy(self):
