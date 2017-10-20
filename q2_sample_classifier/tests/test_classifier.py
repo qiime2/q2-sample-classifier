@@ -244,9 +244,8 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
     # this just checks that palette names are valid input
     def test_custom_palettes(self):
         confused = np.array([[1, 0], [0, 1]])
-        for cm in ['Default', *_custom_palettes().keys()]:
-            print(cm)
-            _plot_heatmap_from_confusion_matrix(confused, cm)
+        for palette in _custom_palettes().keys():
+            _plot_heatmap_from_confusion_matrix(confused, palette)
 
 
 class EstimatorsTests(SampleClassifierTestPluginBase):

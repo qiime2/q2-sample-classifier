@@ -27,7 +27,7 @@ defaults = {
     'n_jobs': 1,
     'n_estimators': 100,
     'estimator_r': 'RandomForestClassifier',
-    'palette': 'Default'
+    'palette': 'sirocco'
 }
 
 

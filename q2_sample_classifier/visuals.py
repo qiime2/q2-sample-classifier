@@ -195,15 +195,12 @@ def _linear_regress(actual, pred):
 
 
 def _plot_heatmap_from_confusion_matrix(cm, palette):
-    if palette == 'Default':
-        palette = _custom_palettes()['sirocco']
-    else:
-        palette = _custom_palettes()[palette]
+    palette = _custom_palettes()[palette]
     return sns.heatmap(cm, cmap=palette)
 
 
-def _plot_confusion_matrix(y_test, y_pred, classes, accuracy, normalize=True,
-                           palette='Default'):
+def _plot_confusion_matrix(y_test, y_pred, classes, accuracy, normalize,
+                           palette):
 
     cm = confusion_matrix(y_test, y_pred)
     # normalize

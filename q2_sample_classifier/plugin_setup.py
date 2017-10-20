@@ -217,8 +217,7 @@ plugin.visualizers.register_function(
             ['RandomForestClassifier', 'ExtraTreesClassifier',
              'GradientBoostingClassifier', 'AdaBoostClassifier',
              'KNeighborsClassifier', 'LinearSVC', 'SVC']),
-        'palette': Str % Choices(
-            ['Default', *_custom_palettes().keys()])},
+        'palette': Str % Choices(_custom_palettes().keys())},
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions['base'],
