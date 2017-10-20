@@ -188,10 +188,11 @@ def _linear_regress(actual, pred):
     '''
     slope, intercept, r_value, p_value, std_err = linregress(actual, pred)
     mse = mean_squared_error(actual, pred)
-    return pd.DataFrame([(mse, r_value, p_value, std_err, slope, intercept)],
-                        columns=["Mean squared error", "R", "P-value",
-                                 "Std Error", "Slope", "Intercept"],
-                        index=[actual.name])
+    return pd.DataFrame(
+        [(mse, r_value, r_value**2, p_value, std_err, slope, intercept)],
+        columns=["Mean squared error", "r-value", "r-squared", "P-value",
+                 "Std Error", "Slope", "Intercept"],
+        index=[actual.name])
 
 
 def _plot_heatmap_from_confusion_matrix(cm, palette):

@@ -15,9 +15,8 @@ import pandas as pd
 
 from .utilities import (split_optimize_classify, _visualize, _load_data,
                         _maz_score, _visualize_maturity_index,
-                        _split_training_data, _set_parameters_and_estimator,
+                        _set_parameters_and_estimator,
                         _disable_feature_selection, _select_estimator)
-from .visuals import _linear_regress
 
 
 defaults = {
@@ -182,53 +181,3 @@ def detect_outliers(table: pd.DataFrame,
     y_pred[y_pred == 1] = 'False'
     y_pred.name = "outlier"
     return y_pred
-
-
-# The following method is experimental and is not registered in the current
-# release. Any use of the API is at user's own risk.
-def predict_coordinates(table: pd.DataFrame, metadata: qiime2.Metadata,
-                        axis1_category: str='latitude',
-                        axis2_category: str='longitude',
-                        estimator: str='RandomForestRegressor',
-                        n_estimators: int=defaults['n_estimators'],
-                        test_size: float=defaults['test_size'],
-                        step: float=defaults['step'], cv: int=defaults['cv'],
-                        random_state: int=None, n_jobs: int=defaults['n_jobs'],
-                        parameter_tuning: bool=True,
-                        optimize_feature_selection: bool=True,
-                        ) -> (pd.DataFrame, pd.DataFrame):
-
-    # select estimator
-    param_dist, estimator = _select_estimator(estimator, n_jobs, n_estimators)
-
-    # split input data into training and test sets
-    table, metadata = _load_data(table, metadata)
-    X_train, X_test, y_train, y_test = _split_training_data(
-        table, metadata, [axis1_category, axis2_category], test_size,
-        random_state=random_state)
-
-    # train model and predict test data for each category
-    # *** would it be better to do this as a multioutput regression?
-    # *** currently each dimension is predicted separately
-    estimators = {}
-    predictions = {}
-    prediction_regression = pd.DataFrame()
-    for category in [axis1_category, axis2_category]:
-        estimator, cm, acc, importances = split_optimize_classify(
-            X_train, y_train, category, estimator, output_dir=None,
-            random_state=random_state, n_jobs=n_jobs, test_size=0.0,
-            step=step, cv=cv, parameter_tuning=parameter_tuning,
-            optimize_feature_selection=optimize_feature_selection,
-            param_dist=param_dist, calc_feature_importance=True,
-            load_data=False, scoring=mean_squared_error, classification=False)
-
-        y_pred = estimator.predict(X_test.iloc[:, importances.index])
-        predictions[category] = y_pred
-        pred = _linear_regress(y_test[category], y_pred)
-        prediction_regression = pd.concat(
-            [prediction_regression, pred.rename(index={0: category})])
-        estimators[category] = estimator
-
-    predictions = pd.DataFrame(predictions, index=X_test.index)
-
-    return predictions, prediction_regression
