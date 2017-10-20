@@ -349,7 +349,10 @@ def _visualize(output_dir, estimator, cm, accuracy, importances=None,
     result = pd.Series(estimator.get_params(), name='Parameter setting')
     result = q2templates.df_to_html(result.to_frame())
 
+    cm.to_csv(join(
+        output_dir, 'predictive_accuracy.tsv'), sep='\t', index=True)
     cm = q2templates.df_to_html(cm)
+
     if importances is not None:
         importances = sort_importances(importances)
         pd.set_option('display.float_format', '{:.3e}'.format)

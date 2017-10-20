@@ -15,6 +15,9 @@
     {% if classification %}
     <div class="col-lg-12">
       {{ predictions }}
+      <a href="predictive_accuracy.tsv">
+        <p>Download accuracy results as tsv</p>
+      </a>
     </div>
     {% endif %}
     {% if maturity_index %}
