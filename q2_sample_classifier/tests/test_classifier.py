@@ -15,7 +15,8 @@ from warnings import filterwarnings
 from sklearn.exceptions import ConvergenceWarning
 from q2_sample_classifier.visuals import (
     _two_way_anova, _pairwise_stats, _linear_regress,
-    _calculate_baseline_accuracy)
+    _calculate_baseline_accuracy, _custom_palettes,
+    _plot_heatmap_from_confusion_matrix)
 from q2_sample_classifier.classify import (
     classify_samples, regress_samples,
     maturity_index, detect_outliers)
@@ -189,6 +190,12 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         exp = pd.Series(['True', 'False', 'True', 'False'],
                         name='outlier', index=exp_index)
         self.assertEqual(sorted(exp), sorted(obs_category.to_series()))
+
+    # this just checks that palette names are valid input
+    def test_custom_palettes(self):
+        confused = np.array([[1, 0], [0, 1]])
+        for palette in _custom_palettes().keys():
+            _plot_heatmap_from_confusion_matrix(confused, palette)
 
 
 class EstimatorsTests(SampleClassifierTestPluginBase):
