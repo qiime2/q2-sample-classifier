@@ -18,14 +18,13 @@ from q2_sample_classifier.visuals import (
     _calculate_baseline_accuracy)
 from q2_sample_classifier.classify import (
     classify_samples, regress_samples,
-    maturity_index, detect_outliers, predict_coordinates)
+    maturity_index, detect_outliers)
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator,
     _prepare_training_data, _optimize_feature_selection, _fit_and_predict,
     _calculate_feature_importances, _extract_important_features,
     _train_adaboost_base_estimator, _disable_feature_selection)
 from q2_sample_classifier.plugin_setup import (
-    CoordinatesFormat, CoordinatesDirectoryFormat, Coordinates,
     BooleanSeriesFormat, BooleanSeriesDirectoryFormat, BooleanSeries)
 from q2_types.sample_data import SampleData
 import tempfile
@@ -189,56 +188,6 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         exp_index = pd.Index(['a', 'b', 'c', 'd'], dtype=object)
         exp = pd.Series(['True', 'False', 'True', 'False'],
                         name='outlier', index=exp_index)
-        self.assertEqual(sorted(exp), sorted(obs_category.to_series()))
-
-    def test_coordinates_format_validate_positive(self):
-        filepath = self.get_data_path('coordinates.tsv')
-        format = CoordinatesFormat(filepath, mode='r')
-        format.validate()
-
-    def test_coordinates_format_validate_negative(self):
-        filepath = self.get_data_path('false-coordinates.tsv')
-        format = CoordinatesFormat(filepath, mode='r')
-        with self.assertRaisesRegex(ValidationError, 'CoordinatesFormat'):
-            format.validate()
-
-    def test_coordinates_dir_fmt_validate_positive(self):
-        filepath = self.get_data_path('coordinates.tsv')
-        shutil.copy(filepath, self.temp_dir.name)
-        format = CoordinatesDirectoryFormat(self.temp_dir.name, mode='r')
-        format.validate()
-
-    def test_coordinates_semantic_type_registration(self):
-        self.assertRegisteredSemanticType(Coordinates)
-
-    def test_sample_data_coordinates_to_coordinates_dir_fmt_registration(self):
-        self.assertSemanticTypeRegisteredToFormat(
-            SampleData[Coordinates], CoordinatesDirectoryFormat)
-
-    def test_pd_dataframe_to_coordinates_format(self):
-        transformer = self.get_transformer(pd.DataFrame, CoordinatesFormat)
-        exp = pd.DataFrame(
-            {'Latitude': (38.306, 38.306), 'Longitude': (-122.228, -122.228)})
-        obs = transformer(exp)
-        obs = pd.DataFrame.from_csv(str(obs), sep='\t', header=0)
-        self.assertEqual(sorted(exp), sorted(obs))
-
-    def test_coordinates_format_to_pd_dataframe(self):
-        _, obs = self.transform_format(
-            CoordinatesFormat, pd.DataFrame, 'coordinates.tsv')
-        exp = pd.DataFrame(
-            {'Latitude': (38.306, 38.306, 38.306, 38.306),
-             'Longitude': (-122.228, -122.228, -122.228, -122.228)},
-            index=['a', 'b', 'c', 'd'])
-        self.assertEqual(sorted(exp), sorted(obs))
-
-    def test_coordinates_format_to_metadata(self):
-        _, obs = self.transform_format(
-            CoordinatesFormat, qiime2.Metadata, 'coordinates.tsv')
-        obs_category = obs.get_category('Latitude')
-        exp_index = pd.Index(['a', 'b', 'c', 'd'], dtype=object)
-        exp = pd.Series(['38.306', '38.306', '38.306', '38.306'],
-                        name='Latitude', index=exp_index)
         self.assertEqual(sorted(exp), sorted(obs_category.to_series()))
 
 
@@ -439,12 +388,6 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             detect_outliers(self.table_chard_fp, self.md_chard_fp,
                             random_state=123, n_jobs=1, contamination=0.05,
                             subset_category=None, subset_value=1)
-
-    def test_predict_coordinates(self):
-        pred, coords = predict_coordinates(
-            self.table_chard_fp, self.md_chard_fp,
-            axis1_category='latitude', axis2_category='longitude',
-            random_state=123, n_jobs=1)
 
 
 md = pd.DataFrame([(1, 'a', 0.11), (1, 'a', 0.12), (1, 'a', 0.13),
