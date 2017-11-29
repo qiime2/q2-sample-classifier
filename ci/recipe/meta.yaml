@@ -21,7 +21,7 @@ requirements:
     - python 3.5*
     - setuptools
     - pandas
-    - scipy
+    - scipy 0.19.1
     - scikit-learn
     - scikit-bio
     - seaborn >=0.8
