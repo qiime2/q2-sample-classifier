@@ -31,7 +31,7 @@ defaults = {
 
 
 def classify_samples(output_dir: str, table: pd.DataFrame,
-                     metadata: qiime2.MetadataCategory,
+                     metadata: qiime2.CategoricalMetadataColumn,
                      test_size: float=defaults['test_size'],
                      step: float=defaults['step'],
                      cv: int=defaults['cv'], random_state: int=None,
@@ -42,8 +42,8 @@ def classify_samples(output_dir: str, table: pd.DataFrame,
                      parameter_tuning: bool=False,
                      palette: str=defaults['palette']) -> None:
 
-    # extract category name from MetadataCategory
-    category = metadata.to_series().name
+    # extract column name from CategoricalMetadataColumn
+    column = metadata.to_series().name
 
     # disable feature selection for unsupported estimators
     optimize_feature_selection, calc_feature_importance = \
@@ -51,11 +51,11 @@ def classify_samples(output_dir: str, table: pd.DataFrame,
 
     # specify parameters and distributions to sample from for parameter tuning
     estimator, param_dist, parameter_tuning = _set_parameters_and_estimator(
-        estimator, table, metadata, category, n_estimators, n_jobs, cv,
+        estimator, table, metadata, column, n_estimators, n_jobs, cv,
         random_state, parameter_tuning, classification=True)
 
     estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, category, estimator, output_dir,
+        table, metadata, column, estimator, output_dir,
         test_size=test_size, step=step, cv=cv, random_state=random_state,
         n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
@@ -66,7 +66,7 @@ def classify_samples(output_dir: str, table: pd.DataFrame,
 
 
 def regress_samples(output_dir: str, table: pd.DataFrame,
-                    metadata: qiime2.MetadataCategory,
+                    metadata: qiime2.NumericMetadataColumn,
                     test_size: float=defaults['test_size'],
                     step: float=defaults['step'],
                     cv: int=defaults['cv'], random_state: int=None,
@@ -76,8 +76,8 @@ def regress_samples(output_dir: str, table: pd.DataFrame,
                     optimize_feature_selection: bool=False,
                     stratify: str=False, parameter_tuning: bool=False) -> None:
 
-    # extract category name from MetadataCategory
-    category = metadata.to_series().name
+    # extract column name from NumericMetadataColumn
+    column = metadata.to_series().name
 
     # disable feature selection for unsupported estimators
     optimize_feature_selection, calc_feature_importance = \
@@ -85,11 +85,11 @@ def regress_samples(output_dir: str, table: pd.DataFrame,
 
     # specify parameters and distributions to sample from for parameter tuning
     estimator, param_dist, parameter_tuning = _set_parameters_and_estimator(
-        estimator, table, metadata, category, n_estimators, n_jobs, cv,
+        estimator, table, metadata, column, n_estimators, n_jobs, cv,
         random_state, parameter_tuning, classification=True)
 
     estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, category, estimator, output_dir,
+        table, metadata, column, estimator, output_dir,
         test_size=test_size, step=step, cv=cv, random_state=random_state,
         n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
@@ -101,7 +101,7 @@ def regress_samples(output_dir: str, table: pd.DataFrame,
 
 
 def maturity_index(output_dir: str, table: pd.DataFrame,
-                   metadata: qiime2.Metadata, category: str, group_by: str,
+                   metadata: qiime2.Metadata, column: str, group_by: str,
                    control: str, estimator: str='RandomForestRegressor',
                    n_estimators: int=defaults['n_estimators'],
                    test_size: float=defaults['test_size'],
@@ -121,7 +121,7 @@ def maturity_index(output_dir: str, table: pd.DataFrame,
 
     # train model on control data
     estimator, cm, accuracy, importances = split_optimize_classify(
-        table_control, md_control, category, estimator, output_dir,
+        table_control, md_control, column, estimator, output_dir,
         random_state=random_state, n_jobs=n_jobs, test_size=test_size,
         step=step, cv=cv, parameter_tuning=parameter_tuning,
         optimize_feature_selection=optimize_feature_selection,
@@ -131,23 +131,23 @@ def maturity_index(output_dir: str, table: pd.DataFrame,
     # predict treatment data
     table = table.loc[:, importances["feature"]]
     y_pred = estimator.predict(table)
-    predicted_category = 'predicted {0}'.format(category)
-    metadata[predicted_category] = y_pred
+    predicted_column = 'predicted {0}'.format(column)
+    metadata[predicted_column] = y_pred
 
     # calculate MAZ score
     metadata = _maz_score(
-        metadata, predicted_category, category, group_by, control)
+        metadata, predicted_column, column, group_by, control)
 
     # visualize
-    _visualize_maturity_index(table, metadata, group_by, category,
-                              predicted_category, importances, estimator,
+    _visualize_maturity_index(table, metadata, group_by, column,
+                              predicted_column, importances, estimator,
                               accuracy, output_dir, maz_stats=maz_stats)
 
 
 # The following method is experimental and is not registered in the current
 # release. Any use of the API is at user's own risk.
 def detect_outliers(table: pd.DataFrame,
-                    metadata: qiime2.Metadata, subset_category: str=None,
+                    metadata: qiime2.Metadata, subset_column: str=None,
                     subset_value: str=None,
                     n_estimators: int=defaults['n_estimators'],
                     contamination: float=0.05, random_state: int=None,
@@ -156,13 +156,13 @@ def detect_outliers(table: pd.DataFrame,
     features, sample_md = _load_data(table, metadata)
 
     # if opting to train on a subset, choose subset that fits criteria
-    if subset_category and subset_value:
-        y_train = sample_md[sample_md[subset_category] == subset_value]
+    if subset_column and subset_value:
+        y_train = sample_md[sample_md[subset_column] == subset_value]
         X_train = table.loc[list(y_train.index.values)]
-    # raise error if subset_category or subset_value (but not both) are set
-    elif subset_category is not None or subset_value is not None:
+    # raise error if subset_column or subset_value (but not both) are set
+    elif subset_column is not None or subset_value is not None:
         raise ValueError((
-            'subset_category and subset_value must both be provided with a '
+            'subset_column and subset_value must both be provided with a '
             'valid value to perform model training on a subset of data.'))
     else:
         X_train = features

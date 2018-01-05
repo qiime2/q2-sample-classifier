@@ -184,12 +184,12 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
     def test_boolean_format_to_metadata(self):
         _, obs = self.transform_format(
             BooleanSeriesFormat, qiime2.Metadata, 'outliers.tsv')
-        obs_category = obs.get_category('outlier')
 
-        exp_index = pd.Index(['a', 'b', 'c', 'd'], dtype=object)
-        exp = pd.Series(['True', 'False', 'True', 'False'],
-                        name='outlier', index=exp_index)
-        self.assertEqual(sorted(exp), sorted(obs_category.to_series()))
+        exp_index = pd.Index(['a', 'b', 'c', 'd'], name='id')
+        exp = pd.DataFrame([['True'], ['False'], ['True'], ['False']],
+                           columns=['outlier'], index=exp_index, dtype='str')
+        exp = qiime2.Metadata(exp)
+        self.assertEqual(obs, exp)
 
     # this just checks that palette names are valid input
     def test_custom_palettes(self):
@@ -215,18 +215,24 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             md = qiime2.Metadata(md)
             return md
 
-        def _load_mdc(md_fp, category):
+        def _load_nmc(md_fp, column):
             md_fp = self.get_data_path(md_fp)
             md = pd.DataFrame.from_csv(md_fp, sep='\t')
-            md = qiime2.MetadataCategory(md[category])
+            md = qiime2.NumericMetadataColumn(md[column])
+            return md
+
+        def _load_cmc(md_fp, column):
+            md_fp = self.get_data_path(md_fp)
+            md = pd.DataFrame.from_csv(md_fp, sep='\t')
+            md = qiime2.CategoricalMetadataColumn(md[column])
             return md
 
         self.table_chard_fp = _load_df('chardonnay.table.qza')
         self.md_chard_fp = _load_md('chardonnay.map.txt')
-        self.mdc_chard_fp = _load_mdc('chardonnay.map.txt', 'Region')
+        self.mdc_chard_fp = _load_cmc('chardonnay.map.txt', 'Region')
         self.table_ecam_fp = _load_df('ecam-table-maturity.qza')
         self.md_ecam_fp = _load_md('ecam_map_maturity.txt')
-        self.mdc_ecam_fp = _load_mdc('ecam_map_maturity.txt', 'month')
+        self.mdc_ecam_fp = _load_nmc('ecam_map_maturity.txt', 'month')
 
     # test that the plugin/visualizer work
     def test_classify_samples(self):
@@ -374,7 +380,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     # test experimental functions
     def test_maturity_index(self):
         maturity_index(self.temp_dir.name, self.table_ecam_fp, self.md_ecam_fp,
-                       category='month', group_by='delivery', random_state=123,
+                       column='month', group_by='delivery', random_state=123,
                        n_jobs=1, control='Vaginal', test_size=0.4)
 
     def test_detect_outliers(self):
@@ -384,17 +390,17 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     def test_detect_outliers_with_subsets(self):
         detect_outliers(self.table_chard_fp, self.md_chard_fp,
                         random_state=123, n_jobs=1, contamination=0.05,
-                        subset_category='Vineyard', subset_value=1)
+                        subset_column='Vineyard', subset_value=1)
 
     def test_detect_outliers_raise_error_on_missing_subset_data(self):
         with self.assertRaisesRegex(ValueError, "must both be provided"):
             detect_outliers(self.table_chard_fp, self.md_chard_fp,
                             random_state=123, n_jobs=1, contamination=0.05,
-                            subset_category='Vineyard', subset_value=None)
+                            subset_column='Vineyard', subset_value=None)
         with self.assertRaisesRegex(ValueError, "must both be provided"):
             detect_outliers(self.table_chard_fp, self.md_chard_fp,
                             random_state=123, n_jobs=1, contamination=0.05,
-                            subset_category=None, subset_value=1)
+                            subset_column=None, subset_value=1)
 
 
 md = pd.DataFrame([(1, 'a', 0.11), (1, 'a', 0.12), (1, 'a', 0.13),

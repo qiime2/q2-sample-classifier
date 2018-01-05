@@ -76,7 +76,7 @@ def _load_data(feature_data, targets_metadata):
         target (columns) X sample (rows) values.
     '''
     # Load metadata, attempt to convert to numeric
-    targets = _metadata_to_df(targets_metadata)
+    targets = targets_metadata.to_dataframe()
 
     # filter features and targets so samples match
     merged = feature_data.join(targets, how='inner')
@@ -84,17 +84,6 @@ def _load_data(feature_data, targets_metadata):
     targets = targets.loc[merged.index]
 
     return feature_data, targets
-
-
-def _metadata_to_df(metadata):
-    # Load metadata, attempt to convert to numeric
-    try:
-        metadata = metadata.to_dataframe()
-    # metadata category has no attribute to_dataframe()
-    except AttributeError:
-        metadata = metadata.to_series().to_frame()
-    metadata = metadata.apply(lambda x: pd.to_numeric(x, errors='ignore'))
-    return metadata
 
 
 def _extract_important_features(table, top):
@@ -119,7 +108,7 @@ def _extract_important_features(table, top):
     return imp
 
 
-def _split_training_data(feature_data, targets, category, test_size=0.2,
+def _split_training_data(feature_data, targets, column, test_size=0.2,
                          stratify=None, random_state=None, drop_na=True):
     '''Split data sets into training and test sets.
 
@@ -127,18 +116,18 @@ def _split_training_data(feature_data, targets, category, test_size=0.2,
         feature X sample values.
     targets: pandas.DataFrame
         target (columns) X sample (rows) values.
-    category: str
-        Target category contained in targets.
+    column: str
+        Target column contained in targets.
     test_size: float
         Fraction of data to be reserved as test data.
     stratify: array-like
         Stratify data using this as class labels. E.g., set to df
-        category by setting stratify=df[category]
+        column by setting stratify=df[column]
     random_state: int or None
         Int to use for seeding random state. Random if None.
     '''
     # Define target / predictor data
-    targets = targets[category]
+    targets = targets[column]
 
     if drop_na:
         targets = targets.dropna(axis=0, how='any')
@@ -151,14 +140,14 @@ def _split_training_data(feature_data, targets, category, test_size=0.2,
                 random_state=random_state)
         except ValueError:
             raise ValueError((
-                'You have chosen to predict a metadata category that contains '
+                'You have chosen to predict a metadata column that contains '
                 'one or more values that match only one sample. For proper '
                 'stratification of data into training and test sets, each '
                 'class (value) must contain at least two samples. This is a '
                 'requirement for classification problems, but stratification '
                 'can be disabled for regression by setting stratify=False. '
                 'Alternatively, remove all samples that bear a unique class '
-                'label for your chosen metadata category. Note that disabling '
+                'label for your chosen metadata column. Note that disabling '
                 'stratification can negatively impact predictive accuracy for '
                 'small data sets.'))
     else:
@@ -221,7 +210,7 @@ def _rfecv_feature_selection(feature_data, targets, estimator,
     return rfecv, importance, top_feature_data, rfep
 
 
-def split_optimize_classify(features, targets, category, estimator,
+def split_optimize_classify(features, targets, column, estimator,
                             output_dir, test_size=0.2,
                             step=0.05, cv=5, random_state=None, n_jobs=1,
                             optimize_feature_selection=False,
@@ -231,7 +220,7 @@ def split_optimize_classify(features, targets, category, estimator,
                             stratify=True, palette='sirocco'):
     # Load, stratify, and split training/test data
     X_train, X_test, y_train, y_test = _prepare_training_data(
-        features, targets, category, test_size, random_state,
+        features, targets, column, test_size, random_state,
         load_data=load_data, stratify=stratify)
 
     # optimize training feature count
@@ -268,7 +257,7 @@ def split_optimize_classify(features, targets, category, estimator,
     return estimator, predictions, accuracy, importances
 
 
-def _prepare_training_data(features, targets, category, test_size,
+def _prepare_training_data(features, targets, column, test_size,
                            random_state, load_data=True, stratify=True):
     # load data
     if load_data:
@@ -276,12 +265,12 @@ def _prepare_training_data(features, targets, category, test_size,
 
     # split into training and test sets
     if stratify:
-        strata = targets[category]
+        strata = targets[column]
     else:
         strata = None
 
     X_train, X_test, y_train, y_test = _split_training_data(
-        features, targets, category, test_size, strata,
+        features, targets, column, test_size, strata,
         random_state)
 
     return X_train, X_test, y_train, y_test
@@ -371,14 +360,14 @@ def _visualize(output_dir, estimator, cm, accuracy, importances=None,
         'maturity_index': False})
 
 
-def _visualize_maturity_index(table, metadata, group_by, category,
-                              predicted_category, importances, estimator,
+def _visualize_maturity_index(table, metadata, group_by, column,
+                              predicted_column, importances, estimator,
                               accuracy, output_dir, maz_stats=True):
 
     pd.set_option('display.max_colwidth', -1)
 
-    maturity = '{0} maturity'.format(category)
-    maz = '{0} MAZ score'.format(category)
+    maturity = '{0} maturity'.format(column)
+    maz = '{0} MAZ score'.format(column)
 
     # save feature importance data and convert to html
     importances = sort_importances(importances)
@@ -387,33 +376,33 @@ def _visualize_maturity_index(table, metadata, group_by, category,
     importance = q2templates.df_to_html(importances, index=False)
 
     # save predicted values, maturity, and MAZ score data
-    maz_md = metadata[[group_by, category, predicted_category, maturity, maz]]
+    maz_md = metadata[[group_by, column, predicted_column, maturity, maz]]
     maz_md.to_csv(join(output_dir, 'maz_scores.tsv'), sep='\t')
     if maz_stats:
-        maz_aov = _two_way_anova(table, metadata, maz, group_by, category)[0]
+        maz_aov = _two_way_anova(table, metadata, maz, group_by, column)[0]
         maz_aov.to_csv(join(output_dir, 'maz_aov.tsv'), sep='\t')
         maz_pairwise = _pairwise_stats(
-            table, metadata, maz, group_by, category)
+            table, metadata, maz, group_by, column)
         maz_pairwise.to_csv(join(output_dir, 'maz_pairwise.tsv'), sep='\t')
 
     # plot control/treatment predicted vs. actual values
     g = _lmplot_from_dataframe(
-        metadata, category, predicted_category, group_by)
+        metadata, column, predicted_column, group_by)
     g.savefig(join(output_dir, 'maz_predictions.png'), bbox_inches='tight')
     g.savefig(join(output_dir, 'maz_predictions.pdf'), bbox_inches='tight')
     plt.close('all')
 
-    # plot barplots of MAZ score vs. category (e.g., age)
-    g = _boxplot_from_dataframe(metadata, category, maz, group_by)
+    # plot barplots of MAZ score vs. column (e.g., age)
+    g = _boxplot_from_dataframe(metadata, column, maz, group_by)
     g.get_figure().savefig(
         join(output_dir, 'maz_boxplots.png'), bbox_inches='tight')
     g.get_figure().savefig(
         join(output_dir, 'maz_boxplots.pdf'), bbox_inches='tight')
     plt.close('all')
 
-    # plot heatmap of category (e.g., age) vs. abundance of top features
+    # plot heatmap of column (e.g., age) vs. abundance of top features
     top = table[list(importances.feature)]
-    g = _clustermap_from_dataframe(top, metadata, group_by, category)
+    g = _clustermap_from_dataframe(top, metadata, group_by, column)
     g.savefig(join(output_dir, 'maz_heatmaps.png'), bbox_inches='tight')
     g.savefig(join(output_dir, 'maz_heatmaps.pdf'), bbox_inches='tight')
 
@@ -456,15 +445,15 @@ def _fit_and_predict(X_train, X_test, y_train, y_test, estimator,
     return estimator, accuracy, y_pred
 
 
-def _maz_score(metadata, predicted, category, group_by, control):
+def _maz_score(metadata, predicted, column, group_by, control):
     '''pd.DataFrame -> pd.DataFrame'''
     # extract control data
     md_control = metadata[metadata[group_by] == control]
 
     # for each bin, calculate median and SD in control samples
     medians = {}
-    for n in md_control[category].unique():
-        _bin = md_control[md_control[category] == n]
+    for n in md_control[column].unique():
+        _bin = md_control[md_control[column] == n]
         _median = _bin[predicted].median()
         _std = _bin[predicted].std()
         medians[n] = (_median, _std)
@@ -473,7 +462,7 @@ def _maz_score(metadata, predicted, category, group_by, control):
     maturity_scores = []
     maz_scores = []
     for i, v in metadata[predicted].iteritems():
-        _median, _std = medians[metadata.loc[i][category]]
+        _median, _std = medians[metadata.loc[i][column]]
         maturity = v - _median
         maturity_scores.append(maturity)
         if maturity == 0.0 or _std == 0.0:
@@ -482,9 +471,9 @@ def _maz_score(metadata, predicted, category, group_by, control):
             maz_score = maturity / _std
         maz_scores.append(maz_score)
 
-    maturity = '{0} maturity'.format(category)
+    maturity = '{0} maturity'.format(column)
     metadata[maturity] = maturity_scores
-    maz = '{0} MAZ score'.format(category)
+    maz = '{0} MAZ score'.format(column)
     metadata[maz] = maz_scores
 
     return metadata
@@ -556,7 +545,7 @@ def _select_estimator(estimator, n_jobs, n_estimators, random_state=None):
     return param_dist, estimator
 
 
-def _train_adaboost_base_estimator(table, metadata, category, n_estimators,
+def _train_adaboost_base_estimator(table, metadata, column, n_estimators,
                                    n_jobs, cv, random_state=None,
                                    parameter_tuning=False,
                                    classification=True):
@@ -571,7 +560,7 @@ def _train_adaboost_base_estimator(table, metadata, category, n_estimators,
     if parameter_tuning:
         features, targets = _load_data(table, metadata)
         base_estimator = _tune_parameters(
-            features, targets[category], base_estimator, param_dist,
+            features, targets[column], base_estimator, param_dist,
             n_jobs=n_jobs, cv=cv, random_state=random_state)
 
     return adaboost_estimator(
@@ -593,13 +582,13 @@ def _disable_feature_selection(estimator, optimize_feature_selection):
     return optimize_feature_selection, calc_feature_importance
 
 
-def _set_parameters_and_estimator(estimator, table, metadata, category,
+def _set_parameters_and_estimator(estimator, table, metadata, column,
                                   n_estimators, n_jobs, cv, random_state,
                                   parameter_tuning, classification=True):
     # specify parameters and distributions to sample from for parameter tuning
     if estimator in ['AdaBoostClassifier', 'AdaBoostRegressor']:
         estimator = _train_adaboost_base_estimator(
-            table, metadata, category, n_estimators, n_jobs, cv, random_state,
+            table, metadata, column, n_estimators, n_jobs, cv, random_state,
             parameter_tuning, classification=classification)
         parameter_tuning = False
         param_dist = None

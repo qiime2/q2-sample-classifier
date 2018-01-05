@@ -83,32 +83,32 @@ def _regplot_from_dataframe(x, y, plot_style="whitegrid", arb=True,
     return reg
 
 
-def _lmplot_from_dataframe(metadata, category, predicted_category, group_by,
+def _lmplot_from_dataframe(metadata, column, predicted_column, group_by,
                            plot_style="whitegrid"):
     sns.set_style(plot_style)
-    g = sns.lmplot(category, predicted_category, data=metadata,
+    g = sns.lmplot(column, predicted_column, data=metadata,
                    hue=group_by, fit_reg=False,
                    scatter_kws={"marker": ".", "s": 100}, legend=False)
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     return g
 
 
-def _boxplot_from_dataframe(metadata, category, dep, group_by,
+def _boxplot_from_dataframe(metadata, column, dep, group_by,
                             plot_style="whitegrid"):
     sns.set_style(plot_style)
-    ax = sns.boxplot(x=category, y=dep, hue=group_by, data=metadata)
+    ax = sns.boxplot(x=column, y=dep, hue=group_by, data=metadata)
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.ylim(metadata[dep].min(), metadata[dep].max())
     return ax
 
 
-def _clustermap_from_dataframe(table, metadata, group_by, category,
+def _clustermap_from_dataframe(table, metadata, group_by, column,
                                metric='correlation', method='weighted',
                                plot_style="whitegrid"):
     sns.set_style(plot_style)
-    table = metadata[[group_by, category]].merge(
+    table = metadata[[group_by, column]].merge(
         table, left_index=True, right_index=True)
-    table = table.groupby(by=[group_by, category]).median()
+    table = table.groupby(by=[group_by, column]).median()
 
     # remove any empty columns
     table = table.loc[:, (table != 0).any(axis=0)]
@@ -148,7 +148,7 @@ def _two_way_anova(table, metadata, dep, time, group_by):
 
 def _pairwise_stats(table, metadata, dep, time, group_by):
     '''pd.DataFrame -> pd.DataFrame
-    Perform pairwise t-tests on all groups in group_by and time categories.
+    Perform pairwise t-tests on all groups in group_by and time columns.
     '''
     # Prep data
     table = _filter_metadata_to_table_ids(table, metadata, dep, time, group_by)
