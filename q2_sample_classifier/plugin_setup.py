@@ -7,7 +7,8 @@
 # ----------------------------------------------------------------------------
 
 from qiime2.plugin import (
-    Int, Str, Float, Range, Bool, Plugin, Metadata, Choices, MetadataCategory)
+    Int, Str, Float, Range, Bool, Plugin, Metadata, Choices, MetadataColumn,
+    Numeric, Categorical)
 from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.sample_data import SampleData
 from .classify import (
@@ -57,9 +58,9 @@ BooleanSeriesDirectoryFormat = model.SingleFileDirectoryFormat(
 def _read_dataframe(fh):
     # Using `dtype=object` and `set_index` to avoid type casting/inference
     # of any columns or the index.
-    df = pd.read_csv(fh, sep='\t', header=0, dtype=object)
+    df = pd.read_csv(fh, sep='\t', header=0, dtype='str')
     df.set_index(df.columns[0], drop=True, append=False, inplace=True)
-    df.index.name = None
+    df.index.name = 'id'
     return df
 
 
@@ -93,7 +94,7 @@ plugin.register_semantic_type_to_format(
     artifact_format=BooleanSeriesDirectoryFormat)
 
 
-description = ('Predicts a {0} sample metadata category using a {1}. Splits '
+description = ('Predicts a {0} sample metadata column using a {1}. Splits '
                'input data into training and test sets. The training set is '
                'used to train and test the estimator using a stratified '
                'k-fold cross-validation scheme. This includes optional steps '
@@ -110,7 +111,6 @@ input_descriptions = {'table': ('Feature table containing all features that '
 
 parameters = {
     'base': {
-        'metadata': Metadata,
         'random_state': Int,
         'n_jobs': Int,
         'n_estimators': Int % Range(1, None)},
@@ -122,10 +122,9 @@ parameters = {
         'cv': Int % Range(1, None),
         'parameter_tuning': Bool,
         'optimize_feature_selection': Bool},
-    'standard_metadata': {'metadata': MetadataCategory},
     'modified_metadata': {
         'metadata': Metadata,
-        'category': Str},
+        'column': Str},
     'regressor': {'stratify': Bool}
 }
 
@@ -151,13 +150,8 @@ parameter_descriptions = {
                                        'elimination.')},
     'regressor': {
         'stratify': ('Evenly stratify training and test data among metadata '
-                     'categories. If True, all values in category must match '
+                     'categories. If True, all values in column must match '
                      'at least two samples.')},
-    'standard_metadata': {
-        'metadata': 'Sample metadata category to use as prediction target.'},
-    'modified_metadata': {
-        'metadata': 'Sample metadata to use as prediction targets.',
-        'category': 'Metadata category to use for training and prediction.'},
     'estimator': {
         'estimator': 'Estimator method to use for sample prediction.'}
 }
@@ -169,7 +163,7 @@ plugin.visualizers.register_function(
     parameters={
         **parameters['base'],
         **parameters['standard'],
-        **parameters['standard_metadata'],
+        'metadata': MetadataColumn[Categorical],
         'estimator': Str % Choices(
             ['RandomForestClassifier', 'ExtraTreesClassifier',
              'GradientBoostingClassifier', 'AdaBoostClassifier',
@@ -179,7 +173,8 @@ plugin.visualizers.register_function(
     parameter_descriptions={
         **parameter_descriptions['base'],
         **parameter_descriptions['standard'],
-        **parameter_descriptions['standard_metadata'],
+        'metadata': ('Categorical metadata column to use as prediction '
+                     'target.'),
         **parameter_descriptions['estimator'],
         'palette': 'The color palette to use for plotting.'},
     name='Supervised learning classifier.',
@@ -193,7 +188,7 @@ plugin.visualizers.register_function(
     parameters={
         **parameters['base'],
         **parameters['standard'],
-        **parameters['standard_metadata'],
+        'metadata': MetadataColumn[Numeric],
         **parameters['regressor'],
         'estimator': Str % Choices(
             ['RandomForestRegressor', 'ExtraTreesRegressor',
@@ -204,7 +199,7 @@ plugin.visualizers.register_function(
         **parameter_descriptions['base'],
         **parameter_descriptions['standard'],
         **parameter_descriptions['regressor'],
-        **parameter_descriptions['standard_metadata'],
+        'metadata': 'Numeric metadata column to use as prediction target.',
         **parameter_descriptions['estimator']},
     name='Supervised learning regressor.',
     description=description.format(
@@ -223,7 +218,8 @@ plugin.visualizers.register_function(
                     'ElasticNet']),
                 **parameters['base'],
                 **parameters['standard'],
-                **parameters['modified_metadata'],
+                'metadata': Metadata,
+                'column': Str,
                 **parameters['regressor'],
                 'maz_stats': Bool,
                 },
@@ -231,11 +227,11 @@ plugin.visualizers.register_function(
     parameter_descriptions={
         **parameter_descriptions['base'],
         **parameter_descriptions['standard'],
-        **parameter_descriptions['modified_metadata'],
-        'group_by': ('Metadata category to use for plotting and significance '
-                     'testing between main treatment groups.'),
+        'column': 'Numeric metadata column to use as prediction target.',
+        'group_by': ('Categorical metadata column to use for plotting and '
+                     'significance testing between main treatment groups.'),
         'control': (
-            'Value of group_by to use as control group. The regression  model '
+            'Value of group_by to use as control group. The regression model '
             'will be trained using only control group data, and the maturity '
             'scores of other groups consequently will be assessed relative to '
             'this group.'),
@@ -246,9 +242,9 @@ plugin.visualizers.register_function(
     name='Microbial maturity index prediction.',
     description=('Calculates a "microbial maturity" index from a regression '
                  'model trained on feature data to predict a given continuous '
-                 'metadata category, e.g., to predict age as a function of '
+                 'metadata column, e.g., to predict age as a function of '
                  'microbiota composition. The model is trained on a subset of '
-                 'control group samples, then predicts the category value for '
+                 'control group samples, then predicts the column value for '
                  'all samples. This visualization computes maturity index '
                  'z-scores to compare relative "maturity" between each group, '
                  'as described in doi:10.1038/nature13421. This method can '
