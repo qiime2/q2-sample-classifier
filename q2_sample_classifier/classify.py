@@ -107,7 +107,7 @@ def regress_samples_ncv(
         n_jobs: int=defaults['n_jobs'],
         n_estimators: int=defaults['n_estimators'],
         estimator: str='RandomForestRegressor', stratify: str=False,
-        parameter_tuning: bool=False) -> (pd.DataFrame, pd.DataFrame):
+        parameter_tuning: bool=False) -> (pd.Series, pd.DataFrame):
 
     y_pred, importances = nested_cross_validation(
         table, metadata, cv, random_state, n_jobs, n_estimators, estimator,

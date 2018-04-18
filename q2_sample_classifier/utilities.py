@@ -235,11 +235,13 @@ def nested_cross_validation(table, metadata, cv, random_state, n_jobs,
             X_train, y_train, estimator, param_dist, n_iter_search=20,
             n_jobs=n_jobs, cv=cv, random_state=random_state).best_estimator_
 
+    # predict values for all samples via (nested) CV
     accuracy, y_pred = _fit_and_predict_cv(
-        X_train, y_train, estimator, cv=cv, scoring)
+        X_train, y_train, estimator, cv, scoring)
 
-    y_pred = pd.DataFrame(
-        y_pred, index=md.index, columns=["Predicted %s" % column])
+    # convert predictions to series
+    y_pred = pd.Series(
+        y_pred, index=y_train.index, name="Predicted %s" % column)
 
     # calculate feature importances, if appropriate for the estimator
     if calc_feature_importance:
