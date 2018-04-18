@@ -6,7 +6,8 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
-from sklearn.model_selection import train_test_split, RandomizedSearchCV
+from sklearn.model_selection import (
+    train_test_split, RandomizedSearchCV, cross_val_predict)
 from sklearn.metrics import accuracy_score
 from sklearn.feature_selection import RFECV
 from sklearn.ensemble import (RandomForestRegressor, RandomForestClassifier,
@@ -210,6 +211,56 @@ def _rfecv_feature_selection(feature_data, targets, estimator,
     return rfecv, importance, top_feature_data, rfep
 
 
+def nested_cross_validation(table, metadata, cv, random_state, n_jobs,
+                            n_estimators, estimator, stratify,
+                            parameter_tuning, classification, scoring):
+    # extract column name from NumericMetadataColumn
+    column = metadata.to_series().name
+
+    # load feature data, metadata targets
+    X_train, y_train = _load_data(table, metadata)
+
+    # disable feature selection for unsupported estimators
+    optimize_feature_selection, calc_feature_importance = \
+        _disable_feature_selection(estimator, False)
+
+    # specify parameters and distributions to sample from for parameter tuning
+    estimator, param_dist, parameter_tuning = _set_parameters_and_estimator(
+        estimator, table, metadata, column, n_estimators, n_jobs, cv,
+        random_state, parameter_tuning, classification)
+
+    if parameter_tuning:
+        # tune parameters
+        estimator = _tune_parameters(
+            X_train, y_train, estimator, param_dist, n_iter_search=20,
+            n_jobs=n_jobs, cv=cv, random_state=random_state).best_estimator_
+
+    accuracy, y_pred = _fit_and_predict_cv(
+        X_train, y_train, estimator, cv=cv, scoring)
+
+    y_pred = pd.DataFrame(
+        y_pred, index=md.index, columns=["Predicted %s" % column])
+
+    # calculate feature importances, if appropriate for the estimator
+    if calc_feature_importance:
+        importances = _calculate_feature_importances(X_train, estimator)
+    # otherwise, we have no weights nor selection, so features==n_features
+    else:
+        importances = null_feature_importance(X_train)
+
+    # Print accuracy score to stdout
+    print("Estimator Accuracy: {0}".format(accuracy))
+
+    return y_pred, importances
+
+
+def null_feature_importance(table):
+    imp = pd.DataFrame(index=table.columns)
+    imp.index.name = "feature"
+    imp["importance"] = 1
+    return imp
+
+
 def split_optimize_classify(features, targets, column, estimator,
                             output_dir, test_size=0.2,
                             step=0.05, cv=5, random_state=None, n_jobs=1,
@@ -233,7 +284,7 @@ def split_optimize_classify(features, targets, column, estimator,
         # tune parameters
         estimator = _tune_parameters(
             X_train, y_train, estimator, param_dist, n_iter_search=20,
-            n_jobs=n_jobs, cv=cv, random_state=random_state)
+            n_jobs=n_jobs, cv=cv, random_state=random_state).best_estimator_
 
     # train classifier and predict test set classes
     estimator, accuracy, y_pred = _fit_and_predict(
@@ -428,7 +479,7 @@ def _tune_parameters(X_train, y_train, estimator, param_dist, n_iter_search=20,
         estimator, param_distributions=param_dist, n_iter=n_iter_search,
         n_jobs=n_jobs, cv=cv, random_state=random_state)
     random_search.fit(X_train, y_train)
-    return random_search.best_estimator_
+    return random_search
 
 
 def _fit_and_predict(X_train, X_test, y_train, y_test, estimator,
@@ -443,6 +494,19 @@ def _fit_and_predict(X_train, X_test, y_train, y_test, estimator,
     accuracy = scoring(y_test, pd.DataFrame(y_pred))
 
     return estimator, accuracy, y_pred
+
+
+def _fit_and_predict_cv(X_train, y_train, estimator, cv=10,
+                        scoring=accuracy_score):
+    '''train and test estimators via cross-validation.
+    scoring: str
+        use accuracy_score for classification, mean_squared_error for
+        regression.
+    '''
+    y_pred = cross_val_predict(estimator, X_train, y_train, cv=cv)
+    accuracy = scoring(y_train, pd.DataFrame(y_pred))
+
+    return accuracy, y_pred
 
 
 def _maz_score(metadata, predicted, column, group_by, control):
@@ -561,7 +625,7 @@ def _train_adaboost_base_estimator(table, metadata, column, n_estimators,
         features, targets = _load_data(table, metadata)
         base_estimator = _tune_parameters(
             features, targets[column], base_estimator, param_dist,
-            n_jobs=n_jobs, cv=cv, random_state=random_state)
+            n_jobs=n_jobs, cv=cv, random_state=random_state).best_estimator_
 
     return adaboost_estimator(
         base_estimator, n_estimators, random_state=random_state)
