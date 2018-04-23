@@ -193,7 +193,7 @@ description = ('Predicts a {0} sample metadata column using a {1}. Splits '
                'for automated feature extraction and hyperparameter '
                'optimization. The test set validates classification accuracy '
                'of the optimized estimator. Outputs classification results '
-               'for test set. For more details on the learning  algorithm, '
+               'for test set. For more details on the learning algorithm, '
                'see http://scikit-learn.org/stable/supervised_learning.html')
 
 cv_description = ('Predicts a {0} sample metadata column using a {1}. Uses '
@@ -201,7 +201,7 @@ cv_description = ('Predicts a {0} sample metadata column using a {1}. Uses '
                   'hyperparameter optimization and sample prediction. Outputs '
                   'predicted values for each input sample, and relative '
                   'importance of each feature for model accuracy. For more '
-                  'details on the learning  algorithm, see '
+                  'details on the learning algorithm, see '
                   'http://scikit-learn.org/stable/supervised_learning.html')
 
 inputs = {'table': FeatureTable[Frequency]}
@@ -259,11 +259,11 @@ parameter_descriptions = {
 }
 
 outputs = [('predictions', SampleData[Predictions]),
-           ('feature importance', FeatureData[Importance])]
+           ('feature_importance', FeatureData[Importance])]
 
 output_descriptions = {
     'predictions': 'Predicted target values for each input sample.',
-    'feature importance': 'Importance of each input feature to model accuracy.'
+    'feature_importance': 'Importance of each input feature to model accuracy.'
 }
 
 plugin.visualizers.register_function(

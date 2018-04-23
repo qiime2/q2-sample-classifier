@@ -7,7 +7,7 @@
 # ----------------------------------------------------------------------------
 
 from sklearn.model_selection import (
-    train_test_split, RandomizedSearchCV, cross_val_predict)
+    train_test_split, RandomizedSearchCV, KFold, StratifiedKFold)
 from sklearn.metrics import accuracy_score
 from sklearn.feature_selection import RFECV
 from sklearn.ensemble import (RandomForestRegressor, RandomForestClassifier,
@@ -21,6 +21,7 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 import q2templates
 import pandas as pd
+import numpy as np
 from os.path import join
 import matplotlib.pyplot as plt
 import pkg_resources
@@ -226,34 +227,22 @@ def nested_cross_validation(table, metadata, cv, random_state, n_jobs,
 
     # specify parameters and distributions to sample from for parameter tuning
     estimator, param_dist, parameter_tuning = _set_parameters_and_estimator(
-        estimator, table, metadata, column, n_estimators, n_jobs, cv,
+        estimator, table, y_train[column], column, n_estimators, n_jobs, cv,
         random_state, parameter_tuning, classification)
 
-    if parameter_tuning:
-        # tune parameters
-        estimator = _tune_parameters(
-            X_train, y_train, estimator, param_dist, n_iter_search=20,
-            n_jobs=n_jobs, cv=cv, random_state=random_state).best_estimator_
-
     # predict values for all samples via (nested) CV
-    accuracy, y_pred = _fit_and_predict_cv(
-        X_train, y_train, estimator, cv, scoring)
-
-    # convert predictions to series
-    y_pred = pd.Series(
-        y_pred, index=y_train.index, name="Predicted %s" % column)
-
-    # calculate feature importances, if appropriate for the estimator
-    if calc_feature_importance:
-        importances = _calculate_feature_importances(X_train, estimator)
-    # otherwise, we have no weights nor selection, so features==n_features
-    else:
-        importances = null_feature_importance(X_train)
+    scores, predictions, importances, tops = _fit_and_predict_cv(
+        X_train, y_train[column], estimator, param_dist, n_jobs, scoring,
+        random_state, cv, stratify, calc_feature_importance, parameter_tuning)
 
     # Print accuracy score to stdout
-    print("Estimator Accuracy: {0}".format(accuracy))
+    print("Estimator Accuracy: {0} ± {1}".format(
+        np.mean(scores), np.std(scores)))
 
-    return y_pred, importances
+    # TODO: save down estimator with tops parameters (currently the estimator
+    # would be untrained, and tops parameters are not reported)
+
+    return predictions['prediction'], importances
 
 
 def null_feature_importance(table):
@@ -498,17 +487,89 @@ def _fit_and_predict(X_train, X_test, y_train, y_test, estimator,
     return estimator, accuracy, y_pred
 
 
-def _fit_and_predict_cv(X_train, y_train, estimator, cv=10,
-                        scoring=accuracy_score):
+def _fit_and_predict_cv(table, metadata, estimator, param_dist, n_jobs,
+                        scoring=accuracy_score, random_state=None, cv=10,
+                        stratify=True, calc_feature_importance=False,
+                        parameter_tuning=False):
     '''train and test estimators via cross-validation.
     scoring: str
         use accuracy_score for classification, mean_squared_error for
         regression.
     '''
-    y_pred = cross_val_predict(estimator, X_train, y_train, cv=cv)
-    accuracy = scoring(y_train, pd.DataFrame(y_pred))
+    # Set CV method
+    if stratify:
+        _cv = StratifiedKFold(
+            n_splits=cv, shuffle=True, random_state=random_state)
+    else:
+        _cv = KFold(n_splits=cv, shuffle=True, random_state=random_state)
 
-    return accuracy, y_pred
+    predictions = pd.DataFrame()
+    scores = []
+    top_params = []
+    importances = []
+    for train_index, test_index in _cv.split(table, metadata):
+        X_train = table.iloc[train_index]
+        y_train = metadata.iloc[train_index]
+        # perform parameter tuning in inner loop
+        if parameter_tuning:
+            #estimator = RandomizedSearchCV(
+            #    estimator, param_distributions=param_dist, n_iter=20,
+            #    n_jobs=n_jobs, cv=cv, random_state=random_state)
+            estimator = _tune_parameters(
+                X_train, y_train, estimator, param_dist,
+                n_iter_search=20, n_jobs=n_jobs, cv=cv,
+                random_state=random_state).best_estimator_
+        else:
+            # fit estimator on inner outer training set
+            estimator.fit(X_train, y_train)
+        # predict values for outer loop test set
+        test_set = table.iloc[test_index]
+        pred = pd.DataFrame(estimator.predict(test_set), index=test_set.index)
+
+        # log predictions results
+        predictions = pd.concat([predictions, pred])
+        # log accuracy on that fold
+        scores += [scoring(pred, metadata.iloc[test_index])]
+        # log feature importances
+        if calc_feature_importance:
+            imp = _calculate_feature_importances(X_train, estimator)
+            importances += [imp]
+        # log top parameters
+        # for now we will cast as a str (instead of dict) so that we can count
+        # frequency of unique elements below
+        top_params += [str(estimator.get_params())]
+
+    # Report most frequent best params
+    # convert top_params to a set, order by count (hence str conversion above)
+    # max will be the most frequent... then we convert back to a dict via eval
+    # which should be safe since this is always a dict of param values reported
+    # by sklearn.
+    tops = max(set(top_params), key=top_params.count)
+    tops = eval(tops)
+
+    # calculate mean feature importances
+    if calc_feature_importance:
+        importances = _mean_feature_importance(importances)
+    else:
+        importances = null_feature_importance(table)
+
+    predictions.columns = ['prediction']
+    predictions.index.name = 'SampleID'
+
+    return scores, predictions, importances, tops
+
+
+def _mean_feature_importance(importances):
+    '''Calculate mean feature importance across a list of pd.dataframes
+    containing importance scores of the same features from multiple models
+    (e.g., CV importance scores).
+    '''
+    imp = pd.concat(importances, axis=1)
+    # the first column will be feature IDs — convert to index for df of means
+    imp.index = imp.iloc[:, 0]
+    imp = imp.mean(axis=1)
+    imp.name = 'importance'
+    return imp.to_frame().sort_values('importance', ascending=False)
 
 
 def _maz_score(metadata, predicted, column, group_by, control):
