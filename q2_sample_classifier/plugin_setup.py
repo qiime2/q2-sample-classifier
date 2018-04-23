@@ -33,7 +33,7 @@ plugin = Plugin(
         'learning methods.'),
     short_description=(
         'Plugin for machine learning prediction of sample metadata.'),
-    citations=[citations['pedregosa2011scikit']]
+    citations=[citations['Bokulich306167']]
 )
 
 
