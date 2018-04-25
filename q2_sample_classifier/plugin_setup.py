@@ -8,18 +8,19 @@
 
 from qiime2.plugin import (
     Int, Str, Float, Range, Bool, Plugin, Metadata, Choices, MetadataColumn,
-    Numeric, Categorical)
+    Numeric, Categorical, SemanticType, Citations)
 from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.sample_data import SampleData
 from .classify import (
     classify_samples, regress_samples, maturity_index)
 from .visuals import _custom_palettes
 import q2_sample_classifier
-from qiime2.plugin import SemanticType
 import qiime2.plugin.model as model
 import pandas as pd
 import qiime2
 
+
+citations = Citations.load('citations.bib', package='q2_sample_classifier')
 
 plugin = Plugin(
     name='sample-classifier',
@@ -31,7 +32,8 @@ plugin = Plugin(
         'and regression of sample metadata, and other supervised machine '
         'learning methods.'),
     short_description=(
-        'Plugin for machine learning prediction of sample metadata.')
+        'Plugin for machine learning prediction of sample metadata.'),
+    citations=[citations['Bokulich306167']]
 )
 
 
@@ -253,5 +255,6 @@ plugin.visualizers.register_function(
                  'e.g., intestinal microbiome development by age, microbial '
                  'succession during wine fermentation, or microbial community '
                  'differences along environmental gradients, as a function of '
-                 'two or more different "treatment" groups.')
+                 'two or more different "treatment" groups.'),
+    citations=[citations['subramanian2014persistent']]
 )
