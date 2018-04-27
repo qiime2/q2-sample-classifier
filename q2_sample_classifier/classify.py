@@ -8,7 +8,7 @@
 
 
 from sklearn.ensemble import IsolationForest
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, accuracy_score
 
 import qiime2
 import pandas as pd
@@ -113,6 +113,21 @@ def regress_samples_ncv(
         table, metadata, cv, random_state, n_jobs, n_estimators, estimator,
         stratify, parameter_tuning, classification=False,
         scoring=mean_squared_error)
+    return y_pred, importances
+
+
+def classify_samples_ncv(
+        table: pd.DataFrame, metadata: qiime2.CategoricalMetadataColumn,
+        cv: int=defaults['cv'], random_state: int=None,
+        n_jobs: int=defaults['n_jobs'],
+        n_estimators: int=defaults['n_estimators'],
+        estimator: str=defaults['estimator_r'],
+        parameter_tuning: bool=False) -> (pd.Series, pd.DataFrame):
+
+    y_pred, importances = nested_cross_validation(
+        table, metadata, cv, random_state, n_jobs, n_estimators, estimator,
+        stratify=True, parameter_tuning=parameter_tuning, classification=False,
+        scoring=accuracy_score)
     return y_pred, importances
 
 

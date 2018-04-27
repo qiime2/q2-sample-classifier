@@ -98,18 +98,11 @@ def _extract_important_features(table, top):
     # is top a 1-d or multi-d array?
     # coef_ is a multidimensional array of shape = [n_class-1, n_features]
     if any(isinstance(i, list) for i in top) or top.ndim > 1:
-        # iterate over each list of importances (coef_ sets) in array
-        #tops = range(len(top))
         imp = pd.DataFrame(
             top, index=["importance{0}".format(n) for n in range(len(top))]).T
-        #imp = pd.DataFrame(
-        #    [i for i in zip(table.columns, *[top[n] for n in tops])],
-        #    columns=["feature", *["importance{0}".format(n) for n in tops]])
     # ensemble estimators and RFECV return 1-d arrays
     else:
         imp = pd.DataFrame(top, columns=["importance"])
-        #imp = pd.DataFrame([i for i in zip(table.columns, top)],
-        #                   columns=["feature", "importance"])
     imp.index = table.columns
     imp.index.name = 'feature'
     return imp

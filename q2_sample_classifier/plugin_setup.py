@@ -13,7 +13,8 @@ from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
 from .classify import (
-    classify_samples, regress_samples, maturity_index, regress_samples_ncv)
+    classify_samples, regress_samples, maturity_index, regress_samples_ncv,
+    classify_samples_ncv)
 from .visuals import _custom_palettes
 import q2_sample_classifier
 from qiime2.plugin import SemanticType
@@ -88,11 +89,16 @@ class ImportanceFormat(model.TextFileFormat):
                 cells = line.strip().split('\t')
                 if len(cells) < 2:
                     return False
+                # all values (except row name) should be numbers
+                try:
+                    [float(c) for c in cells[1:]]
+                except ValueError:
+                    return False
             return True
 
 
 ImportanceDirectoryFormat = model.SingleFileDirectoryFormat(
-    'ImportanceDirectoryFormat', 'feature-importance.tsv',
+    'ImportanceDirectoryFormat', 'importance.tsv',
     ImportanceFormat)
 
 
@@ -343,6 +349,30 @@ plugin.methods.register_function(
     name='Nested cross-validated supervised learning regressor.',
     description=cv_description.format(
         'continuous', 'supervised learning regressor')
+)
+
+plugin.methods.register_function(
+    function=classify_samples_ncv,
+    inputs=inputs,
+    parameters={
+        **parameters['base'],
+        **parameters['cv'],
+        'metadata': MetadataColumn[Categorical],
+        'estimator': Str % Choices(
+            ['RandomForestClassifier', 'ExtraTreesClassifier',
+             'GradientBoostingClassifier', 'AdaBoostClassifier',
+             'KNeighborsClassifier', 'LinearSVC', 'SVC'])},
+    outputs=outputs,
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions['base'],
+        **parameter_descriptions['cv'],
+        'metadata': 'Categorical metadata column to use as prediction target.',
+        **parameter_descriptions['estimator']},
+    output_descriptions=output_descriptions,
+    name='Nested cross-validated supervised learning classifier.',
+    description=cv_description.format(
+        'categorical', 'supervised learning classifier')
 )
 
 plugin.visualizers.register_function(
