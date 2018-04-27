@@ -145,7 +145,7 @@ def maturity_index(output_dir: str, table: pd.DataFrame,
         scoring=mean_squared_error, stratify=stratify, classification=False)
 
     # predict treatment data
-    table = table.loc[:, importances["feature"]]
+    table = table.loc[:, importances.index]
     y_pred = estimator.predict(table)
     predicted_column = 'predicted {0}'.format(column)
     metadata[predicted_column] = y_pred

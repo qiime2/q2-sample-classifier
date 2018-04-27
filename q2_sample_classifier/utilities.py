@@ -99,14 +99,19 @@ def _extract_important_features(table, top):
     # coef_ is a multidimensional array of shape = [n_class-1, n_features]
     if any(isinstance(i, list) for i in top) or top.ndim > 1:
         # iterate over each list of importances (coef_ sets) in array
-        tops = range(len(top))
+        #tops = range(len(top))
         imp = pd.DataFrame(
-            [i for i in zip(table.columns, *[top[n] for n in tops])],
-            columns=["feature", *["importance{0}".format(n) for n in tops]])
+            top, index=["importance{0}".format(n) for n in range(len(top))]).T
+        #imp = pd.DataFrame(
+        #    [i for i in zip(table.columns, *[top[n] for n in tops])],
+        #    columns=["feature", *["importance{0}".format(n) for n in tops]])
     # ensemble estimators and RFECV return 1-d arrays
     else:
-        imp = pd.DataFrame([i for i in zip(table.columns, top)],
-                           columns=["feature", "importance"])
+        imp = pd.DataFrame(top, columns=["importance"])
+        #imp = pd.DataFrame([i for i in zip(table.columns, top)],
+        #                   columns=["feature", "importance"])
+    imp.index = table.columns
+    imp.index.name = 'feature'
     return imp
 
 
@@ -204,7 +209,7 @@ def _rfecv_feature_selection(feature_data, targets, estimator,
     n_opt = rfecv.n_features_
     importance = _extract_important_features(feature_data, rfecv.ranking_)
     importance = sort_importances(importance, ascending=True)[:n_opt]
-    top_feature_data = feature_data.iloc[:, importance.index]
+    top_feature_data = feature_data.loc[:, importance.index]
 
     # Plot RFE accuracy
     rfep = _plot_RFE(rfecv)
@@ -243,13 +248,6 @@ def nested_cross_validation(table, metadata, cv, random_state, n_jobs,
     # would be untrained, and tops parameters are not reported)
 
     return predictions['prediction'], importances
-
-
-def null_feature_importance(table):
-    imp = pd.DataFrame(index=table.columns)
-    imp.index.name = "feature"
-    imp["importance"] = 1
-    return imp
 
 
 def split_optimize_classify(features, targets, column, estimator,
@@ -327,8 +325,8 @@ def _optimize_feature_selection(output_dir, X_train, X_test, y_train,
         rfep.savefig(join(output_dir, 'rfe_plot.pdf'))
     plt.close('all')
 
-    X_train = X_train.loc[:, importance["feature"]]
-    X_test = X_test.loc[:, importance["feature"]]
+    X_train = X_train.loc[:, importance.index]
+    X_test = X_test.loc[:, importance.index]
 
     return X_train, X_test, importance
 
@@ -365,7 +363,7 @@ def _predict_and_plot(output_dir, y_test, y_pred, estimator, accuracy,
 
 def sort_importances(importances, ascending=False):
     return importances.sort_values(
-        by=importances.columns[1], ascending=ascending)
+        by=importances.columns[0], ascending=ascending)
 
 
 def _visualize(output_dir, estimator, cm, accuracy, importances=None,
@@ -388,8 +386,8 @@ def _visualize(output_dir, estimator, cm, accuracy, importances=None,
         importances = sort_importances(importances)
         pd.set_option('display.float_format', '{:.3e}'.format)
         importances.to_csv(join(
-            output_dir, 'feature_importance.tsv'), sep='\t', index=False)
-        importances = q2templates.df_to_html(importances, index=False)
+            output_dir, 'feature_importance.tsv'), sep='\t', index=True)
+        importances = q2templates.df_to_html(importances, index=True)
 
     index = join(TEMPLATES, 'index.html')
     q2templates.render(index, output_dir, context={
@@ -414,8 +412,8 @@ def _visualize_maturity_index(table, metadata, group_by, column,
     # save feature importance data and convert to html
     importances = sort_importances(importances)
     importances.to_csv(
-        join(output_dir, 'feature_importance.tsv'), index=False, sep='\t')
-    importance = q2templates.df_to_html(importances, index=False)
+        join(output_dir, 'feature_importance.tsv'), index=True, sep='\t')
+    importance = q2templates.df_to_html(importances, index=True)
 
     # save predicted values, maturity, and MAZ score data
     maz_md = metadata[[group_by, column, predicted_column, maturity, maz]]
@@ -443,7 +441,7 @@ def _visualize_maturity_index(table, metadata, group_by, column,
     plt.close('all')
 
     # plot heatmap of column (e.g., age) vs. abundance of top features
-    top = table[list(importances.feature)]
+    top = table[list(importances.index)]
     g = _clustermap_from_dataframe(top, metadata, group_by, column)
     g.savefig(join(output_dir, 'maz_heatmaps.png'), bbox_inches='tight')
     g.savefig(join(output_dir, 'maz_heatmaps.pdf'), bbox_inches='tight')
@@ -512,9 +510,6 @@ def _fit_and_predict_cv(table, metadata, estimator, param_dist, n_jobs,
         y_train = metadata.iloc[train_index]
         # perform parameter tuning in inner loop
         if parameter_tuning:
-            #estimator = RandomizedSearchCV(
-            #    estimator, param_distributions=param_dist, n_iter=20,
-            #    n_jobs=n_jobs, cv=cv, random_state=random_state)
             estimator = _tune_parameters(
                 X_train, y_train, estimator, param_dist,
                 n_iter_search=20, n_jobs=n_jobs, cv=cv,
@@ -551,7 +546,7 @@ def _fit_and_predict_cv(table, metadata, estimator, param_dist, n_jobs,
     if calc_feature_importance:
         importances = _mean_feature_importance(importances)
     else:
-        importances = null_feature_importance(table)
+        importances = _null_feature_importance(table)
 
     predictions.columns = ['prediction']
     predictions.index.name = 'SampleID'
@@ -565,11 +560,16 @@ def _mean_feature_importance(importances):
     (e.g., CV importance scores).
     '''
     imp = pd.concat(importances, axis=1)
-    # the first column will be feature IDs — convert to index for df of means
-    imp.index = imp.iloc[:, 0]
-    imp = imp.mean(axis=1)
-    imp.name = 'importance'
-    return imp.to_frame().sort_values('importance', ascending=False)
+    # groupby column name instead of taking column mean to support 2d arrays
+    imp = imp.groupby(imp.columns, axis=1).mean()
+    return imp.sort_values(imp.columns[0], ascending=False)
+
+
+def _null_feature_importance(table):
+    imp = pd.DataFrame(index=table.columns)
+    imp.index.name = "feature"
+    imp["importance"] = 1
+    return imp
 
 
 def _maz_score(metadata, predicted, column, group_by, control):
