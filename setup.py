@@ -27,7 +27,7 @@ setup(
     },
     package_data={
         'q2_sample_classifier.tests': ['data/*'],
-        'q2_sample_classifier': ['assets/index.html'],
+        'q2_sample_classifier': ['assets/index.html', 'citations.bib']
     },
     zip_safe=False,
 )
