@@ -248,6 +248,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
 
     # test that the plugin/visualizer work
     def test_classify_samples_from_dist(self):
+        # hardcode this path somewhere non-temp to see the visualiztion output
         tmpd = join(self.temp_dir.name, 'KNeighborsClassifier')
         mkdir(tmpd)
         classify_samples_from_dist(tmpd, dmtx, d_metacol)
