@@ -9,15 +9,18 @@
 
 from sklearn.ensemble import IsolationForest
 from sklearn.metrics import mean_squared_error
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import confusion_matrix
 
 import qiime2
 import pandas as pd
+import skbio
 
 from .utilities import (split_optimize_classify, _visualize, _load_data,
                         _maz_score, _visualize_maturity_index,
                         _set_parameters_and_estimator,
                         _disable_feature_selection, _select_estimator)
-
+from .visuals import (_plot_confusion_matrix)
 
 defaults = {
     'test_size': 0.2,
@@ -28,6 +31,33 @@ defaults = {
     'estimator_r': 'RandomForestClassifier',
     'palette': 'sirocco'
 }
+
+def classify_samples_from_dist(output_dir: str, dmtx: skbio.DistanceMatrix,
+                     metadata: qiime2.CategoricalMetadataColumn,
+                     palette: str=defaults['palette']) -> None:
+
+    # extract column name from CategoricalMetadataColumn
+    column = metadata.to_series()
+    # loo 1nn brut force
+    classifier = KNeighborsClassifier(n_neighbors=1, metric='precomputed')
+    # train it on all data
+    classifier.fit(dmtx.to_data_frame(), column)
+    # predict on all data
+    # warning, this probably doesn't do loo (leave one out)
+    predictions = classifier.predict(dmtx.to_data_frame())
+    print(predictions)
+    # def _plot_confusion_matrix(y_test, y_pred, classes, accuracy, normalize,
+    #                        palette):
+    predictions2, confusion = _plot_confusion_matrix(column, predictions, ['fat','skinny'], .8, False, 'sirocco')
+    print(predictions2)
+    # cm, color palette
+    # cm2 = _plot_heatmap_from_confusion_matrix(cm, 'YlOrBr')
+
+    # param_dist =         {"n_neighbors": 1,
+    #     "weights": ['uniform', 'distance'],
+    #     }
+    _visualize(output_dir, classifier, predictions2, .7, None,
+               False, title='classification predictions')
 
 
 def classify_samples(output_dir: str, table: pd.DataFrame,

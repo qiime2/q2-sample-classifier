@@ -18,7 +18,7 @@ from q2_sample_classifier.visuals import (
     _calculate_baseline_accuracy, _custom_palettes,
     _plot_heatmap_from_confusion_matrix)
 from q2_sample_classifier.classify import (
-    classify_samples, regress_samples,
+    classify_samples, classify_samples_from_dist, regress_samples,
     maturity_index, detect_outliers)
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator,
@@ -36,6 +36,7 @@ from qiime2.plugin import ValidationError
 from sklearn.metrics import mean_squared_error
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.svm import LinearSVC
+import skbio
 
 filterwarnings("ignore", category=UserWarning)
 filterwarnings("ignore", category=Warning)
@@ -245,6 +246,12 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                          parameter_tuning=True,
                          optimize_feature_selection=True)
 
+    # test that the plugin/visualizer work
+    def test_classify_samples_from_dist(self):
+        tmpd = join(self.temp_dir.name, 'KNeighborsClassifier')
+        mkdir(tmpd)
+        classify_samples_from_dist(tmpd, dmtx, d_metacol)
+
     # test that each classifier works and delivers an expected accuracy result
     # when a random seed is set.
     def test_classifiers(self):
@@ -402,6 +409,34 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                             random_state=123, n_jobs=1, contamination=0.05,
                             subset_column=None, subset_value=1)
 
+
+# 1,2 are a group, 3,4 are a group
+dmtx = skbio.DistanceMatrix([
+    [0,1,4,4],
+    [1,0,4,4],
+    [4,4,0,1],
+    [4,4,1,0],
+    ])
+
+# def _load_cmc(md_fp, column):
+#     md_fp = self.get_data_path(md_fp)
+#     md = pd.DataFrame.from_csv(md_fp, sep='\t')
+#     md = qiime2.CategoricalMetadataColumn(md[column])
+#     return md
+
+# for distmatrix classifier
+import io
+d_metadata = io.StringIO('''
+#SampleID,mass
+f1,fat
+f2,fat
+s1,skinny
+s2,skinny
+''')
+d_metadf =  pd.DataFrame.from_csv(d_metadata)
+# print(d_metadf)
+d_metacol = qiime2.CategoricalMetadataColumn(d_metadf['mass'])
+# print(d_metacol)
 
 md = pd.DataFrame([(1, 'a', 0.11), (1, 'a', 0.12), (1, 'a', 0.13),
                    (2, 'a', 0.19), (2, 'a', 0.18), (2, 'a', 0.21),
