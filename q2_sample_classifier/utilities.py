@@ -67,7 +67,7 @@ parameters = {
 TEMPLATES = pkg_resources.resource_filename('q2_sample_classifier', 'assets')
 
 
-def _load_data(feature_data, targets_metadata):
+def _load_data(feature_data, targets_metadata, missing_samples):
     '''Load data and generate training and test sets.
 
     feature_data: pd.DataFrame
@@ -78,12 +78,23 @@ def _load_data(feature_data, targets_metadata):
     # Load metadata, attempt to convert to numeric
     targets = targets_metadata.to_dataframe()
 
+    if missing_samples == 'error':
+        _validate_metadata_is_superset(targets, feature_data)
+
     # filter features and targets so samples match
     merged = feature_data.join(targets, how='inner')
     feature_data = feature_data.loc[merged.index]
     targets = targets.loc[merged.index]
 
     return feature_data, targets
+
+
+def _validate_metadata_is_superset(metadata, table):
+    metadata_ids = set(metadata.index.tolist())
+    table_ids = set(table.index.tolist())
+    if not table_ids.issubset(metadata_ids):
+        raise ValueError('Missing samples in metadata: %r' %
+                         table_ids.difference(metadata_ids))
 
 
 def _extract_important_features(table, top):
@@ -217,11 +228,13 @@ def split_optimize_classify(features, targets, column, estimator,
                             parameter_tuning=False, param_dist=None,
                             calc_feature_importance=False, load_data=True,
                             scoring=accuracy_score, classification=True,
-                            stratify=True, palette='sirocco'):
+                            stratify=True, palette='sirocco',
+                            missing_samples='error'):
     # Load, stratify, and split training/test data
     X_train, X_test, y_train, y_test = _prepare_training_data(
         features, targets, column, test_size, random_state,
-        load_data=load_data, stratify=stratify)
+        load_data=load_data, stratify=stratify,
+        missing_samples=missing_samples)
 
     # optimize training feature count
     if optimize_feature_selection:
@@ -258,10 +271,12 @@ def split_optimize_classify(features, targets, column, estimator,
 
 
 def _prepare_training_data(features, targets, column, test_size,
-                           random_state, load_data=True, stratify=True):
+                           random_state, load_data=True, stratify=True,
+                           missing_samples='error'):
     # load data
     if load_data:
-        features, targets = _load_data(features, targets)
+        features, targets = _load_data(
+            features, targets, missing_samples=missing_samples)
 
     # split into training and test sets
     if stratify:
@@ -548,7 +563,8 @@ def _select_estimator(estimator, n_jobs, n_estimators, random_state=None):
 def _train_adaboost_base_estimator(table, metadata, column, n_estimators,
                                    n_jobs, cv, random_state=None,
                                    parameter_tuning=False,
-                                   classification=True):
+                                   classification=True,
+                                   missing_samples='error'):
     param_dist = parameters['ensemble']
     if classification:
         base_estimator = DecisionTreeClassifier()
@@ -558,7 +574,8 @@ def _train_adaboost_base_estimator(table, metadata, column, n_estimators,
         adaboost_estimator = AdaBoostRegressor
 
     if parameter_tuning:
-        features, targets = _load_data(table, metadata)
+        features, targets = _load_data(
+            table, metadata, missing_samples=missing_samples)
         base_estimator = _tune_parameters(
             features, targets[column], base_estimator, param_dist,
             n_jobs=n_jobs, cv=cv, random_state=random_state)
@@ -584,12 +601,14 @@ def _disable_feature_selection(estimator, optimize_feature_selection):
 
 def _set_parameters_and_estimator(estimator, table, metadata, column,
                                   n_estimators, n_jobs, cv, random_state,
-                                  parameter_tuning, classification=True):
+                                  parameter_tuning, classification=True,
+                                  missing_samples='error'):
     # specify parameters and distributions to sample from for parameter tuning
     if estimator in ['AdaBoostClassifier', 'AdaBoostRegressor']:
         estimator = _train_adaboost_base_estimator(
             table, metadata, column, n_estimators, n_jobs, cv, random_state,
-            parameter_tuning, classification=classification)
+            parameter_tuning, classification=classification,
+            missing_samples=missing_samples)
         parameter_tuning = False
         param_dist = None
     else:
