@@ -4,6 +4,8 @@
 
 QIIME 2 plugin for machine learning prediction of sample data.
 
+Follow the QIIME 2 core distribution installation instructions at https://qiime2.org/ to install q2-sample-classifier.
+
 This is a QIIME 2 plugin. For details on QIIME 2 and tutorials demonstrating how to use this plugin, see the [QIIME 2 documentation](https://qiime2.org/).
 
 Not sure which model to use? A good starting point is [this flowchart](http://scikit-learn.org/dev/tutorial/machine_learning_map/index.html). Most of the classification and regression models shown in that chart (and a few extras) are implemented in q2-sample-classifier.
