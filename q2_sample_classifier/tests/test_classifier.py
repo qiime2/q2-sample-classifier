@@ -255,6 +255,7 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
     def test_Predictions_format_validate_positive(self):
         filepath = self.get_data_path('predictions.tsv')
         format = PredictionsFormat(filepath, mode='r')
+        format.validate(level='min')
         format.validate()
 
     def test_Predictions_format_validate_negative(self):
@@ -308,12 +309,25 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
     def test_Importance_format_validate_positive(self):
         filepath = self.get_data_path('importance.tsv')
         format = ImportanceFormat(filepath, mode='r')
+        format.validate(level='min')
         format.validate()
 
-    def test_Importance_format_validate_negative(self):
+    def test_Importance_format_validate_negative_nonnumeric(self):
         filepath = self.get_data_path('chardonnay.map.txt')
         format = ImportanceFormat(filepath, mode='r')
-        with self.assertRaisesRegex(ValidationError, 'ImportanceFormat'):
+        with self.assertRaisesRegex(ValidationError, 'numeric values'):
+            format.validate()
+
+    def test_Importance_format_validate_negative_empty(self):
+        filepath = self.get_data_path('empty_file.txt')
+        format = ImportanceFormat(filepath, mode='r')
+        with self.assertRaisesRegex(ValidationError, 'one data record'):
+            format.validate()
+
+    def test_Importance_format_validate_negative(self):
+        filepath = self.get_data_path('garbage.txt')
+        format = ImportanceFormat(filepath, mode='r')
+        with self.assertRaisesRegex(ValidationError, 'two or more fields'):
             format.validate()
 
     def test_Importance_dir_fmt_validate_positive(self):

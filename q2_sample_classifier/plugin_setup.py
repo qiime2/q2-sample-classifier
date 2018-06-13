@@ -63,6 +63,13 @@ Predictions = SemanticType(
     'Predictions', variant_of=SampleData.field['type'])
 
 
+def _validate_file_not_empty(has_data):
+    if not has_data:
+        raise ValidationError(
+            "There must be at least one data record present in the "
+            "file in addition to the header line.")
+
+
 class PredictionsFormat(model.TextFileFormat):
     def _validate(self, n_records=None):
         with self.open() as fh:
@@ -87,10 +94,7 @@ class PredictionsFormat(model.TextFileFormat):
                 if n_records is not None and (line_number - 1) >= n_records:
                     break
 
-            if not has_data:
-                raise ValidationError(
-                    "There must be at least one data record present in the "
-                    "file in addition to the header line.")
+            _validate_file_not_empty(has_data)
             return True
 
     def _validate_(self, level):
@@ -138,10 +142,7 @@ class ImportanceFormat(model.TextFileFormat):
                 if n_records is not None and (line_number - 1) >= n_records:
                     break
 
-            if not has_data:
-                raise ValidationError(
-                    "There must be at least one data record present in the "
-                    "file in addition to the header line.")
+            _validate_file_not_empty(has_data)
             return True
 
     def _validate_(self, level):
