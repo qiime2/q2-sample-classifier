@@ -292,8 +292,6 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
                              name='id', dtype=object)
         exp = pd.Series(['5.0', '6.0', '1.5', '5.0'], name='prediction',
                         index=exp_index, dtype=object)
-        print(exp)
-        print(obs[:4])
         pdt.assert_series_equal(obs[:4], exp)
 
     def test_Predictions_format_to_metadata(self):

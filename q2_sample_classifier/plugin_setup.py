@@ -8,7 +8,7 @@
 
 from qiime2.plugin import (
     Int, Str, Float, Range, Bool, Plugin, Metadata, Choices, MetadataColumn,
-    Numeric, Categorical, SemanticType, Citations)
+    Numeric, Categorical, SemanticType, Citations, ValidationError)
 from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
@@ -64,14 +64,38 @@ Predictions = SemanticType(
 
 
 class PredictionsFormat(model.TextFileFormat):
-    def sniff(self):
+    def _validate(self, n_records=None):
         with self.open() as fh:
+            # validate header
+            # for now we will not validate any information in the header,
+            # since the name of the predicted column should be flexible. The
+            # header name written by methods in q2-sample-classifier will be
+            # "predicted-*", but this should also accommodate user-defined
+            # column names.
             line = fh.readline()
-            for line, _ in zip(fh, range(5)):
+
+            # validate body
+            has_data = False
+            for line_number, line in enumerate(fh, start=2):
                 cells = line.strip().split('\t')
                 if len(cells) != 2:
-                    return False
+                    raise ValidationError(
+                        "Expected data record to be TSV with two "
+                        "fields. Detected {0} fields at line {1}:\n\n{2!r}"
+                        .format(len(cells), line_number, cells))
+                has_data = True
+                if n_records is not None and (line_number - 1) >= n_records:
+                    break
+
+            if not has_data:
+                raise ValidationError(
+                    "There must be at least one data record present in the "
+                    "file in addition to the header line.")
             return True
+
+    def _validate_(self, level):
+        record_count_map = {'min': 5, 'max': None}
+        self._validate(record_count_map[level])
 
 
 PredictionsDirectoryFormat = model.SingleFileDirectoryFormat(
@@ -84,19 +108,45 @@ Importance = SemanticType(
 
 
 class ImportanceFormat(model.TextFileFormat):
-    def sniff(self):
+    def _validate(self, n_records=None):
         with self.open() as fh:
+            # validate header
+            # for now we will not validate any information in the header,
+            # since column names, count etc are frequently unique to individual
+            # estimators. Let's keep this flexible.
             line = fh.readline()
-            for line, _ in zip(fh, range(5)):
+
+            # validate body
+            has_data = False
+            for line_number, line in enumerate(fh, start=2):
                 cells = line.strip().split('\t')
                 if len(cells) < 2:
-                    return False
+                    raise ValidationError(
+                        "Expected data record to be TSV with two or more "
+                        "fields. Detected {0} fields at line {1}:\n\n{2!r}"
+                        .format(len(cells), line_number, cells))
                 # all values (except row name) should be numbers
                 try:
                     [float(c) for c in cells[1:]]
                 except ValueError:
-                    return False
+                    raise ValidationError(
+                        "Columns must contain only numeric values. "
+                        "A non-numeric value ({0!r}) was detected at line "
+                        "{1}.".format(cells[1], line_number))
+
+                has_data = True
+                if n_records is not None and (line_number - 1) >= n_records:
+                    break
+
+            if not has_data:
+                raise ValidationError(
+                    "There must be at least one data record present in the "
+                    "file in addition to the header line.")
             return True
+
+    def _validate_(self, level):
+        record_count_map = {'min': 5, 'max': None}
+        self._validate(record_count_map[level])
 
 
 ImportanceDirectoryFormat = model.SingleFileDirectoryFormat(
