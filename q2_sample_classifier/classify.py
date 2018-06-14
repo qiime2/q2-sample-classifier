@@ -90,7 +90,7 @@ def fit_regressor(table: pd.DataFrame,
                   step: float=defaults['step'], cv: int=defaults['cv'],
                   random_state: int=None, n_jobs: int=defaults['n_jobs'],
                   n_estimators: int=defaults['n_estimators'],
-                  estimator: str=defaults['estimator_c'],
+                  estimator: str=defaults['estimator_r'],
                   optimize_feature_selection: bool=False,
                   parameter_tuning: bool=False) -> pd.Series:
     estimator, importance = _fit_estimator(
@@ -143,7 +143,7 @@ def regress_samples_ncv(
         cv: int=defaults['cv'], random_state: int=None,
         n_jobs: int=defaults['n_jobs'],
         n_estimators: int=defaults['n_estimators'],
-        estimator: str='RandomForestRegressor', stratify: str=False,
+        estimator: str=defaults['estimator_r'], stratify: str=False,
         parameter_tuning: bool=False) -> (pd.Series, pd.DataFrame):
 
     y_pred, importances = nested_cross_validation(
@@ -158,7 +158,7 @@ def classify_samples_ncv(
         cv: int=defaults['cv'], random_state: int=None,
         n_jobs: int=defaults['n_jobs'],
         n_estimators: int=defaults['n_estimators'],
-        estimator: str=defaults['estimator_r'],
+        estimator: str=defaults['estimator_c'],
         parameter_tuning: bool=False) -> (pd.Series, pd.DataFrame):
 
     y_pred, importances = nested_cross_validation(
@@ -170,7 +170,7 @@ def classify_samples_ncv(
 
 def maturity_index(output_dir: str, table: pd.DataFrame,
                    metadata: qiime2.Metadata, column: str, group_by: str,
-                   control: str, estimator: str='RandomForestRegressor',
+                   control: str, estimator: str=defaults['estimator_r'],
                    n_estimators: int=defaults['n_estimators'],
                    test_size: float=defaults['test_size'],
                    step: float=defaults['step'], cv: int=defaults['cv'],

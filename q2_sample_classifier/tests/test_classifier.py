@@ -501,13 +501,15 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         importances = fit_regressor(
             self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
             n_estimators=2, n_jobs=1)
-        pdt.assert_frame_equal(importances, self.exp_imp)
+        exp_imp = pd.DataFrame.from_csv(
+            self.get_data_path('importance_cv.tsv'), sep='\t')
+        pdt.assert_frame_equal(importances, exp_imp)
 
     # just make sure this method runs. Uses the same internal function as
     # fit_regressor, so importance score consistency is covered by the above
     # test.
     def test_fit_classifier(self):
-        importances = fit_classifier(
+        fit_classifier(
             self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
             n_estimators=2, n_jobs=1, optimize_feature_selection=True,
             parameter_tuning=True)

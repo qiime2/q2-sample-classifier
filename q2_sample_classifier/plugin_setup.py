@@ -255,13 +255,18 @@ description = ('Predicts a {0} sample metadata column using a {1}. Splits '
                'for test set. For more details on the learning algorithm, '
                'see http://scikit-learn.org/stable/supervised_learning.html')
 
-cv_description = ('Predicts a {0} sample metadata column using a {1}. Uses '
-                  'nested stratified k-fold cross validation for automated '
-                  'hyperparameter optimization and sample prediction. Outputs '
-                  'predicted values for each input sample, and relative '
-                  'importance of each feature for model accuracy. For more '
-                  'details on the learning algorithm, see '
-                  'http://scikit-learn.org/stable/supervised_learning.html')
+ncv_description = ('Predicts a {0} sample metadata column using a {1}. Uses '
+                   'nested stratified k-fold cross validation for automated '
+                   'hyperparameter optimization and sample prediction. '
+                   'Outputs predicted values for each input sample, and '
+                   'relative importance of each feature for model accuracy.')
+
+cv_description = ('Fit a supervised learning {0}. Outputs the fit estimator '
+                  '(for prediction of test samples and/or unknown samples) '
+                  'and the relative importance of each feature for model '
+                  'accuracy. Optionally use k-fold cross-validation for '
+                  'automatic recursive feature elimination and hyperparameter '
+                  'tuning.')
 
 inputs = {'table': FeatureTable[Frequency]}
 
@@ -276,7 +281,7 @@ parameters = {
     'splitter': {
         'test_size': Float % Range(0.0, 1.0, inclusive_end=False,
                                    inclusive_start=False)},
-    'standard': {
+    'rfe': {
         'step': Float % Range(0.0, 1.0, inclusive_end=False,
                               inclusive_start=False),
         'optimize_feature_selection': Bool},
@@ -301,7 +306,7 @@ parameter_descriptions = {
     'splitter': {
         'test_size': ('Fraction of input samples to exclude from training set '
                       'and use for classifier testing.')},
-    'standard': {
+    'rfe': {
         'step': ('If optimize_feature_selection is True, step is the '
                  'percentage of features to remove at each iteration.'),
         'optimize_feature_selection': ('Automatically optimize input feature '
@@ -320,9 +325,9 @@ parameter_descriptions = {
 }
 
 classifiers = Str % Choices(
-    ['RandomForestRegressor', 'ExtraTreesRegressor',
-     'GradientBoostingRegressor', 'AdaBoostRegressor', 'ElasticNet',
-     'Ridge', 'Lasso', 'KNeighborsRegressor', 'LinearSVR', 'SVR'])}
+    ['RandomForestClassifier', 'ExtraTreesClassifier',
+     'GradientBoostingClassifier', 'AdaBoostClassifier',
+     'KNeighborsClassifier', 'LinearSVC', 'SVC'])
 
 regressors = Str % Choices(
     ['RandomForestRegressor', 'ExtraTreesRegressor',
@@ -342,7 +347,7 @@ plugin.visualizers.register_function(
     inputs=inputs,
     parameters={
         **parameters['base'],
-        **parameters['standard'],
+        **parameters['rfe'],
         **parameters['splitter'],
         **parameters['cv'],
         'metadata': MetadataColumn[Categorical],
@@ -351,14 +356,14 @@ plugin.visualizers.register_function(
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions['base'],
-        **parameter_descriptions['standard'],
+        **parameter_descriptions['rfe'],
         **parameter_descriptions['splitter'],
         **parameter_descriptions['cv'],
         'metadata': ('Categorical metadata column to use as prediction '
                      'target.'),
         **parameter_descriptions['estimator'],
         'palette': 'The color palette to use for plotting.'},
-    name='Supervised learning classifier.',
+    name='Train and test a cross-validated supervised learning classifier.',
     description=description.format(
         'categorical', 'supervised learning classifier')
 )
@@ -369,7 +374,7 @@ plugin.visualizers.register_function(
     inputs=inputs,
     parameters={
         **parameters['base'],
-        **parameters['standard'],
+        **parameters['rfe'],
         **parameters['splitter'],
         **parameters['cv'],
         'metadata': MetadataColumn[Numeric],
@@ -378,13 +383,13 @@ plugin.visualizers.register_function(
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions['base'],
-        **parameter_descriptions['standard'],
+        **parameter_descriptions['rfe'],
         **parameter_descriptions['splitter'],
         **parameter_descriptions['cv'],
         **parameter_descriptions['regressor'],
         'metadata': 'Numeric metadata column to use as prediction target.',
         **parameter_descriptions['estimator']},
-    name='Supervised learning regressor.',
+    name='Train and test a cross-validated supervised learning regressor.',
     description=description.format(
         'continuous', 'supervised learning regressor')
 )
@@ -411,7 +416,7 @@ plugin.methods.register_function(
         **parameter_descriptions['estimator']},
     output_descriptions=output_descriptions,
     name='Nested cross-validated supervised learning regressor.',
-    description=cv_description.format(
+    description=ncv_description.format(
         'continuous', 'supervised learning regressor')
 )
 
@@ -435,31 +440,8 @@ plugin.methods.register_function(
         **parameter_descriptions['estimator']},
     output_descriptions=output_descriptions,
     name='Nested cross-validated supervised learning classifier.',
-    description=cv_description.format(
+    description=ncv_description.format(
         'categorical', 'supervised learning classifier')
-)
-
-plugin.visualizers.register_function(
-    function=regress_samples,
-    inputs=inputs,
-    parameters={
-        **parameters['base'],
-        **parameters['standard'],
-        **parameters['splitter'],
-        'metadata': MetadataColumn[Numeric],
-        **parameters['regressor'],
-        'estimator': regressors},
-    input_descriptions=input_descriptions,
-    parameter_descriptions={
-        **parameter_descriptions['base'],
-        **parameter_descriptions['standard'],
-        **parameter_descriptions['splitter'],
-        **parameter_descriptions['regressor'],
-        'metadata': 'Numeric metadata column to use as prediction target.',
-        **parameter_descriptions['estimator']},
-    name='Supervised learning regressor.',
-    description=description.format(
-        'continuous', 'supervised learning regressor')
 )
 
 
@@ -468,23 +450,22 @@ plugin.methods.register_function(
     inputs=inputs,
     parameters={
         **parameters['base'],
-        **parameters['standard'],
+        **parameters['rfe'],
+        **parameters['cv'],
         'metadata': MetadataColumn[Categorical],
         'estimator': classifiers},
     outputs=[('feature_importance', FeatureData[Importance])],
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions['base'],
-        **parameter_descriptions['standard'],
+        **parameter_descriptions['rfe'],
+        **parameter_descriptions['cv'],
         'metadata': 'Numeric metadata column to use as prediction target.',
         **parameter_descriptions['estimator']},
     output_descriptions={
-        'feature_importance': output_descriptions['feature_importance']}
+        'feature_importance': output_descriptions['feature_importance']},
     name='Fit a supervised learning classifier.',
-    description=description.format(
-        'Fit a supervised learning classifier. Outputs the fit estimator '
-        '(for prediction of test samples and/or unknown samples) and the '
-        'relative importance of each feature for model accuracy.')
+    description=cv_description.format('classifier')
 )
 
 
@@ -493,23 +474,22 @@ plugin.methods.register_function(
     inputs=inputs,
     parameters={
         **parameters['base'],
-        **parameters['standard'],
+        **parameters['rfe'],
+        **parameters['cv'],
         'metadata': MetadataColumn[Numeric],
         'estimator': regressors},
     outputs=[('feature_importance', FeatureData[Importance])],
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions['base'],
-        **parameter_descriptions['standard'],
+        **parameter_descriptions['rfe'],
+        **parameter_descriptions['cv'],
         'metadata': 'Numeric metadata column to use as prediction target.',
         **parameter_descriptions['estimator']},
     output_descriptions={
-        'feature_importance': output_descriptions['feature_importance']}
+        'feature_importance': output_descriptions['feature_importance']},
     name='Fit a supervised learning regressor.',
-    description=description.format(
-        'Fit a supervised learning regressor. Outputs the fit estimator '
-        '(for prediction of test samples and/or unknown samples) and the '
-        'relative importance of each feature for model accuracy.')
+    description=cv_description.format('regressor')
 )
 
 
@@ -518,13 +498,11 @@ plugin.visualizers.register_function(
     inputs=inputs,
     parameters={'group_by': Str,
                 'control': Str,
-                'estimator': Str % Choices([
-                    'RandomForestRegressor', 'ExtraTreesRegressor',
-                    'GradientBoostingRegressor', 'SVR', 'Ridge', 'Lasso',
-                    'ElasticNet']),
+                'estimator': regressors,
                 **parameters['base'],
-                **parameters['standard'],
+                **parameters['rfe'],
                 **parameters['cv'],
+                **parameters['splitter'],
                 'metadata': Metadata,
                 'column': Str,
                 **parameters['regressor'],
@@ -533,8 +511,9 @@ plugin.visualizers.register_function(
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions['base'],
-        **parameter_descriptions['standard'],
+        **parameter_descriptions['rfe'],
         **parameter_descriptions['cv'],
+        **parameter_descriptions['splitter'],
         'column': 'Numeric metadata column to use as prediction target.',
         'group_by': ('Categorical metadata column to use for plotting and '
                      'significance testing between main treatment groups.'),
