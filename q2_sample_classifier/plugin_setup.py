@@ -95,7 +95,6 @@ class PredictionsFormat(model.TextFileFormat):
                     break
 
             _validate_file_not_empty(has_data)
-            return True
 
     def _validate_(self, level):
         record_count_map = {'min': 5, 'max': None}
@@ -143,7 +142,6 @@ class ImportanceFormat(model.TextFileFormat):
                     break
 
             _validate_file_not_empty(has_data)
-            return True
 
     def _validate_(self, level):
         record_count_map = {'min': 5, 'max': None}
@@ -402,10 +400,7 @@ plugin.methods.register_function(
         **parameters['cv'],
         'metadata': MetadataColumn[Numeric],
         **parameters['regressor'],
-        'estimator': Str % Choices(
-            ['RandomForestRegressor', 'ExtraTreesRegressor',
-             'GradientBoostingRegressor', 'AdaBoostRegressor', 'ElasticNet',
-             'Ridge', 'Lasso', 'KNeighborsRegressor', 'LinearSVR', 'SVR'])},
+        'estimator': regressors},
     outputs=outputs,
     input_descriptions=input_descriptions,
     parameter_descriptions={
@@ -427,10 +422,7 @@ plugin.methods.register_function(
         **parameters['base'],
         **parameters['cv'],
         'metadata': MetadataColumn[Categorical],
-        'estimator': Str % Choices(
-            ['RandomForestClassifier', 'ExtraTreesClassifier',
-             'GradientBoostingClassifier', 'AdaBoostClassifier',
-             'KNeighborsClassifier', 'LinearSVC', 'SVC'])},
+        'estimator': classifiers},
     outputs=outputs,
     input_descriptions=input_descriptions,
     parameter_descriptions={
