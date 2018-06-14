@@ -12,7 +12,7 @@ from qiime2.plugin import (
 from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.sample_data import SampleData
 from .classify import (
-    classify_samples, regress_samples, maturity_index)
+    classify_samples, regress_samples, maturity_index, split_table)
 from .visuals import _custom_palettes
 import q2_sample_classifier
 import qiime2.plugin.model as model
@@ -206,6 +206,34 @@ plugin.visualizers.register_function(
     name='Supervised learning regressor.',
     description=description.format(
         'continuous', 'supervised learning regressor')
+)
+
+
+plugin.methods.register_function(
+    function=split_table,
+    inputs=inputs,
+    parameters={
+        'random_state': parameters['base']['random_state'],
+        'test_size': parameters['standard']['test_size'],
+        'metadata': MetadataColumn[Numeric | Categorical],
+        **parameters['regressor']},
+    outputs=[('training_table', FeatureTable[Frequency]),
+             ('test_table', FeatureTable[Frequency])],
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        'random_state': parameter_descriptions['base']['random_state'],
+        'test_size': parameter_descriptions['standard']['test_size'],
+        **parameter_descriptions['regressor'],
+        'metadata': 'Numeric metadata column to use as prediction target.'},
+    output_descriptions={
+        'training_table': 'Feature table containing training samples',
+        'test_table': 'Feature table containing test samples'},
+    name='Split a feature table into training and testing sets.',
+    description=(
+        'Split a feature table into training and testing sets. By default '
+        'stratifies training and test sets on a metadata column, such that '
+        'values in that column are evenly represented across training and '
+        'test sets.')
 )
 
 

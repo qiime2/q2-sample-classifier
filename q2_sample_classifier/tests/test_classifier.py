@@ -19,7 +19,7 @@ from q2_sample_classifier.visuals import (
     _plot_heatmap_from_confusion_matrix)
 from q2_sample_classifier.classify import (
     classify_samples, regress_samples,
-    maturity_index, detect_outliers)
+    maturity_index, detect_outliers, split_table)
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator,
     _prepare_training_data, _optimize_feature_selection, _fit_and_predict,
@@ -376,6 +376,12 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 n_jobs=1, optimize_feature_selection=False,
                 parameter_tuning=False, param_dist=None,
                 calc_feature_importance=False)
+
+    # just test that splitting method works. the inner function is tested
+    # separately.
+    def test_split_table(self):
+        split_table(self.table_chard_fp, self.mdc_chard_fp, test_size=0.5,
+                    random_state=123, stratify=True)
 
     # test experimental functions
     def test_maturity_index(self):

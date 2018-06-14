@@ -15,7 +15,7 @@ import pandas as pd
 
 from .utilities import (split_optimize_classify, _visualize, _load_data,
                         _maz_score, _visualize_maturity_index,
-                        _set_parameters_and_estimator,
+                        _set_parameters_and_estimator, _prepare_training_data,
                         _disable_feature_selection, _select_estimator)
 
 
@@ -98,6 +98,19 @@ def regress_samples(output_dir: str, table: pd.DataFrame,
 
     _visualize(output_dir, estimator, cm, accuracy, importances,
                optimize_feature_selection, title='regression predictions')
+
+
+def split_table(table: pd.DataFrame, metadata: qiime2.MetadataColumn,
+                test_size: float=defaults['test_size'], random_state: int=None,
+                stratify: str=True) -> (pd.DataFrame, pd.DataFrame):
+    column = metadata.to_series().name
+    X_train, X_test, y_train, y_test = _prepare_training_data(
+        table, metadata, column, test_size, random_state, load_data=True,
+        stratify=True)
+    # TODO: we can consider returning the metadata (y_train, y_test) if a
+    # SampleData[Metadata] type comes into existence. For now we will just
+    # throw this out.
+    return X_train, X_test
 
 
 def maturity_index(output_dir: str, table: pd.DataFrame,
