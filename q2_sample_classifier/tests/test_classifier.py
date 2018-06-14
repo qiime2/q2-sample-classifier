@@ -377,11 +377,23 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 parameter_tuning=False, param_dist=None,
                 calc_feature_importance=False)
 
-    # just test that splitting method works. the inner function is tested
-    # separately.
-    def test_split_table(self):
-        split_table(self.table_chard_fp, self.mdc_chard_fp, test_size=0.5,
-                    random_state=123, stratify=True)
+    def test_split_table_no_rounding_error(self):
+        X_train, X_test = split_table(
+            self.table_chard_fp, self.mdc_chard_fp, test_size=0.5,
+            random_state=123, stratify=True)
+        self.assertEqual(len(X_train) + len(X_test), 21)
+
+    def test_split_table_no_split(self):
+        X_train, X_test = split_table(
+            self.table_chard_fp, self.mdc_chard_fp, test_size=0.0,
+            random_state=123, stratify=True)
+        self.assertEqual(len(X_train), 21)
+
+    def test_split_table_invalid_test_size(self):
+        with self.assertRaisesRegex(ValueError, "at least two samples"):
+            X_train, X_test = split_table(
+                self.table_chard_fp, self.mdc_chard_fp, test_size=1.0,
+                random_state=123, stratify=True)
 
     # test experimental functions
     def test_maturity_index(self):
