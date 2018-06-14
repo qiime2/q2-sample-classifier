@@ -296,7 +296,11 @@ parameter_descriptions = {
                 'but will also increase time and memory requirements. This '
                 'parameter only affects ensemble estimators, such as Random '
                 'Forest, AdaBoost, ExtraTrees, and GradientBoosting.'),
-             'missing_samples': 'How to handle missing samples in metadata.'},
+             'missing_samples': (
+                'How to handle missing samples in metadata. "error" will fail '
+                'if missing samples are detected. "ignore" will cause the '
+                'feature table and metadata to be filtered, so that only '
+                'samples found in both files are retained.')},
     'standard': {
         'test_size': ('Fraction of input samples to exclude from training set '
                       'and use for classifier testing.'),
