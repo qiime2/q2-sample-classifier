@@ -6,7 +6,8 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
-from sklearn.model_selection import train_test_split, RandomizedSearchCV
+from sklearn.model_selection import (
+    train_test_split, RandomizedSearchCV, KFold, StratifiedKFold)
 from sklearn.metrics import accuracy_score
 from sklearn.feature_selection import RFECV
 from sklearn.ensemble import (RandomForestRegressor, RandomForestClassifier,
@@ -20,6 +21,7 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 import q2templates
 import pandas as pd
+import numpy as np
 from os.path import join
 import matplotlib.pyplot as plt
 import pkg_resources
@@ -96,15 +98,13 @@ def _extract_important_features(table, top):
     # is top a 1-d or multi-d array?
     # coef_ is a multidimensional array of shape = [n_class-1, n_features]
     if any(isinstance(i, list) for i in top) or top.ndim > 1:
-        # iterate over each list of importances (coef_ sets) in array
-        tops = range(len(top))
         imp = pd.DataFrame(
-            [i for i in zip(table.columns, *[top[n] for n in tops])],
-            columns=["feature", *["importance{0}".format(n) for n in tops]])
+            top, index=["importance{0}".format(n) for n in range(len(top))]).T
     # ensemble estimators and RFECV return 1-d arrays
     else:
-        imp = pd.DataFrame([i for i in zip(table.columns, top)],
-                           columns=["feature", "importance"])
+        imp = pd.DataFrame(top, columns=["importance"])
+    imp.index = table.columns
+    imp.index.name = 'feature'
     return imp
 
 
@@ -202,12 +202,45 @@ def _rfecv_feature_selection(feature_data, targets, estimator,
     n_opt = rfecv.n_features_
     importance = _extract_important_features(feature_data, rfecv.ranking_)
     importance = sort_importances(importance, ascending=True)[:n_opt]
-    top_feature_data = feature_data.iloc[:, importance.index]
+    top_feature_data = feature_data.loc[:, importance.index]
 
     # Plot RFE accuracy
     rfep = _plot_RFE(rfecv)
 
     return rfecv, importance, top_feature_data, rfep
+
+
+def nested_cross_validation(table, metadata, cv, random_state, n_jobs,
+                            n_estimators, estimator, stratify,
+                            parameter_tuning, classification, scoring):
+    # extract column name from NumericMetadataColumn
+    column = metadata.to_series().name
+
+    # load feature data, metadata targets
+    X_train, y_train = _load_data(table, metadata)
+
+    # disable feature selection for unsupported estimators
+    optimize_feature_selection, calc_feature_importance = \
+        _disable_feature_selection(estimator, False)
+
+    # specify parameters and distributions to sample from for parameter tuning
+    estimator, param_dist, parameter_tuning = _set_parameters_and_estimator(
+        estimator, table, y_train[column], column, n_estimators, n_jobs, cv,
+        random_state, parameter_tuning, classification)
+
+    # predict values for all samples via (nested) CV
+    scores, predictions, importances, tops = _fit_and_predict_cv(
+        X_train, y_train[column], estimator, param_dist, n_jobs, scoring,
+        random_state, cv, stratify, calc_feature_importance, parameter_tuning)
+
+    # Print accuracy score to stdout
+    print("Estimator Accuracy: {0} ± {1}".format(
+        np.mean(scores), np.std(scores)))
+
+    # TODO: save down estimator with tops parameters (currently the estimator
+    # would be untrained, and tops parameters are not reported)
+
+    return predictions['prediction'], importances
 
 
 def _fit_estimator(features, targets, estimator, n_estimators=100, step=0.05,
@@ -271,7 +304,7 @@ def split_optimize_classify(features, targets, column, estimator,
         # tune parameters
         estimator = _tune_parameters(
             X_train, y_train, estimator, param_dist, n_iter_search=20,
-            n_jobs=n_jobs, cv=cv, random_state=random_state)
+            n_jobs=n_jobs, cv=cv, random_state=random_state).best_estimator_
 
     # train classifier and predict test set classes
     estimator, accuracy, y_pred = _fit_and_predict(
@@ -323,9 +356,9 @@ def _optimize_feature_selection(output_dir, X_train, X_test, y_train,
         rfep.savefig(join(output_dir, 'rfe_plot.pdf'))
         plt.close('all')
 
-    X_train = X_train.loc[:, importance["feature"]]
-    if X_test not None:
-        X_test = X_test.loc[:, importance["feature"]]
+    X_train = X_train.loc[:, importance.index]
+    if X_test is not None:
+        X_test = X_test.loc[:, importance.index]
 
     return X_train, X_test, importance
 
@@ -362,7 +395,7 @@ def _predict_and_plot(output_dir, y_test, y_pred, estimator, accuracy,
 
 def sort_importances(importances, ascending=False):
     return importances.sort_values(
-        by=importances.columns[1], ascending=ascending)
+        by=importances.columns[0], ascending=ascending)
 
 
 def _visualize(output_dir, estimator, cm, accuracy, importances=None,
@@ -385,8 +418,8 @@ def _visualize(output_dir, estimator, cm, accuracy, importances=None,
         importances = sort_importances(importances)
         pd.set_option('display.float_format', '{:.3e}'.format)
         importances.to_csv(join(
-            output_dir, 'feature_importance.tsv'), sep='\t', index=False)
-        importances = q2templates.df_to_html(importances, index=False)
+            output_dir, 'feature_importance.tsv'), sep='\t', index=True)
+        importances = q2templates.df_to_html(importances, index=True)
 
     index = join(TEMPLATES, 'index.html')
     q2templates.render(index, output_dir, context={
@@ -411,8 +444,8 @@ def _visualize_maturity_index(table, metadata, group_by, column,
     # save feature importance data and convert to html
     importances = sort_importances(importances)
     importances.to_csv(
-        join(output_dir, 'feature_importance.tsv'), index=False, sep='\t')
-    importance = q2templates.df_to_html(importances, index=False)
+        join(output_dir, 'feature_importance.tsv'), index=True, sep='\t')
+    importance = q2templates.df_to_html(importances, index=True)
 
     # save predicted values, maturity, and MAZ score data
     maz_md = metadata[[group_by, column, predicted_column, maturity, maz]]
@@ -440,7 +473,7 @@ def _visualize_maturity_index(table, metadata, group_by, column,
     plt.close('all')
 
     # plot heatmap of column (e.g., age) vs. abundance of top features
-    top = table[list(importances.feature)]
+    top = table[list(importances.index)]
     g = _clustermap_from_dataframe(top, metadata, group_by, column)
     g.savefig(join(output_dir, 'maz_heatmaps.png'), bbox_inches='tight')
     g.savefig(join(output_dir, 'maz_heatmaps.pdf'), bbox_inches='tight')
@@ -467,7 +500,7 @@ def _tune_parameters(X_train, y_train, estimator, param_dist, n_iter_search=20,
         estimator, param_distributions=param_dist, n_iter=n_iter_search,
         n_jobs=n_jobs, cv=cv, random_state=random_state)
     random_search.fit(X_train, y_train)
-    return random_search.best_estimator_
+    return random_search
 
 
 def _fit_and_predict(X_train, X_test, y_train, y_test, estimator,
@@ -482,6 +515,93 @@ def _fit_and_predict(X_train, X_test, y_train, y_test, estimator,
     accuracy = scoring(y_test, pd.DataFrame(y_pred))
 
     return estimator, accuracy, y_pred
+
+
+def _fit_and_predict_cv(table, metadata, estimator, param_dist, n_jobs,
+                        scoring=accuracy_score, random_state=None, cv=10,
+                        stratify=True, calc_feature_importance=False,
+                        parameter_tuning=False):
+    '''train and test estimators via cross-validation.
+    scoring: str
+        use accuracy_score for classification, mean_squared_error for
+        regression.
+    '''
+    # Set CV method
+    if stratify:
+        _cv = StratifiedKFold(
+            n_splits=cv, shuffle=True, random_state=random_state)
+    else:
+        _cv = KFold(n_splits=cv, shuffle=True, random_state=random_state)
+
+    predictions = pd.DataFrame()
+    scores = []
+    top_params = []
+    importances = []
+    for train_index, test_index in _cv.split(table, metadata):
+        X_train = table.iloc[train_index]
+        y_train = metadata.iloc[train_index]
+        # perform parameter tuning in inner loop
+        if parameter_tuning:
+            estimator = _tune_parameters(
+                X_train, y_train, estimator, param_dist,
+                n_iter_search=20, n_jobs=n_jobs, cv=cv,
+                random_state=random_state).best_estimator_
+        else:
+            # fit estimator on inner outer training set
+            estimator.fit(X_train, y_train)
+        # predict values for outer loop test set
+        test_set = table.iloc[test_index]
+        pred = pd.DataFrame(estimator.predict(test_set), index=test_set.index)
+
+        # log predictions results
+        predictions = pd.concat([predictions, pred])
+        # log accuracy on that fold
+        scores += [scoring(pred, metadata.iloc[test_index])]
+        # log feature importances
+        if calc_feature_importance:
+            imp = _calculate_feature_importances(X_train, estimator)
+            importances += [imp]
+        # log top parameters
+        # for now we will cast as a str (instead of dict) so that we can count
+        # frequency of unique elements below
+        top_params += [str(estimator.get_params())]
+
+    # Report most frequent best params
+    # convert top_params to a set, order by count (hence str conversion above)
+    # max will be the most frequent... then we convert back to a dict via eval
+    # which should be safe since this is always a dict of param values reported
+    # by sklearn.
+    tops = max(set(top_params), key=top_params.count)
+    tops = eval(tops)
+
+    # calculate mean feature importances
+    if calc_feature_importance:
+        importances = _mean_feature_importance(importances)
+    else:
+        importances = _null_feature_importance(table)
+
+    predictions.columns = ['prediction']
+    predictions.index.name = 'SampleID'
+
+    return scores, predictions, importances, tops
+
+
+def _mean_feature_importance(importances):
+    '''Calculate mean feature importance across a list of pd.dataframes
+    containing importance scores of the same features from multiple models
+    (e.g., CV importance scores).
+    '''
+    imp = pd.concat(importances, axis=1)
+    # groupby column name instead of taking column mean to support 2d arrays
+    imp = imp.groupby(imp.columns, axis=1).mean()
+    return imp.sort_values(imp.columns[0], ascending=False)
+
+
+def _null_feature_importance(table):
+    imp = pd.DataFrame(index=table.columns)
+    imp.index.name = "feature"
+    imp["importance"] = 1
+    return imp
 
 
 def _maz_score(metadata, predicted, column, group_by, control):
@@ -600,7 +720,7 @@ def _train_adaboost_base_estimator(table, metadata, column, n_estimators,
         features, targets = _load_data(table, metadata)
         base_estimator = _tune_parameters(
             features, targets[column], base_estimator, param_dist,
-            n_jobs=n_jobs, cv=cv, random_state=random_state)
+            n_jobs=n_jobs, cv=cv, random_state=random_state).best_estimator_
 
     return adaboost_estimator(
         base_estimator, n_estimators, random_state=random_state)

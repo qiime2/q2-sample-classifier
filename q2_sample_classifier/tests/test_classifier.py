@@ -18,16 +18,20 @@ from q2_sample_classifier.visuals import (
     _calculate_baseline_accuracy, _custom_palettes,
     _plot_heatmap_from_confusion_matrix)
 from q2_sample_classifier.classify import (
-    classify_samples, regress_samples,
-    maturity_index, detect_outliers)
+    classify_samples, regress_samples, regress_samples_ncv,
+    classify_samples_ncv, maturity_index, detect_outliers)
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator,
     _prepare_training_data, _optimize_feature_selection, _fit_and_predict,
     _calculate_feature_importances, _extract_important_features,
-    _train_adaboost_base_estimator, _disable_feature_selection)
+    _train_adaboost_base_estimator, _disable_feature_selection,
+    _mean_feature_importance, _null_feature_importance)
 from q2_sample_classifier.plugin_setup import (
-    BooleanSeriesFormat, BooleanSeriesDirectoryFormat, BooleanSeries)
+    BooleanSeriesFormat, BooleanSeriesDirectoryFormat, BooleanSeries,
+    PredictionsFormat, PredictionsDirectoryFormat, Predictions,
+    ImportanceFormat, ImportanceDirectoryFormat, Importance)
 from q2_types.sample_data import SampleData
+from q2_types.feature_data import FeatureData
 import tempfile
 import shutil
 import pkg_resources
@@ -36,6 +40,8 @@ from qiime2.plugin import ValidationError
 from sklearn.metrics import mean_squared_error
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.svm import LinearSVC
+import pandas.util.testing as pdt
+
 
 filterwarnings("ignore", category=UserWarning)
 filterwarnings("ignore", category=Warning)
@@ -63,16 +69,22 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
     def setUp(self):
         super().setUp()
 
-        self.exp_rf = pd.DataFrame(
-            {'feature': ['a', 'b', 'c'], 'importance': [0.1, 0.2, 0.3]})
+        exp_rf = pd.DataFrame(
+            {'importance': [0.1, 0.2, 0.3]}, index=['a', 'b', 'c'])
+        exp_rf.index.name = 'feature'
+        self.exp_rf = exp_rf
 
-        self.exp_svm = pd.DataFrame(
-            {'feature': ['a', 'b', 'c'], 'importance0': [0.1, 0.2, 0.3],
-             'importance1': [0.4, 0.5, 0.6]})
+        exp_svm = pd.DataFrame(
+            {'importance0': [0.1, 0.2, 0.3], 'importance1': [0.4, 0.5, 0.6]},
+            index=['a', 'b', 'c'])
+        exp_svm.index.name = 'feature'
+        self.exp_svm = exp_svm
 
-        self.exp_lsvm = pd.DataFrame(
-            {'feature': ['a', 'b', 'c'],
-             'importance0': [-0.048794, -0.048794, -0.048794]})
+        exp_lsvm = pd.DataFrame(
+            {'importance0': [-0.048794, -0.048794, -0.048794]},
+            index=['a', 'b', 'c'])
+        exp_lsvm.index.name = 'feature'
+        self.exp_lsvm = exp_lsvm
 
         self.features = pd.DataFrame(
             {'a': [1, 1, 1, 1, 1], 'b': [1, 1, 1, 1, 1], 'c': [1, 1, 1, 1, 1]})
@@ -105,6 +117,54 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
     def test_disable_feature_selection_unsupported(self):
         with self.assertWarnsRegex(UserWarning, "does not support recursive"):
             _disable_feature_selection('KNeighborsClassifier', False)
+
+    def test_mean_feature_importance_1d_arrays(self):
+        exp = pd.DataFrame([10, 9, 8, 7], columns=["importance0"],
+                           index=[3, 2, 1, 0])
+        imps = [pd.DataFrame([1, 2, 3, 4], columns=["importance0"]),
+                pd.DataFrame([5, 6, 7, 8], columns=["importance0"]),
+                pd.DataFrame([9, 10, 11, 12], columns=["importance0"]),
+                pd.DataFrame([13, 14, 15, 16], columns=["importance0"])]
+        pdt.assert_frame_equal(_mean_feature_importance(imps), exp)
+
+    def test_mean_feature_importance_different_column_names(self):
+        exp = pd.DataFrame([[6, 5, 4, 3], [14, 13, 12, 11]],
+                           index=["importance0", "importance1"],
+                           columns=[3, 2, 1, 0]).T
+        imps = [pd.DataFrame([1, 2, 3, 4], columns=["importance0"]),
+                pd.DataFrame([5, 6, 7, 8], columns=["importance0"]),
+                pd.DataFrame([9, 10, 11, 12], columns=["importance1"]),
+                pd.DataFrame([13, 14, 15, 16], columns=["importance1"])]
+        pdt.assert_frame_equal(_mean_feature_importance(imps), exp)
+
+    def test_mean_feature_importance_2d_arrays(self):
+        exp = pd.DataFrame([[3.5] * 4, [9.5] * 4],
+                           index=["importance0", "importance1"],
+                           columns=[3, 2, 1, 0]).T
+        imps = [pd.DataFrame([[6, 5, 4, 3], [14, 13, 12, 11]],
+                             index=["importance0", "importance1"],
+                             columns=[3, 2, 1, 0]).T,
+                pd.DataFrame([[1, 2, 3, 4], [5, 6, 7, 8]],
+                             index=["importance0", "importance1"],
+                             columns=[3, 2, 1, 0]).T]
+        pdt.assert_frame_equal(_mean_feature_importance(imps), exp)
+
+    # and this should not occur now, but theoretically should just concat and
+    # sort but not collapse if all column names are unique
+    def test_mean_feature_importance_do_not_collapse(self):
+        imps = [pd.DataFrame([4, 3, 2, 1], columns=["importance0"]),
+                pd.DataFrame([16, 15, 14, 13], columns=["importance1"])]
+        exp = pd.concat(imps, axis=1)
+        pdt.assert_frame_equal(_mean_feature_importance(imps), exp)
+
+    def test_null_feature_importance(self):
+        exp = pd.DataFrame(
+            [1, 1, 1], index=['o1', 'o2', 'o3'], columns=['importance'])
+        exp.index.name = 'feature'
+        tab = pd.DataFrame([[1., 2., 3.], [3., 2., 1.], [7., 6., 9.]],
+                           columns=['o1', 'o2', 'o3'],
+                           index=['s1', 's2', 's3'])
+        pdt.assert_frame_equal(_null_feature_importance(tab), exp)
 
 
 class VisualsTests(SampleClassifierTestPluginBase):
@@ -191,6 +251,134 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         exp = qiime2.Metadata(exp)
         self.assertEqual(obs, exp)
 
+    # test predictions format
+    def test_Predictions_format_validate_positive(self):
+        filepath = self.get_data_path('predictions.tsv')
+        format = PredictionsFormat(filepath, mode='r')
+        format.validate(level='min')
+        format.validate()
+
+    def test_Predictions_format_validate_negative(self):
+        filepath = self.get_data_path('coordinates.tsv')
+        format = PredictionsFormat(filepath, mode='r')
+        with self.assertRaisesRegex(ValidationError, 'PredictionsFormat'):
+            format.validate()
+
+    def test_Predictions_dir_fmt_validate_positive(self):
+        filepath = self.get_data_path('predictions.tsv')
+        shutil.copy(filepath, self.temp_dir.name)
+        format = PredictionsDirectoryFormat(self.temp_dir.name, mode='r')
+        format.validate()
+
+    def test_Predictions_semantic_type_registration(self):
+        self.assertRegisteredSemanticType(Predictions)
+
+    def test_sample_data_Predictions_to_Predictions_dir_fmt_registration(self):
+        self.assertSemanticTypeRegisteredToFormat(
+            SampleData[Predictions], PredictionsDirectoryFormat)
+
+    def test_pd_series_to_Predictions_format(self):
+        transformer = self.get_transformer(pd.Series, PredictionsFormat)
+        exp = pd.Series([1, 2, 3, 4],
+                        name='prediction', index=['a', 'b', 'c', 'd'])
+        obs = transformer(exp)
+        obs = pd.Series.from_csv(str(obs), sep='\t', header=0)
+        pdt.assert_series_equal(obs[:4], exp)
+
+    def test_Predictions_format_to_pd_series(self):
+        _, obs = self.transform_format(
+            PredictionsFormat, pd.Series, 'predictions.tsv')
+        exp_index = pd.Index(['10249.C001.10SS', '10249.C002.05SS',
+                              '10249.C004.01SS', '10249.C004.11SS'],
+                             name='id', dtype=object)
+        exp = pd.Series(['5.0', '6.0', '1.5', '5.0'], name='prediction',
+                        index=exp_index, dtype=object)
+        pdt.assert_series_equal(obs[:4], exp)
+
+    def test_Predictions_format_to_metadata(self):
+        _, obs = self.transform_format(
+            PredictionsFormat, qiime2.Metadata, 'predictions.tsv')
+        exp_index = pd.Index(['10249.C001.10SS', '10249.C002.05SS',
+                              '10249.C004.01SS', '10249.C004.11SS'],
+                             name='id')
+        exp = pd.DataFrame([5., 6., 1.5, 5.], columns=['prediction'],
+                           index=exp_index, dtype='str')
+        pdt.assert_frame_equal(obs.to_dataframe()[:4], exp)
+
+    # test Importance format
+    def test_Importance_format_validate_positive(self):
+        filepath = self.get_data_path('importance.tsv')
+        format = ImportanceFormat(filepath, mode='r')
+        format.validate(level='min')
+        format.validate()
+
+    def test_Importance_format_validate_negative_nonnumeric(self):
+        filepath = self.get_data_path('chardonnay.map.txt')
+        format = ImportanceFormat(filepath, mode='r')
+        with self.assertRaisesRegex(ValidationError, 'numeric values'):
+            format.validate()
+
+    def test_Importance_format_validate_negative_empty(self):
+        filepath = self.get_data_path('empty_file.txt')
+        format = ImportanceFormat(filepath, mode='r')
+        with self.assertRaisesRegex(ValidationError, 'one data record'):
+            format.validate()
+
+    def test_Importance_format_validate_negative(self):
+        filepath = self.get_data_path('garbage.txt')
+        format = ImportanceFormat(filepath, mode='r')
+        with self.assertRaisesRegex(ValidationError, 'two or more fields'):
+            format.validate()
+
+    def test_Importance_dir_fmt_validate_positive(self):
+        filepath = self.get_data_path('importance.tsv')
+        shutil.copy(filepath, self.temp_dir.name)
+        format = ImportanceDirectoryFormat(self.temp_dir.name, mode='r')
+        format.validate()
+
+    def test_Importance_semantic_type_registration(self):
+        self.assertRegisteredSemanticType(Importance)
+
+    def test_sample_data_Importance_to_Importance_dir_fmt_registration(self):
+        self.assertSemanticTypeRegisteredToFormat(
+            FeatureData[Importance], ImportanceDirectoryFormat)
+
+    def test_pd_dataframe_to_Importance_format(self):
+        transformer = self.get_transformer(pd.DataFrame, ImportanceFormat)
+        exp = pd.DataFrame([1, 2, 3, 4],
+                           columns=['importance'], index=['a', 'b', 'c', 'd'])
+        obs = transformer(exp)
+        obs = pd.DataFrame.from_csv(str(obs), sep='\t', header=0)
+        pdt.assert_frame_equal(exp, obs)
+
+    def test_Importance_format_to_pd_dataframe(self):
+        _, obs = self.transform_format(
+            ImportanceFormat, pd.DataFrame, 'importance.tsv')
+        exp_index = pd.Index(['74ec9fe6ffab4ecff6d5def74298a825',
+                              'c82032c40c98975f71892e4be561c87a',
+                              '79280cea51a6fe8a3432b2f266dd34db',
+                              'f7686a74ca2d3729eb66305e8a26309b'],
+                             name='id')
+        exp = pd.DataFrame([0.44659295550403905, 0.07707168164298116,
+                            0.06553926463821949, 0.061624511537813884],
+                           columns=['importance'],
+                           index=exp_index, dtype='str')
+        pdt.assert_frame_equal(exp, obs[:4])
+
+    def test_Importance_format_to_metadata(self):
+        _, obs = self.transform_format(
+            ImportanceFormat, qiime2.Metadata, 'importance.tsv')
+        exp_index = pd.Index(['74ec9fe6ffab4ecff6d5def74298a825',
+                              'c82032c40c98975f71892e4be561c87a',
+                              '79280cea51a6fe8a3432b2f266dd34db',
+                              'f7686a74ca2d3729eb66305e8a26309b'],
+                             name='id')
+        exp = pd.DataFrame([0.44659295550403905, 0.07707168164298116,
+                            0.06553926463821949, 0.061624511537813884],
+                           columns=['importance'],
+                           index=exp_index, dtype='str')
+        pdt.assert_frame_equal(obs.to_dataframe()[:4], exp)
+
     # this just checks that palette names are valid input
     def test_custom_palettes(self):
         confused = np.array([[1, 0], [0, 1]])
@@ -233,6 +421,10 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         self.table_ecam_fp = _load_df('ecam-table-maturity.qza')
         self.md_ecam_fp = _load_md('ecam_map_maturity.txt')
         self.mdc_ecam_fp = _load_nmc('ecam_map_maturity.txt', 'month')
+        self.exp_imp = pd.DataFrame.from_csv(
+            self.get_data_path('importance.tsv'), sep='\t')
+        self.exp_pred = pd.Series.from_csv(
+            self.get_data_path('predictions.tsv'), sep='\t', header=0)
 
     # test that the plugin/visualizer work
     def test_classify_samples(self):
@@ -269,7 +461,24 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 msg='Accuracy of %s classifier was %f, but expected %f' % (
                     classifier, accuracy, seeded_results[classifier]))
 
-    # test that the plugin/visualizer work
+    # test that the plugin methods/visualizers work
+    def test_regress_samples_ncv(self):
+        y_pred, importances = regress_samples_ncv(
+            self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
+            n_estimators=2, n_jobs=1, stratify=True, parameter_tuning=True)
+
+    def test_classify_samples_ncv(self):
+        y_pred, importances = classify_samples_ncv(
+            self.table_chard_fp, self.mdc_chard_fp, random_state=123,
+            n_estimators=2, n_jobs=1)
+
+    # test ncv a second time with KNeighborsRegressor (no feature importance)
+    def test_regress_samples_ncv_knn(self):
+        y_pred, importances = regress_samples_ncv(
+            self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
+            n_estimators=2, n_jobs=1, stratify=False, parameter_tuning=False,
+            estimator='KNeighborsRegressor')
+
     def test_regress_samples(self):
         tmpd = join(self.temp_dir.name, 'RandomForestRegressor')
         mkdir(tmpd)
@@ -277,6 +486,14 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                         test_size=0.5, cv=3,
                         n_estimators=2, n_jobs=1,
                         estimator='RandomForestRegressor')
+
+    # test that ncv gives expected results
+    def test_regress_samples_ncv_accuracy(self):
+        y_pred, importances = regress_samples_ncv(
+            self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
+            n_estimators=2, n_jobs=1)
+        pdt.assert_series_equal(y_pred, self.exp_pred)
+        pdt.assert_frame_equal(importances, self.exp_imp)
 
     # test that each regressor works and delivers an expected accuracy result
     # when a random seed is set.
@@ -328,7 +545,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             scoring=mean_squared_error)
         # pull important features from a different dataframe
         importances = _calculate_feature_importances(X_train, estimator)
-        table = self.table_ecam_fp.loc[:, importances["feature"]]
+        table = self.table_ecam_fp.loc[:, importances.index]
         # confirm ordering of feature (column) names
         ca = list(X_train.columns.values)
         cb = list(table.columns.values)

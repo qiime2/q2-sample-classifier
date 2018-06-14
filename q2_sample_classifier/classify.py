@@ -8,7 +8,7 @@
 
 
 from sklearn.ensemble import IsolationForest
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, accuracy_score
 
 import qiime2
 import pandas as pd
@@ -17,7 +17,7 @@ from .utilities import (split_optimize_classify, _visualize, _load_data,
                         _maz_score, _visualize_maturity_index,
                         _set_parameters_and_estimator,
                         _disable_feature_selection, _select_estimator,
-                        _fit_estimator)
+                        nested_cross_validation, _fit_estimator)
 
 
 defaults = {
@@ -124,7 +124,7 @@ def regress_samples(output_dir: str, table: pd.DataFrame,
     # specify parameters and distributions to sample from for parameter tuning
     estimator, param_dist, parameter_tuning = _set_parameters_and_estimator(
         estimator, table, metadata, column, n_estimators, n_jobs, cv,
-        random_state, parameter_tuning, classification=True)
+        random_state, parameter_tuning, classification=False)
 
     estimator, cm, accuracy, importances = split_optimize_classify(
         table, metadata, column, estimator, output_dir,
@@ -136,6 +136,36 @@ def regress_samples(output_dir: str, table: pd.DataFrame,
 
     _visualize(output_dir, estimator, cm, accuracy, importances,
                optimize_feature_selection, title='regression predictions')
+
+
+def regress_samples_ncv(
+        table: pd.DataFrame, metadata: qiime2.NumericMetadataColumn,
+        cv: int=defaults['cv'], random_state: int=None,
+        n_jobs: int=defaults['n_jobs'],
+        n_estimators: int=defaults['n_estimators'],
+        estimator: str='RandomForestRegressor', stratify: str=False,
+        parameter_tuning: bool=False) -> (pd.Series, pd.DataFrame):
+
+    y_pred, importances = nested_cross_validation(
+        table, metadata, cv, random_state, n_jobs, n_estimators, estimator,
+        stratify, parameter_tuning, classification=False,
+        scoring=mean_squared_error)
+    return y_pred, importances
+
+
+def classify_samples_ncv(
+        table: pd.DataFrame, metadata: qiime2.CategoricalMetadataColumn,
+        cv: int=defaults['cv'], random_state: int=None,
+        n_jobs: int=defaults['n_jobs'],
+        n_estimators: int=defaults['n_estimators'],
+        estimator: str=defaults['estimator_r'],
+        parameter_tuning: bool=False) -> (pd.Series, pd.DataFrame):
+
+    y_pred, importances = nested_cross_validation(
+        table, metadata, cv, random_state, n_jobs, n_estimators, estimator,
+        stratify=True, parameter_tuning=parameter_tuning, classification=False,
+        scoring=accuracy_score)
+    return y_pred, importances
 
 
 def maturity_index(output_dir: str, table: pd.DataFrame,
@@ -167,7 +197,7 @@ def maturity_index(output_dir: str, table: pd.DataFrame,
         scoring=mean_squared_error, stratify=stratify, classification=False)
 
     # predict treatment data
-    table = table.loc[:, importances["feature"]]
+    table = table.loc[:, importances.index]
     y_pred = estimator.predict(table)
     predicted_column = 'predicted {0}'.format(column)
     metadata[predicted_column] = y_pred
