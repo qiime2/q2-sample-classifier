@@ -19,7 +19,8 @@ from q2_sample_classifier.visuals import (
     _plot_heatmap_from_confusion_matrix)
 from q2_sample_classifier.classify import (
     classify_samples, regress_samples, regress_samples_ncv,
-    classify_samples_ncv, maturity_index, detect_outliers)
+    classify_samples_ncv, fit_classifier, fit_regressor, maturity_index,
+    detect_outliers)
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator,
     _prepare_training_data, _optimize_feature_selection, _fit_and_predict,
@@ -494,6 +495,22 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             n_estimators=2, n_jobs=1)
         pdt.assert_series_equal(y_pred, self.exp_pred)
         pdt.assert_frame_equal(importances, self.exp_imp)
+
+    # test that fit_* methods output consistent importance scores
+    def test_fit_regressor(self):
+        importances = fit_regressor(
+            self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
+            n_estimators=2, n_jobs=1)
+        pdt.assert_frame_equal(importances, self.exp_imp)
+
+    # just make sure this method runs. Uses the same internal function as
+    # fit_regressor, so importance score consistency is covered by the above
+    # test.
+    def test_fit_classifier(self):
+        importances = fit_classifier(
+            self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
+            n_estimators=2, n_jobs=1, optimize_feature_selection=True,
+            parameter_tuning=True)
 
     # test that each regressor works and delivers an expected accuracy result
     # when a random seed is set.
