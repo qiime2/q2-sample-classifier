@@ -479,11 +479,35 @@ plugin.methods.register_function(
         'metadata': 'Numeric metadata column to use as prediction target.',
         **parameter_descriptions['estimator']},
     output_descriptions={
-        'feature_importance': 'Importance of each input feature to model '
-                              'accuracy.'}
+        'feature_importance': output_descriptions['feature_importance']}
     name='Fit a supervised learning classifier.',
     description=description.format(
         'Fit a supervised learning classifier. Outputs the fit estimator '
+        '(for prediction of test samples and/or unknown samples) and the '
+        'relative importance of each feature for model accuracy.')
+)
+
+
+plugin.methods.register_function(
+    function=fit_regressor,
+    inputs=inputs,
+    parameters={
+        **parameters['base'],
+        **parameters['standard'],
+        'metadata': MetadataColumn[Numeric],
+        'estimator': regressors},
+    outputs=[('feature_importance', FeatureData[Importance])],
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions['base'],
+        **parameter_descriptions['standard'],
+        'metadata': 'Numeric metadata column to use as prediction target.',
+        **parameter_descriptions['estimator']},
+    output_descriptions={
+        'feature_importance': output_descriptions['feature_importance']}
+    name='Fit a supervised learning regressor.',
+    description=description.format(
+        'Fit a supervised learning regressor. Outputs the fit estimator '
         '(for prediction of test samples and/or unknown samples) and the '
         'relative importance of each feature for model accuracy.')
 )
