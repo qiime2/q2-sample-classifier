@@ -16,7 +16,8 @@ import pandas as pd
 from .utilities import (split_optimize_classify, _visualize, _load_data,
                         _maz_score, _visualize_maturity_index,
                         _set_parameters_and_estimator,
-                        _disable_feature_selection, _select_estimator)
+                        _disable_feature_selection, _select_estimator,
+                        _fit_estimator)
 
 
 defaults = {
@@ -25,7 +26,8 @@ defaults = {
     'cv': 5,
     'n_jobs': 1,
     'n_estimators': 100,
-    'estimator_r': 'RandomForestClassifier',
+    'estimator_c': 'RandomForestClassifier',
+    'estimator_r': 'RandomForestRegressor',
     'palette': 'sirocco'
 }
 
@@ -37,7 +39,7 @@ def classify_samples(output_dir: str, table: pd.DataFrame,
                      cv: int=defaults['cv'], random_state: int=None,
                      n_jobs: int=defaults['n_jobs'],
                      n_estimators: int=defaults['n_estimators'],
-                     estimator: str=defaults['estimator_r'],
+                     estimator: str=defaults['estimator_c'],
                      optimize_feature_selection: bool=False,
                      parameter_tuning: bool=False,
                      palette: str=defaults['palette']) -> None:
@@ -65,6 +67,42 @@ def classify_samples(output_dir: str, table: pd.DataFrame,
                optimize_feature_selection, title='classification predictions')
 
 
+def fit_classifier(table: pd.DataFrame,
+                   metadata: qiime2.CategoricalMetadataColumn,
+                   step: float=defaults['step'], cv: int=defaults['cv'],
+                   random_state: int=None, n_jobs: int=defaults['n_jobs'],
+                   n_estimators: int=defaults['n_estimators'],
+                   estimator: str=defaults['estimator_c'],
+                   optimize_feature_selection: bool=False,
+                   parameter_tuning: bool=False) -> pd.Series:
+    estimator, importance = _fit_estimator(
+        table, metadata, estimator, n_estimators, step, cv, random_state,
+        n_jobs, optimize_feature_selection, parameter_tuning,
+        classification=True)
+
+    # TODO: BEN PLS MAKE THIS RETURN estimator AND WIRE UP YOUR PIPELINE TYPE
+    # HERE AND IN THE PLUGIN SETUP OUTPUT.
+    return importance
+
+
+def fit_regressor(table: pd.DataFrame,
+                  metadata: qiime2.CategoricalMetadataColumn,
+                  step: float=defaults['step'], cv: int=defaults['cv'],
+                  random_state: int=None, n_jobs: int=defaults['n_jobs'],
+                  n_estimators: int=defaults['n_estimators'],
+                  estimator: str=defaults['estimator_c'],
+                  optimize_feature_selection: bool=False,
+                  parameter_tuning: bool=False) -> pd.Series:
+    estimator, importance = _fit_estimator(
+        table, metadata, estimator, n_estimators, step, cv, random_state,
+        n_jobs, optimize_feature_selection, parameter_tuning,
+        classification=False)
+
+    # TODO: BEN PLS MAKE THIS RETURN estimator AND WIRE UP YOUR PIPELINE TYPE
+    # HERE AND IN THE PLUGIN SETUP OUTPUT.
+    return importance
+
+
 def regress_samples(output_dir: str, table: pd.DataFrame,
                     metadata: qiime2.NumericMetadataColumn,
                     test_size: float=defaults['test_size'],
@@ -72,7 +110,7 @@ def regress_samples(output_dir: str, table: pd.DataFrame,
                     cv: int=defaults['cv'], random_state: int=None,
                     n_jobs: int=defaults['n_jobs'],
                     n_estimators: int=defaults['n_estimators'],
-                    estimator: str='RandomForestRegressor',
+                    estimator: str=defaults['estimator_r'],
                     optimize_feature_selection: bool=False,
                     stratify: str=False, parameter_tuning: bool=False) -> None:
 

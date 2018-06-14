@@ -12,7 +12,8 @@ from qiime2.plugin import (
 from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.sample_data import SampleData
 from .classify import (
-    classify_samples, regress_samples, maturity_index)
+    classify_samples, regress_samples, maturity_index,
+    fit_classifier, fit_regressor)
 from .visuals import _custom_palettes
 import q2_sample_classifier
 import qiime2.plugin.model as model
@@ -116,9 +117,10 @@ parameters = {
         'random_state': Int,
         'n_jobs': Int,
         'n_estimators': Int % Range(1, None)},
-    'standard': {
+    'splitter': {
         'test_size': Float % Range(0.0, 1.0, inclusive_end=False,
-                                   inclusive_start=False),
+                                   inclusive_start=False)},
+    'standard': {
         'step': Float % Range(0.0, 1.0, inclusive_end=False,
                               inclusive_start=False),
         'cv': Int % Range(1, None),
@@ -139,9 +141,10 @@ parameter_descriptions = {
                 'but will also increase time and memory requirements. This '
                 'parameter only affects ensemble estimators, such as Random '
                 'Forest, AdaBoost, ExtraTrees, and GradientBoosting.')},
-    'standard': {
+    'splitter': {
         'test_size': ('Fraction of input samples to exclude from training set '
-                      'and use for classifier testing.'),
+                      'and use for classifier testing.')},
+    'standard': {
         'step': ('If optimize_feature_selection is True, step is the '
                  'percentage of features to remove at each iteration.'),
         'cv': 'Number of k-fold cross-validations to perform.',
@@ -158,6 +161,16 @@ parameter_descriptions = {
         'estimator': 'Estimator method to use for sample prediction.'}
 }
 
+classifiers = Str % Choices(
+    ['RandomForestRegressor', 'ExtraTreesRegressor',
+     'GradientBoostingRegressor', 'AdaBoostRegressor', 'ElasticNet',
+     'Ridge', 'Lasso', 'KNeighborsRegressor', 'LinearSVR', 'SVR'])}
+
+regressors = Str % Choices(
+    ['RandomForestRegressor', 'ExtraTreesRegressor',
+     'GradientBoostingRegressor', 'AdaBoostRegressor', 'ElasticNet',
+     'Ridge', 'Lasso', 'KNeighborsRegressor', 'LinearSVR', 'SVR'])
+
 
 plugin.visualizers.register_function(
     function=classify_samples,
@@ -165,16 +178,15 @@ plugin.visualizers.register_function(
     parameters={
         **parameters['base'],
         **parameters['standard'],
+        **parameters['splitter'],
         'metadata': MetadataColumn[Categorical],
-        'estimator': Str % Choices(
-            ['RandomForestClassifier', 'ExtraTreesClassifier',
-             'GradientBoostingClassifier', 'AdaBoostClassifier',
-             'KNeighborsClassifier', 'LinearSVC', 'SVC']),
+        'estimator': classifiers,
         'palette': Str % Choices(_custom_palettes().keys())},
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions['base'],
         **parameter_descriptions['standard'],
+        **parameter_descriptions['splitter'],
         'metadata': ('Categorical metadata column to use as prediction '
                      'target.'),
         **parameter_descriptions['estimator'],
@@ -184,28 +196,78 @@ plugin.visualizers.register_function(
         'categorical', 'supervised learning classifier')
 )
 
+
 plugin.visualizers.register_function(
     function=regress_samples,
     inputs=inputs,
     parameters={
         **parameters['base'],
         **parameters['standard'],
+        **parameters['splitter'],
         'metadata': MetadataColumn[Numeric],
         **parameters['regressor'],
-        'estimator': Str % Choices(
-            ['RandomForestRegressor', 'ExtraTreesRegressor',
-             'GradientBoostingRegressor', 'AdaBoostRegressor', 'ElasticNet',
-             'Ridge', 'Lasso', 'KNeighborsRegressor', 'LinearSVR', 'SVR'])},
+        'estimator': regressors},
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions['base'],
         **parameter_descriptions['standard'],
+        **parameter_descriptions['splitter'],
         **parameter_descriptions['regressor'],
         'metadata': 'Numeric metadata column to use as prediction target.',
         **parameter_descriptions['estimator']},
     name='Supervised learning regressor.',
     description=description.format(
         'continuous', 'supervised learning regressor')
+)
+
+
+plugin.visualizers.register_function(
+    function=regress_samples,
+    inputs=inputs,
+    parameters={
+        **parameters['base'],
+        **parameters['standard'],
+        **parameters['splitter'],
+        'metadata': MetadataColumn[Numeric],
+        **parameters['regressor'],
+        'estimator': regressors},
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions['base'],
+        **parameter_descriptions['standard'],
+        **parameter_descriptions['splitter'],
+        **parameter_descriptions['regressor'],
+        'metadata': 'Numeric metadata column to use as prediction target.',
+        **parameter_descriptions['estimator']},
+    name='Supervised learning regressor.',
+    description=description.format(
+        'continuous', 'supervised learning regressor')
+)
+
+
+plugin.methods.register_function(
+    function=fit_classifier,
+    inputs=inputs,
+    parameters={
+        **parameters['base'],
+        **parameters['standard'],
+        'metadata': MetadataColumn[Categorical],
+        'estimator': classifiers},
+    outputs=[('feature_importance', FeatureData[Importance])],
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions['base'],
+        **parameter_descriptions['standard'],
+        'metadata': 'Numeric metadata column to use as prediction target.',
+        **parameter_descriptions['estimator']},
+    output_descriptions={
+        'feature_importance': 'Importance of each input feature to model '
+                              'accuracy.'}
+    name='Fit a supervised learning classifier.',
+    description=description.format(
+        'Fit a supervised learning classifier. Outputs the fit estimator '
+        '(for prediction of test samples and/or unknown samples) and the '
+        'relative importance of each feature for model accuracy.')
 )
 
 

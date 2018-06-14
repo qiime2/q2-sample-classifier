@@ -210,6 +210,44 @@ def _rfecv_feature_selection(feature_data, targets, estimator,
     return rfecv, importance, top_feature_data, rfep
 
 
+def _fit_estimator(features, targets, estimator, n_estimators=100, step=0.05,
+                   cv=5, random_state=None, n_jobs=1,
+                   optimize_feature_selection=False, parameter_tuning=False,
+                   classification=True):
+    # extract column name from CategoricalMetadataColumn
+    column = metadata.to_series().name
+
+    # load data
+    X_train, y_train = _load_data(features, targets)
+
+    # disable feature selection for unsupported estimators
+    optimize_feature_selection, calc_feature_importance = \
+        _disable_feature_selection(estimator, optimize_feature_selection)
+
+    # specify parameters and distributions to sample from for parameter tuning
+    estimator, param_dist, parameter_tuning = _set_parameters_and_estimator(
+        estimator, table, metadata, column, n_estimators, n_jobs, cv,
+        random_state, parameter_tuning, classification=True)
+
+    # optimize training feature count
+    if optimize_feature_selection:
+        X_train, X_test, importance = _optimize_feature_selection(
+            output_dir=None, X_train, X_test=None, y_train, estimator, cv,
+            step, n_jobs)
+
+    # optimize tuning parameters on your training set
+    if parameter_tuning:
+        # tune parameters
+        estimator = _tune_parameters(
+            X_train, y_train, estimator, param_dist, n_iter_search=20,
+            n_jobs=n_jobs, cv=cv, random_state=random_state)
+
+    # fit estimator
+    estimator.fit(X_train, y_train)
+
+    return estimator, importance
+
+
 def split_optimize_classify(features, targets, column, estimator,
                             output_dir, test_size=0.2,
                             step=0.05, cv=5, random_state=None, n_jobs=1,
@@ -283,10 +321,11 @@ def _optimize_feature_selection(output_dir, X_train, X_test, y_train,
     if output_dir:
         rfep.savefig(join(output_dir, 'rfe_plot.png'))
         rfep.savefig(join(output_dir, 'rfe_plot.pdf'))
-    plt.close('all')
+        plt.close('all')
 
     X_train = X_train.loc[:, importance["feature"]]
-    X_test = X_test.loc[:, importance["feature"]]
+    if X_test not None:
+        X_test = X_test.loc[:, importance["feature"]]
 
     return X_train, X_test, importance
 
