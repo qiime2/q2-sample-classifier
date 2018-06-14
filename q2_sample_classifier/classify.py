@@ -119,7 +119,7 @@ def regress_samples_ncv(
     y_pred, importances = nested_cross_validation(
         table, metadata, cv, random_state, n_jobs, n_estimators, estimator,
         stratify, parameter_tuning, classification=False,
-        scoring=mean_squared_error)
+        scoring=mean_squared_error, missing_samples=missing_samples)
     return y_pred, importances
 
 

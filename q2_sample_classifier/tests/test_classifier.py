@@ -482,19 +482,20 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     def test_regress_samples_ncv(self):
         y_pred, importances = regress_samples_ncv(
             self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
-            n_estimators=2, n_jobs=1, stratify=True, parameter_tuning=True)
+            n_estimators=2, n_jobs=1, stratify=True, parameter_tuning=True,
+            missing_samples='ignore')
 
     def test_classify_samples_ncv(self):
         y_pred, importances = classify_samples_ncv(
             self.table_chard_fp, self.mdc_chard_fp, random_state=123,
-            n_estimators=2, n_jobs=1)
+            n_estimators=2, n_jobs=1, missing_samples='ignore')
 
     # test ncv a second time with KNeighborsRegressor (no feature importance)
     def test_regress_samples_ncv_knn(self):
         y_pred, importances = regress_samples_ncv(
             self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
             n_estimators=2, n_jobs=1, stratify=False, parameter_tuning=False,
-            estimator='KNeighborsRegressor')
+            estimator='KNeighborsRegressor', missing_samples='ignore')
 
     def test_regress_samples(self):
         tmpd = join(self.temp_dir.name, 'RandomForestRegressor')
@@ -509,7 +510,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     def test_regress_samples_ncv_accuracy(self):
         y_pred, importances = regress_samples_ncv(
             self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
-            n_estimators=2, n_jobs=1)
+            n_estimators=2, n_jobs=1, missing_samples='ignore')
         pdt.assert_series_equal(y_pred, self.exp_pred)
         pdt.assert_frame_equal(importances, self.exp_imp)
 
