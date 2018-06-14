@@ -21,7 +21,7 @@ from q2_sample_classifier.classify import (
     classify_samples, regress_samples, regress_samples_ncv,
     classify_samples_ncv, maturity_index, detect_outliers)
 from q2_sample_classifier.utilities import (
-    split_optimize_classify, _set_parameters_and_estimator,
+    split_optimize_classify, _set_parameters_and_estimator, _load_data,
     _prepare_training_data, _optimize_feature_selection, _fit_and_predict,
     _calculate_feature_importances, _extract_important_features,
     _train_adaboost_base_estimator, _disable_feature_selection,
@@ -165,6 +165,21 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
                            columns=['o1', 'o2', 'o3'],
                            index=['s1', 's2', 's3'])
         pdt.assert_frame_equal(_null_feature_importance(tab), exp)
+
+    def test_load_data(self):
+        # phony feature table
+        a = self.features
+        a.index = ['peanut', 'bugs', 'qiime2', 'matt', 'pandas']
+        # phony metadata, convert to qiime2.Metadata
+        b = self.targets
+        b.index = ['pandas', 'peanut', 'qiime1', 'flapjacks', 'bugs']
+        b.index.name = '#SampleID'
+        b = qiime2.Metadata(b.to_frame())
+        # test that merge of tables is inner merge
+        intersection = set(('peanut', 'bugs', 'pandas'))
+        feature_data, targets = _load_data(a, b, missing_samples='ignore')
+        self.assertEqual(set(feature_data.index), intersection)
+        self.assertEqual(set(targets.index), intersection)
 
 
 class VisualsTests(SampleClassifierTestPluginBase):

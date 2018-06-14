@@ -94,9 +94,9 @@ def _load_data(feature_data, targets_metadata, missing_samples):
 def _validate_metadata_is_superset(metadata, table):
     metadata_ids = set(metadata.index.tolist())
     table_ids = set(table.index.tolist())
-    if not table_ids.issubset(metadata_ids):
-        raise ValueError('Missing samples in metadata: %r' %
-                         table_ids.difference(metadata_ids))
+    missing_ids = table_ids.difference(metadata_ids)
+    if len(missing_ids) > 0:
+        raise ValueError('Missing samples in metadata: %r' % missing_ids)
 
 
 def _extract_important_features(table, top):
@@ -223,12 +223,14 @@ def _rfecv_feature_selection(feature_data, targets, estimator,
 
 def nested_cross_validation(table, metadata, cv, random_state, n_jobs,
                             n_estimators, estimator, stratify,
-                            parameter_tuning, classification, scoring):
+                            parameter_tuning, classification, scoring,
+                            missing_samples='error'):
     # extract column name from NumericMetadataColumn
     column = metadata.to_series().name
 
     # load feature data, metadata targets
-    X_train, y_train = _load_data(table, metadata)
+    X_train, y_train = _load_data(
+        table, metadata, missing_samples=missing_samples)
 
     # disable feature selection for unsupported estimators
     optimize_feature_selection, calc_feature_importance = \

@@ -113,7 +113,8 @@ def regress_samples_ncv(
         n_jobs: int=defaults['n_jobs'],
         n_estimators: int=defaults['n_estimators'],
         estimator: str='RandomForestRegressor', stratify: str=False,
-        parameter_tuning: bool=False) -> (pd.Series, pd.DataFrame):
+        parameter_tuning: bool=False,
+        missing_samples: str='error') -> (pd.Series, pd.DataFrame):
 
     y_pred, importances = nested_cross_validation(
         table, metadata, cv, random_state, n_jobs, n_estimators, estimator,
@@ -128,12 +129,13 @@ def classify_samples_ncv(
         n_jobs: int=defaults['n_jobs'],
         n_estimators: int=defaults['n_estimators'],
         estimator: str=defaults['estimator_r'],
-        parameter_tuning: bool=False) -> (pd.Series, pd.DataFrame):
+        parameter_tuning: bool=False,
+        missing_samples: str='error') -> (pd.Series, pd.DataFrame):
 
     y_pred, importances = nested_cross_validation(
         table, metadata, cv, random_state, n_jobs, n_estimators, estimator,
         stratify=True, parameter_tuning=parameter_tuning, classification=False,
-        scoring=accuracy_score)
+        scoring=accuracy_score, missing_samples=missing_samples)
     return y_pred, importances
 
 
