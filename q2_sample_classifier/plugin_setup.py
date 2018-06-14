@@ -95,7 +95,6 @@ class PredictionsFormat(model.TextFileFormat):
                     break
 
             _validate_file_not_empty(has_data)
-            return True
 
     def _validate_(self, level):
         record_count_map = {'min': 5, 'max': None}
@@ -143,7 +142,6 @@ class ImportanceFormat(model.TextFileFormat):
                     break
 
             _validate_file_not_empty(has_data)
-            return True
 
     def _validate_(self, level):
         record_count_map = {'min': 5, 'max': None}
