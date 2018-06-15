@@ -72,7 +72,7 @@ TEMPLATES = pkg_resources.resource_filename('q2_sample_classifier', 'assets')
 def _load_data(feature_data, targets_metadata):
     '''Load data and generate training and test sets.
 
-    feature_data: pd.DataFrame or biom.Table
+    feature_data: pd.DataFrame
         feature X sample values.
     targets_metadata: qiime2.Metadata
         target (columns) X sample (rows) values.
@@ -112,7 +112,7 @@ def _split_training_data(feature_data, targets, column, test_size=0.2,
                          stratify=None, random_state=None, drop_na=True):
     '''Split data sets into training and test sets.
 
-    feature_data: pandas.DataFrame or biom.Table
+    feature_data: pandas.DataFrame
         feature X sample values.
     targets: pandas.DataFrame
         target (columns) X sample (rows) values.
