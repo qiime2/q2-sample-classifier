@@ -74,7 +74,7 @@ def fit_classifier(table: pd.DataFrame,
                    n_estimators: int=defaults['n_estimators'],
                    estimator: str=defaults['estimator_c'],
                    optimize_feature_selection: bool=False,
-                   parameter_tuning: bool=False) -> pd.Series:
+                   parameter_tuning: bool=False) -> pd.DataFrame:
     estimator, importance = _fit_estimator(
         table, metadata, estimator, n_estimators, step, cv, random_state,
         n_jobs, optimize_feature_selection, parameter_tuning,
@@ -92,7 +92,7 @@ def fit_regressor(table: pd.DataFrame,
                   n_estimators: int=defaults['n_estimators'],
                   estimator: str=defaults['estimator_r'],
                   optimize_feature_selection: bool=False,
-                  parameter_tuning: bool=False) -> pd.Series:
+                  parameter_tuning: bool=False) -> pd.DataFrame:
     estimator, importance = _fit_estimator(
         table, metadata, estimator, n_estimators, step, cv, random_state,
         n_jobs, optimize_feature_selection, parameter_tuning,
