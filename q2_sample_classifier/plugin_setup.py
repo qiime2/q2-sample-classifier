@@ -8,11 +8,13 @@
 
 from qiime2.plugin import (
     Int, Str, Float, Range, Bool, Plugin, Metadata, Choices, MetadataColumn,
-    Numeric, Categorical, SemanticType, Citations)
+    Numeric, Categorical, SemanticType, Citations, ValidationError)
 from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.sample_data import SampleData
+from q2_types.feature_data import FeatureData
 from .classify import (
-    classify_samples, regress_samples, maturity_index, split_table)
+    classify_samples, regress_samples, maturity_index, regress_samples_ncv,
+    classify_samples_ncv, split_table)
 from .visuals import _custom_palettes
 import q2_sample_classifier
 import qiime2.plugin.model as model
@@ -57,6 +59,100 @@ BooleanSeriesDirectoryFormat = model.SingleFileDirectoryFormat(
     BooleanSeriesFormat)
 
 
+Predictions = SemanticType(
+    'Predictions', variant_of=SampleData.field['type'])
+
+
+def _validate_file_not_empty(has_data):
+    if not has_data:
+        raise ValidationError(
+            "There must be at least one data record present in the "
+            "file in addition to the header line.")
+
+
+class PredictionsFormat(model.TextFileFormat):
+    def _validate(self, n_records=None):
+        with self.open() as fh:
+            # validate header
+            # for now we will not validate any information in the header,
+            # since the name of the predicted column should be flexible. The
+            # header name written by methods in q2-sample-classifier will be
+            # "predicted-*", but this should also accommodate user-defined
+            # column names.
+            line = fh.readline()
+
+            # validate body
+            has_data = False
+            for line_number, line in enumerate(fh, start=2):
+                cells = line.strip().split('\t')
+                if len(cells) != 2:
+                    raise ValidationError(
+                        "Expected data record to be TSV with two "
+                        "fields. Detected {0} fields at line {1}:\n\n{2!r}"
+                        .format(len(cells), line_number, cells))
+                has_data = True
+                if n_records is not None and (line_number - 1) >= n_records:
+                    break
+
+            _validate_file_not_empty(has_data)
+
+    def _validate_(self, level):
+        record_count_map = {'min': 5, 'max': None}
+        self._validate(record_count_map[level])
+
+
+PredictionsDirectoryFormat = model.SingleFileDirectoryFormat(
+    'PredictionsDirectoryFormat', 'predictions.tsv',
+    PredictionsFormat)
+
+
+Importance = SemanticType(
+    'Importance', variant_of=FeatureData.field['type'])
+
+
+class ImportanceFormat(model.TextFileFormat):
+    def _validate(self, n_records=None):
+        with self.open() as fh:
+            # validate header
+            # for now we will not validate any information in the header,
+            # since column names, count etc are frequently unique to individual
+            # estimators. Let's keep this flexible.
+            line = fh.readline()
+
+            # validate body
+            has_data = False
+            for line_number, line in enumerate(fh, start=2):
+                cells = line.strip().split('\t')
+                if len(cells) < 2:
+                    raise ValidationError(
+                        "Expected data record to be TSV with two or more "
+                        "fields. Detected {0} fields at line {1}:\n\n{2!r}"
+                        .format(len(cells), line_number, cells))
+                # all values (except row name) should be numbers
+                try:
+                    [float(c) for c in cells[1:]]
+                except ValueError:
+                    raise ValidationError(
+                        "Columns must contain only numeric values. "
+                        "A non-numeric value ({0!r}) was detected at line "
+                        "{1}.".format(cells[1], line_number))
+
+                has_data = True
+                if n_records is not None and (line_number - 1) >= n_records:
+                    break
+
+            _validate_file_not_empty(has_data)
+
+    def _validate_(self, level):
+        record_count_map = {'min': 5, 'max': None}
+        self._validate(record_count_map[level])
+
+
+ImportanceDirectoryFormat = model.SingleFileDirectoryFormat(
+    'ImportanceDirectoryFormat', 'importance.tsv',
+    ImportanceFormat)
+
+
 def _read_dataframe(fh):
     # Using `dtype=object` and `set_index` to avoid type casting/inference
     # of any columns or the index.
@@ -67,7 +163,7 @@ def _read_dataframe(fh):
 
 
 @plugin.register_transformer
-def _4(data: pd.Series) -> (BooleanSeriesFormat):
+def _1(data: pd.Series) -> (BooleanSeriesFormat):
     ff = BooleanSeriesFormat()
     with ff.open() as fh:
         data.to_csv(fh, sep='\t', header=True)
@@ -75,25 +171,76 @@ def _4(data: pd.Series) -> (BooleanSeriesFormat):
 
 
 @plugin.register_transformer
-def _5(ff: BooleanSeriesFormat) -> (pd.Series):
+def _2(ff: BooleanSeriesFormat) -> (pd.Series):
     with ff.open() as fh:
         df = _read_dataframe(fh)
         return df.iloc[:, 0]
 
 
 @plugin.register_transformer
-def _6(ff: BooleanSeriesFormat) -> (qiime2.Metadata):
+def _3(ff: BooleanSeriesFormat) -> (qiime2.Metadata):
     with ff.open() as fh:
         return qiime2.Metadata(_read_dataframe(fh))
 
 
-plugin.register_formats(BooleanSeriesFormat, BooleanSeriesDirectoryFormat)
+@plugin.register_transformer
+def _4(data: pd.Series) -> (PredictionsFormat):
+    ff = PredictionsFormat()
+    with ff.open() as fh:
+        data.to_csv(fh, sep='\t', header=True)
+    return ff
 
-plugin.register_semantic_types(BooleanSeries)
+
+@plugin.register_transformer
+def _5(ff: PredictionsFormat) -> (pd.Series):
+    with ff.open() as fh:
+        df = _read_dataframe(fh)
+        return df.iloc[:, 0]
+
+
+@plugin.register_transformer
+def _6(ff: PredictionsFormat) -> (qiime2.Metadata):
+    with ff.open() as fh:
+        return qiime2.Metadata(_read_dataframe(fh))
+
+
+@plugin.register_transformer
+def _7(data: pd.DataFrame) -> (ImportanceFormat):
+    ff = ImportanceFormat()
+    with ff.open() as fh:
+        data.to_csv(fh, sep='\t', header=True)
+    return ff
+
+
+@plugin.register_transformer
+def _8(ff: ImportanceFormat) -> (pd.DataFrame):
+    with ff.open() as fh:
+        return _read_dataframe(fh)
+
+
+@plugin.register_transformer
+def _9(ff: ImportanceFormat) -> (qiime2.Metadata):
+    with ff.open() as fh:
+        return qiime2.Metadata(_read_dataframe(fh))
+
+
+plugin.register_formats(BooleanSeriesFormat, BooleanSeriesDirectoryFormat,
+                        ImportanceFormat, ImportanceDirectoryFormat,
+                        PredictionsFormat, PredictionsDirectoryFormat)
+
+plugin.register_semantic_types(BooleanSeries, Importance, Predictions)
 
 plugin.register_semantic_type_to_format(
     SampleData[BooleanSeries],
     artifact_format=BooleanSeriesDirectoryFormat)
+
+plugin.register_semantic_type_to_format(
+    SampleData[Predictions],
+    artifact_format=PredictionsDirectoryFormat)
+
+plugin.register_semantic_type_to_format(
+    FeatureData[Importance],
+    artifact_format=ImportanceDirectoryFormat)
 
 
 description = ('Predicts a {0} sample metadata column using a {1}. Splits '
@@ -103,8 +250,16 @@ description = ('Predicts a {0} sample metadata column using a {1}. Splits '
                'for automated feature extraction and hyperparameter '
                'optimization. The test set validates classification accuracy '
                'of the optimized estimator. Outputs classification results '
-               'for test set. For more details on the learning  algorithm, '
+               'for test set. For more details on the learning algorithm, '
                'see http://scikit-learn.org/stable/supervised_learning.html')
+
+cv_description = ('Predicts a {0} sample metadata column using a {1}. Uses '
+                  'nested stratified k-fold cross validation for automated '
+                  'hyperparameter optimization and sample prediction. Outputs '
+                  'predicted values for each input sample, and relative '
+                  'importance of each feature for model accuracy. For more '
+                  'details on the learning algorithm, see '
+                  'http://scikit-learn.org/stable/supervised_learning.html')
 
 inputs = {'table': FeatureTable[Frequency]}
 
@@ -121,9 +276,10 @@ parameters = {
                                    inclusive_start=False),
         'step': Float % Range(0.0, 1.0, inclusive_end=False,
                               inclusive_start=False),
-        'cv': Int % Range(1, None),
-        'parameter_tuning': Bool,
         'optimize_feature_selection': Bool},
+    'cv': {
+        'cv': Int % Range(1, None),
+        'parameter_tuning': Bool},
     'modified_metadata': {
         'metadata': Metadata,
         'column': Str},
@@ -144,12 +300,13 @@ parameter_descriptions = {
                       'and use for classifier testing.'),
         'step': ('If optimize_feature_selection is True, step is the '
                  'percentage of features to remove at each iteration.'),
-        'cv': 'Number of k-fold cross-validations to perform.',
-        'parameter_tuning': ('Automatically tune hyperparameters using random '
-                             'grid search.'),
         'optimize_feature_selection': ('Automatically optimize input feature '
                                        'selection using recursive feature '
                                        'elimination.')},
+    'cv': {
+        'cv': 'Number of k-fold cross-validations to perform.',
+        'parameter_tuning': ('Automatically tune hyperparameters using random '
+                             'grid search.')},
     'regressor': {
         'stratify': ('Evenly stratify training and test data among metadata '
                      'categories. If True, all values in column must match '
@@ -158,6 +315,13 @@ parameter_descriptions = {
         'estimator': 'Estimator method to use for sample prediction.'}
 }
 
+outputs = [('predictions', SampleData[Predictions]),
+           ('feature_importance', FeatureData[Importance])]
+
+output_descriptions = {
+    'predictions': 'Predicted target values for each input sample.',
+    'feature_importance': 'Importance of each input feature to model accuracy.'
+}
 
 plugin.visualizers.register_function(
     function=classify_samples,
@@ -165,6 +329,7 @@ plugin.visualizers.register_function(
     parameters={
         **parameters['base'],
         **parameters['standard'],
+        **parameters['cv'],
         'metadata': MetadataColumn[Categorical],
         'estimator': Str % Choices(
             ['RandomForestClassifier', 'ExtraTreesClassifier',
@@ -175,6 +340,7 @@ plugin.visualizers.register_function(
     parameter_descriptions={
         **parameter_descriptions['base'],
         **parameter_descriptions['standard'],
+        **parameter_descriptions['cv'],
         'metadata': ('Categorical metadata column to use as prediction '
                      'target.'),
         **parameter_descriptions['estimator'],
@@ -190,6 +356,7 @@ plugin.visualizers.register_function(
     parameters={
         **parameters['base'],
         **parameters['standard'],
+        **parameters['cv'],
         'metadata': MetadataColumn[Numeric],
         **parameters['regressor'],
         'estimator': Str % Choices(
@@ -200,6 +367,7 @@ plugin.visualizers.register_function(
     parameter_descriptions={
         **parameter_descriptions['base'],
         **parameter_descriptions['standard'],
+        **parameter_descriptions['cv'],
         **parameter_descriptions['regressor'],
         'metadata': 'Numeric metadata column to use as prediction target.',
         **parameter_descriptions['estimator']},
@@ -208,6 +376,55 @@ plugin.visualizers.register_function(
         'continuous', 'supervised learning regressor')
 )
 
+plugin.methods.register_function(
+    function=regress_samples_ncv,
+    inputs=inputs,
+    parameters={
+        **parameters['base'],
+        **parameters['cv'],
+        'metadata': MetadataColumn[Numeric],
+        **parameters['regressor'],
+        'estimator': Str % Choices(
+            ['RandomForestRegressor', 'ExtraTreesRegressor',
+             'GradientBoostingRegressor', 'AdaBoostRegressor', 'ElasticNet',
+             'Ridge', 'Lasso', 'KNeighborsRegressor', 'LinearSVR', 'SVR'])},
+    outputs=outputs,
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions['base'],
+        **parameter_descriptions['cv'],
+        **parameter_descriptions['regressor'],
+        'metadata': 'Numeric metadata column to use as prediction target.',
+        **parameter_descriptions['estimator']},
+    output_descriptions=output_descriptions,
+    name='Nested cross-validated supervised learning regressor.',
+    description=cv_description.format(
+        'continuous', 'supervised learning regressor')
+)
+
+plugin.methods.register_function(
+    function=classify_samples_ncv,
+    inputs=inputs,
+    parameters={
+        **parameters['base'],
+        **parameters['cv'],
+        'metadata': MetadataColumn[Categorical],
+        'estimator': Str % Choices(
+            ['RandomForestClassifier', 'ExtraTreesClassifier',
+             'GradientBoostingClassifier', 'AdaBoostClassifier',
+             'KNeighborsClassifier', 'LinearSVC', 'SVC'])},
+    outputs=outputs,
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions['base'],
+        **parameter_descriptions['cv'],
+        'metadata': 'Categorical metadata column to use as prediction target.',
+        **parameter_descriptions['estimator']},
+    output_descriptions=output_descriptions,
+    name='Nested cross-validated supervised learning classifier.',
+    description=cv_description.format(
+        'categorical', 'supervised learning classifier')
+)
 
 plugin.methods.register_function(
     function=split_table,
@@ -248,6 +465,7 @@ plugin.visualizers.register_function(
                     'ElasticNet']),
                 **parameters['base'],
                 **parameters['standard'],
+                **parameters['cv'],
                 'metadata': Metadata,
                 'column': Str,
                 **parameters['regressor'],
@@ -257,6 +475,7 @@ plugin.visualizers.register_function(
     parameter_descriptions={
         **parameter_descriptions['base'],
         **parameter_descriptions['standard'],
+        **parameter_descriptions['cv'],
         'column': 'Numeric metadata column to use as prediction target.',
         'group_by': ('Categorical metadata column to use for plotting and '
                      'significance testing between main treatment groups.'),
