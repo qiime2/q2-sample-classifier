@@ -21,7 +21,7 @@ from q2_sample_classifier.classify import (
     classify_samples, regress_samples, regress_samples_ncv,
     classify_samples_ncv, maturity_index, detect_outliers)
 from q2_sample_classifier.utilities import (
-    split_optimize_classify, _set_parameters_and_estimator,
+    split_optimize_classify, _set_parameters_and_estimator, _load_data,
     _prepare_training_data, _optimize_feature_selection, _fit_and_predict,
     _calculate_feature_importances, _extract_important_features,
     _train_adaboost_base_estimator, _disable_feature_selection,
@@ -165,6 +165,21 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
                            columns=['o1', 'o2', 'o3'],
                            index=['s1', 's2', 's3'])
         pdt.assert_frame_equal(_null_feature_importance(tab), exp)
+
+    def test_load_data(self):
+        # phony feature table
+        a = self.features
+        a.index = ['peanut', 'bugs', 'qiime2', 'matt', 'pandas']
+        # phony metadata, convert to qiime2.Metadata
+        b = self.targets
+        b.index = ['pandas', 'peanut', 'qiime1', 'flapjacks', 'bugs']
+        b.index.name = '#SampleID'
+        b = qiime2.Metadata(b.to_frame())
+        # test that merge of tables is inner merge
+        intersection = set(('peanut', 'bugs', 'pandas'))
+        feature_data, targets = _load_data(a, b, missing_samples='ignore')
+        self.assertEqual(set(feature_data.index), intersection)
+        self.assertEqual(set(targets.index), intersection)
 
 
 class VisualsTests(SampleClassifierTestPluginBase):
@@ -435,7 +450,8 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                          n_estimators=2, n_jobs=1,
                          estimator='RandomForestClassifier',
                          parameter_tuning=True,
-                         optimize_feature_selection=True)
+                         optimize_feature_selection=True,
+                         missing_samples='ignore')
 
     # test that each classifier works and delivers an expected accuracy result
     # when a random seed is set.
@@ -448,13 +464,14 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             estimator, pad, pt = _set_parameters_and_estimator(
                 classifier, self.table_chard_fp, self.md_chard_fp, 'Region',
                 n_estimators=10, n_jobs=1, cv=1,
-                random_state=123, parameter_tuning=False, classification=True)
+                random_state=123, parameter_tuning=False, classification=True,
+                missing_samples='ignore')
             estimator, cm, accuracy, importances = split_optimize_classify(
                 self.table_chard_fp, self.md_chard_fp, 'Region', estimator,
                 tmpd, test_size=0.5, cv=1, random_state=123,
                 n_jobs=1, optimize_feature_selection=False,
                 parameter_tuning=False, param_dist=None,
-                calc_feature_importance=False)
+                calc_feature_importance=False, missing_samples='ignore')
             self.assertAlmostEqual(accuracy, seeded_results[classifier])
             self.assertAlmostEqual(
                 accuracy, seeded_results[classifier], places=4,
@@ -465,19 +482,20 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     def test_regress_samples_ncv(self):
         y_pred, importances = regress_samples_ncv(
             self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
-            n_estimators=2, n_jobs=1, stratify=True, parameter_tuning=True)
+            n_estimators=2, n_jobs=1, stratify=True, parameter_tuning=True,
+            missing_samples='ignore')
 
     def test_classify_samples_ncv(self):
         y_pred, importances = classify_samples_ncv(
             self.table_chard_fp, self.mdc_chard_fp, random_state=123,
-            n_estimators=2, n_jobs=1)
+            n_estimators=2, n_jobs=1, missing_samples='ignore')
 
     # test ncv a second time with KNeighborsRegressor (no feature importance)
     def test_regress_samples_ncv_knn(self):
         y_pred, importances = regress_samples_ncv(
             self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
             n_estimators=2, n_jobs=1, stratify=False, parameter_tuning=False,
-            estimator='KNeighborsRegressor')
+            estimator='KNeighborsRegressor', missing_samples='ignore')
 
     def test_regress_samples(self):
         tmpd = join(self.temp_dir.name, 'RandomForestRegressor')
@@ -485,13 +503,14 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         regress_samples(tmpd, self.table_ecam_fp, self.mdc_ecam_fp,
                         test_size=0.5, cv=3,
                         n_estimators=2, n_jobs=1,
-                        estimator='RandomForestRegressor')
+                        estimator='RandomForestRegressor',
+                        missing_samples='ignore')
 
     # test that ncv gives expected results
     def test_regress_samples_ncv_accuracy(self):
         y_pred, importances = regress_samples_ncv(
             self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
-            n_estimators=2, n_jobs=1)
+            n_estimators=2, n_jobs=1, missing_samples='ignore')
         pdt.assert_series_equal(y_pred, self.exp_pred)
         pdt.assert_frame_equal(importances, self.exp_imp)
 
@@ -507,13 +526,15 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             estimator, pad, pt = _set_parameters_and_estimator(
                 regressor, self.table_ecam_fp, self.md_ecam_fp, 'month',
                 n_estimators=10, n_jobs=1, cv=1,
-                random_state=123, parameter_tuning=False, classification=False)
+                random_state=123, parameter_tuning=False, classification=False,
+                missing_samples='ignore')
             estimator, cm, accuracy, importances = split_optimize_classify(
                 self.table_ecam_fp, self.md_ecam_fp, 'month', estimator,
                 tmpd, test_size=0.5, cv=1, random_state=123,
                 n_jobs=1, optimize_feature_selection=False,
                 parameter_tuning=False, param_dist=None, classification=False,
-                calc_feature_importance=False, scoring=mean_squared_error)
+                calc_feature_importance=False, scoring=mean_squared_error,
+                missing_samples='ignore')
             self.assertAlmostEqual(
                 accuracy, seeded_results[regressor], places=4,
                 msg='Accuracy of %s regressor was %f, but expected %f' % (
@@ -533,10 +554,12 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         estimator, pad, pt = _set_parameters_and_estimator(
             'RandomForestRegressor', self.table_ecam_fp, self.md_ecam_fp,
             'month', n_estimators=10, n_jobs=1, cv=1,
-            random_state=123, parameter_tuning=False, classification=False)
+            random_state=123, parameter_tuning=False, classification=False,
+            missing_samples='ignore')
         X_train, X_test, y_train, y_test = _prepare_training_data(
             self.table_ecam_fp, self.md_ecam_fp, 'month',
-            test_size=0.1, random_state=123, load_data=True, stratify=False)
+            test_size=0.1, random_state=123, load_data=True, stratify=False,
+            missing_samples='ignore')
         X_train, X_test, importance = _optimize_feature_selection(
             self.temp_dir.name, X_train, X_test, y_train, estimator, cv=3,
             step=0.2, n_jobs=1)
@@ -556,7 +579,8 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         abe = _train_adaboost_base_estimator(
             self.table_chard_fp, self.mdc_chard_fp, 'Region',
             n_estimators=10, n_jobs=1, cv=3, random_state=None,
-            parameter_tuning=True, classification=True)
+            parameter_tuning=True, classification=True,
+            missing_samples='ignore')
         self.assertEqual(type(abe), AdaBoostClassifier)
 
     # test some invalid inputs/edge cases
@@ -564,11 +588,13 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         estimator, pad, pt = _set_parameters_and_estimator(
             'RandomForestClassifier', self.table_chard_fp, self.md_chard_fp,
             'Region', n_estimators=10, n_jobs=1, cv=1,
-            random_state=123, parameter_tuning=False, classification=True)
+            random_state=123, parameter_tuning=False, classification=True,
+            missing_samples='ignore')
         regressor, pad, pt = _set_parameters_and_estimator(
             'RandomForestRegressor', self.table_chard_fp, self.md_chard_fp,
             'Region', n_estimators=10, n_jobs=1, cv=1,
-            random_state=123, parameter_tuning=False, classification=True)
+            random_state=123, parameter_tuning=False, classification=True,
+            missing_samples='ignore')
         # zero samples (if mapping file and table have no common samples)
         with self.assertRaisesRegex(ValueError, "metadata"):
             estimator, cm, accuracy, importances = split_optimize_classify(
@@ -576,7 +602,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 self.temp_dir.name, test_size=0.5, cv=1, random_state=123,
                 n_jobs=1, optimize_feature_selection=False,
                 parameter_tuning=False, param_dist=None,
-                calc_feature_importance=False)
+                calc_feature_importance=False, missing_samples='ignore')
         # too few samples to stratify
         with self.assertRaisesRegex(ValueError, "metadata"):
             estimator, cm, accuracy, importances = split_optimize_classify(
@@ -584,7 +610,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 self.temp_dir.name, test_size=0.9, cv=1, random_state=123,
                 n_jobs=1, optimize_feature_selection=False,
                 parameter_tuning=False, param_dist=None,
-                calc_feature_importance=False)
+                calc_feature_importance=False, missing_samples='ignore')
         # regressor chosen for classification problem
         with self.assertRaisesRegex(ValueError, "convert"):
             estimator, cm, accuracy, importances = split_optimize_classify(
@@ -592,13 +618,21 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 self.temp_dir.name, test_size=0.5, cv=1, random_state=123,
                 n_jobs=1, optimize_feature_selection=False,
                 parameter_tuning=False, param_dist=None,
-                calc_feature_importance=False)
+                calc_feature_importance=False, missing_samples='ignore')
+        # metadata is a subset of feature table ids... raise error or else
+        # an inner merge is taken, causing samples to be silently dropped!
+        with self.assertRaisesRegex(ValueError, 'Missing samples'):
+            md = self.md_chard_fp.filter_ids(self.md_chard_fp.ids[:5])
+            estimator, cm, accuracy, importances = split_optimize_classify(
+                self.table_chard_fp, md, 'Region', regressor,
+                self.temp_dir.name, missing_samples='error')
 
     # test experimental functions
     def test_maturity_index(self):
         maturity_index(self.temp_dir.name, self.table_ecam_fp, self.md_ecam_fp,
                        column='month', group_by='delivery', random_state=123,
-                       n_jobs=1, control='Vaginal', test_size=0.4)
+                       n_jobs=1, control='Vaginal', test_size=0.4,
+                       missing_samples='ignore')
 
     def test_detect_outliers(self):
         detect_outliers(self.table_chard_fp, self.md_chard_fp,
