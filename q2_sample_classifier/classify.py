@@ -9,15 +9,19 @@
 
 from sklearn.ensemble import IsolationForest
 from sklearn.metrics import mean_squared_error, accuracy_score
+from sklearn.feature_extraction import DictVectorizer
+from sklearn.pipeline import Pipeline
 
 import qiime2
 import pandas as pd
+import biom
 
 from .utilities import (split_optimize_classify, _visualize, _load_data,
                         _maz_score, _visualize_maturity_index,
                         _set_parameters_and_estimator,
                         _disable_feature_selection, _select_estimator,
-                        nested_cross_validation, _fit_estimator)
+                        nested_cross_validation, _fit_estimator,
+                        _map_params_to_pipeline)
 
 
 defaults = {
@@ -32,7 +36,7 @@ defaults = {
 }
 
 
-def classify_samples(output_dir: str, table: pd.DataFrame,
+def classify_samples(output_dir: str, table: biom.Table,
                      metadata: qiime2.CategoricalMetadataColumn,
                      test_size: float=defaults['test_size'],
                      step: float=defaults['step'],
@@ -67,7 +71,7 @@ def classify_samples(output_dir: str, table: pd.DataFrame,
                optimize_feature_selection, title='classification predictions')
 
 
-def fit_classifier(table: pd.DataFrame,
+def fit_classifier(table: biom.Table,
                    metadata: qiime2.CategoricalMetadataColumn,
                    step: float=defaults['step'], cv: int=defaults['cv'],
                    random_state: int=None, n_jobs: int=defaults['n_jobs'],
@@ -85,7 +89,7 @@ def fit_classifier(table: pd.DataFrame,
     return importance
 
 
-def fit_regressor(table: pd.DataFrame,
+def fit_regressor(table: biom.Table,
                   metadata: qiime2.CategoricalMetadataColumn,
                   step: float=defaults['step'], cv: int=defaults['cv'],
                   random_state: int=None, n_jobs: int=defaults['n_jobs'],
@@ -103,7 +107,7 @@ def fit_regressor(table: pd.DataFrame,
     return importance
 
 
-def regress_samples(output_dir: str, table: pd.DataFrame,
+def regress_samples(output_dir: str, table: biom.Table,
                     metadata: qiime2.NumericMetadataColumn,
                     test_size: float=defaults['test_size'],
                     step: float=defaults['step'],
@@ -139,7 +143,7 @@ def regress_samples(output_dir: str, table: pd.DataFrame,
 
 
 def regress_samples_ncv(
-        table: pd.DataFrame, metadata: qiime2.NumericMetadataColumn,
+        table: biom.Table, metadata: qiime2.NumericMetadataColumn,
         cv: int=defaults['cv'], random_state: int=None,
         n_jobs: int=defaults['n_jobs'],
         n_estimators: int=defaults['n_estimators'],
@@ -154,7 +158,7 @@ def regress_samples_ncv(
 
 
 def classify_samples_ncv(
-        table: pd.DataFrame, metadata: qiime2.CategoricalMetadataColumn,
+        table: biom.Table, metadata: qiime2.CategoricalMetadataColumn,
         cv: int=defaults['cv'], random_state: int=None,
         n_jobs: int=defaults['n_jobs'],
         n_estimators: int=defaults['n_estimators'],
@@ -168,7 +172,7 @@ def classify_samples_ncv(
     return y_pred, importances
 
 
-def maturity_index(output_dir: str, table: pd.DataFrame,
+def maturity_index(output_dir: str, table: biom.Table,
                    metadata: qiime2.Metadata, column: str, group_by: str,
                    control: str, estimator: str=defaults['estimator_r'],
                    n_estimators: int=defaults['n_estimators'],
@@ -181,11 +185,14 @@ def maturity_index(output_dir: str, table: pd.DataFrame,
 
     # select estimator
     param_dist, estimator = _select_estimator(estimator, n_jobs, n_estimators)
+    estimator = Pipeline([('dv', DictVectorizer()), ('est', estimator)])
+    param_dist = _map_params_to_pipeline(param_dist)
 
     # split input data into control and treatment groups
     table, metadata = _load_data(table, metadata)
-    md_control = metadata[metadata[group_by] == control]
-    table_control = table.loc[list(md_control.index.values)]
+    fancy_index = metadata[group_by] == control
+    md_control = metadata[fancy_index]
+    table_control = [t for t, f in zip(table, fancy_index) if f]
 
     # train model on control data
     estimator, cm, accuracy, importances = split_optimize_classify(
@@ -197,7 +204,8 @@ def maturity_index(output_dir: str, table: pd.DataFrame,
         scoring=mean_squared_error, stratify=stratify, classification=False)
 
     # predict treatment data
-    table = table.loc[:, importances.index]
+    index = importances.index
+    table = [{k: r[k] for k in r.keys() & index} for r in table]
     y_pred = estimator.predict(table)
     predicted_column = 'predicted {0}'.format(column)
     metadata[predicted_column] = y_pred
@@ -207,6 +215,9 @@ def maturity_index(output_dir: str, table: pd.DataFrame,
         metadata, predicted_column, column, group_by, control)
 
     # visualize
+    table = estimator.named_steps.dv.transform(table).todense()
+    table = pd.DataFrame(table, index=metadata.index,
+                         columns=estimator.named_steps.dv.get_feature_names())
     _visualize_maturity_index(table, metadata, group_by, column,
                               predicted_column, importances, estimator,
                               accuracy, output_dir, maz_stats=maz_stats)
@@ -214,7 +225,7 @@ def maturity_index(output_dir: str, table: pd.DataFrame,
 
 # The following method is experimental and is not registered in the current
 # release. Any use of the API is at user's own risk.
-def detect_outliers(table: pd.DataFrame,
+def detect_outliers(table: biom.Table,
                     metadata: qiime2.Metadata, subset_column: str=None,
                     subset_value: str=None,
                     n_estimators: int=defaults['n_estimators'],
@@ -225,8 +236,9 @@ def detect_outliers(table: pd.DataFrame,
 
     # if opting to train on a subset, choose subset that fits criteria
     if subset_column and subset_value:
-        y_train = sample_md[sample_md[subset_column] == subset_value]
-        X_train = table.loc[list(y_train.index.values)]
+        X_train = \
+            [f for s, f in
+             zip(sample_md[subset_column] == subset_value, features) if s]
     # raise error if subset_column or subset_value (but not both) are set
     elif subset_column is not None or subset_value is not None:
         raise ValueError((
@@ -236,14 +248,16 @@ def detect_outliers(table: pd.DataFrame,
         X_train = features
 
     # fit isolation tree
-    estimator = IsolationForest(n_jobs=n_jobs, n_estimators=n_estimators,
-                                contamination=contamination,
-                                random_state=random_state)
+    estimator = Pipeline(
+        [('dv', DictVectorizer()),
+         ('est', IsolationForest(n_jobs=n_jobs, n_estimators=n_estimators,
+                                 contamination=contamination,
+                                 random_state=random_state))])
     estimator.fit(X_train)
 
     # predict outlier status
     y_pred = estimator.predict(features)
-    y_pred = pd.Series(y_pred, index=features.index)
+    y_pred = pd.Series(y_pred, index=sample_md.index)
     # predict reports whether sample is an inlier; change to outlier status
     y_pred[y_pred == -1] = 'True'
     y_pred[y_pred == 1] = 'False'
