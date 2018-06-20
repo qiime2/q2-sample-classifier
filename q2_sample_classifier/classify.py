@@ -42,7 +42,8 @@ def classify_samples(output_dir: str, table: pd.DataFrame,
                      estimator: str=defaults['estimator_c'],
                      optimize_feature_selection: bool=False,
                      parameter_tuning: bool=False,
-                     palette: str=defaults['palette']) -> None:
+                     palette: str=defaults['palette'],
+                     missing_samples: str='error') -> None:
 
     # extract column name from CategoricalMetadataColumn
     column = metadata.to_series().name
@@ -54,14 +55,16 @@ def classify_samples(output_dir: str, table: pd.DataFrame,
     # specify parameters and distributions to sample from for parameter tuning
     estimator, param_dist, parameter_tuning = _set_parameters_and_estimator(
         estimator, table, metadata, column, n_estimators, n_jobs, cv,
-        random_state, parameter_tuning, classification=True)
+        random_state, parameter_tuning, classification=True,
+        missing_samples=missing_samples)
 
     estimator, cm, accuracy, importances = split_optimize_classify(
         table, metadata, column, estimator, output_dir,
         test_size=test_size, step=step, cv=cv, random_state=random_state,
         n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=calc_feature_importance, palette=palette)
+        calc_feature_importance=calc_feature_importance, palette=palette,
+        missing_samples=missing_samples)
 
     _visualize(output_dir, estimator, cm, accuracy, importances,
                optimize_feature_selection, title='classification predictions')
@@ -74,11 +77,12 @@ def fit_classifier(table: pd.DataFrame,
                    n_estimators: int=defaults['n_estimators'],
                    estimator: str=defaults['estimator_c'],
                    optimize_feature_selection: bool=False,
-                   parameter_tuning: bool=False) -> pd.DataFrame:
+                   parameter_tuning: bool=False,
+                   missing_samples: str='error') -> pd.DataFrame:
     estimator, importance = _fit_estimator(
         table, metadata, estimator, n_estimators, step, cv, random_state,
         n_jobs, optimize_feature_selection, parameter_tuning,
-        classification=True)
+        missing_samples=missing_samples, classification=True)
 
     # TODO: BEN PLS MAKE THIS RETURN estimator AND WIRE UP YOUR PIPELINE TYPE
     # HERE AND IN THE PLUGIN SETUP OUTPUT.
@@ -92,11 +96,12 @@ def fit_regressor(table: pd.DataFrame,
                   n_estimators: int=defaults['n_estimators'],
                   estimator: str=defaults['estimator_r'],
                   optimize_feature_selection: bool=False,
-                  parameter_tuning: bool=False) -> pd.DataFrame:
+                  parameter_tuning: bool=False,
+                  missing_samples: str='error') -> pd.DataFrame:
     estimator, importance = _fit_estimator(
         table, metadata, estimator, n_estimators, step, cv, random_state,
         n_jobs, optimize_feature_selection, parameter_tuning,
-        classification=False)
+        missing_samples=missing_samples, classification=False)
 
     # TODO: BEN PLS MAKE THIS RETURN estimator AND WIRE UP YOUR PIPELINE TYPE
     # HERE AND IN THE PLUGIN SETUP OUTPUT.
@@ -112,7 +117,8 @@ def regress_samples(output_dir: str, table: pd.DataFrame,
                     n_estimators: int=defaults['n_estimators'],
                     estimator: str=defaults['estimator_r'],
                     optimize_feature_selection: bool=False,
-                    stratify: str=False, parameter_tuning: bool=False) -> None:
+                    stratify: str=False, parameter_tuning: bool=False,
+                    missing_samples: str='error') -> None:
 
     # extract column name from NumericMetadataColumn
     column = metadata.to_series().name
@@ -124,7 +130,8 @@ def regress_samples(output_dir: str, table: pd.DataFrame,
     # specify parameters and distributions to sample from for parameter tuning
     estimator, param_dist, parameter_tuning = _set_parameters_and_estimator(
         estimator, table, metadata, column, n_estimators, n_jobs, cv,
-        random_state, parameter_tuning, classification=False)
+        random_state, parameter_tuning, classification=True,
+        missing_samples=missing_samples)
 
     estimator, cm, accuracy, importances = split_optimize_classify(
         table, metadata, column, estimator, output_dir,
@@ -132,7 +139,8 @@ def regress_samples(output_dir: str, table: pd.DataFrame,
         n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
         parameter_tuning=parameter_tuning, param_dist=param_dist,
         calc_feature_importance=calc_feature_importance,
-        scoring=mean_squared_error, stratify=stratify, classification=False)
+        scoring=mean_squared_error, stratify=stratify, classification=False,
+        missing_samples=missing_samples)
 
     _visualize(output_dir, estimator, cm, accuracy, importances,
                optimize_feature_selection, title='regression predictions')
@@ -144,12 +152,13 @@ def regress_samples_ncv(
         n_jobs: int=defaults['n_jobs'],
         n_estimators: int=defaults['n_estimators'],
         estimator: str=defaults['estimator_r'], stratify: str=False,
-        parameter_tuning: bool=False) -> (pd.Series, pd.DataFrame):
+        parameter_tuning: bool=False,
+        missing_samples: str='error') -> (pd.Series, pd.DataFrame):
 
     y_pred, importances = nested_cross_validation(
         table, metadata, cv, random_state, n_jobs, n_estimators, estimator,
         stratify, parameter_tuning, classification=False,
-        scoring=mean_squared_error)
+        scoring=mean_squared_error, missing_samples=missing_samples)
     return y_pred, importances
 
 
@@ -159,12 +168,13 @@ def classify_samples_ncv(
         n_jobs: int=defaults['n_jobs'],
         n_estimators: int=defaults['n_estimators'],
         estimator: str=defaults['estimator_c'],
-        parameter_tuning: bool=False) -> (pd.Series, pd.DataFrame):
+        parameter_tuning: bool=False,
+        missing_samples: str='error') -> (pd.Series, pd.DataFrame):
 
     y_pred, importances = nested_cross_validation(
         table, metadata, cv, random_state, n_jobs, n_estimators, estimator,
         stratify=True, parameter_tuning=parameter_tuning, classification=False,
-        scoring=accuracy_score)
+        scoring=accuracy_score, missing_samples=missing_samples)
     return y_pred, importances
 
 
@@ -177,13 +187,14 @@ def maturity_index(output_dir: str, table: pd.DataFrame,
                    random_state: int=None,
                    n_jobs: int=defaults['n_jobs'], parameter_tuning: bool=True,
                    optimize_feature_selection: bool=True, stratify: str=False,
-                   maz_stats: bool=True) -> None:
+                   maz_stats: bool=True, missing_samples: str='error') -> None:
 
     # select estimator
     param_dist, estimator = _select_estimator(estimator, n_jobs, n_estimators)
 
     # split input data into control and treatment groups
-    table, metadata = _load_data(table, metadata)
+    table, metadata = _load_data(
+        table, metadata, missing_samples=missing_samples)
     md_control = metadata[metadata[group_by] == control]
     table_control = table.loc[list(md_control.index.values)]
 
@@ -194,7 +205,8 @@ def maturity_index(output_dir: str, table: pd.DataFrame,
         step=step, cv=cv, parameter_tuning=parameter_tuning,
         optimize_feature_selection=optimize_feature_selection,
         param_dist=param_dist, calc_feature_importance=True, load_data=False,
-        scoring=mean_squared_error, stratify=stratify, classification=False)
+        scoring=mean_squared_error, stratify=stratify, classification=False,
+        missing_samples='ignore')
 
     # predict treatment data
     table = table.loc[:, importances.index]
@@ -219,9 +231,11 @@ def detect_outliers(table: pd.DataFrame,
                     subset_value: str=None,
                     n_estimators: int=defaults['n_estimators'],
                     contamination: float=0.05, random_state: int=None,
-                    n_jobs: int=defaults['n_jobs']) -> (pd.Series):
+                    n_jobs: int=defaults['n_jobs'],
+                    missing_samples: str='ignore') -> (pd.Series):
 
-    features, sample_md = _load_data(table, metadata)
+    features, sample_md = _load_data(
+        table, metadata, missing_samples=missing_samples)
 
     # if opting to train on a subset, choose subset that fits criteria
     if subset_column and subset_value:
