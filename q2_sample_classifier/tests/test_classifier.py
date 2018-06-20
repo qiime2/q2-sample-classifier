@@ -6,12 +6,18 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
-import qiime2
-import pandas as pd
-import numpy as np
+import os
 from os import mkdir
 from os.path import join
 from warnings import filterwarnings
+import tempfile
+import shutil
+import json
+import tarfile
+
+import qiime2
+import pandas as pd
+import numpy as np
 from sklearn.exceptions import ConvergenceWarning
 from q2_sample_classifier.visuals import (
     _two_way_anova, _pairwise_stats, _linear_regress,
@@ -26,22 +32,23 @@ from q2_sample_classifier.utilities import (
     _calculate_feature_importances, _extract_important_features,
     _train_adaboost_base_estimator, _disable_feature_selection,
     _mean_feature_importance, _null_feature_importance, _extract_features)
-from q2_sample_classifier.plugin_setup import (
+from q2_sample_classifier import (
     BooleanSeriesFormat, BooleanSeriesDirectoryFormat, BooleanSeries,
     PredictionsFormat, PredictionsDirectoryFormat, Predictions,
-    ImportanceFormat, ImportanceDirectoryFormat, Importance)
+    ImportanceFormat, ImportanceDirectoryFormat, Importance,
+    SampleEstimatorDirFmt, PickleFormat, SampleEstimator)
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
-import tempfile
-import shutil
 import pkg_resources
 from qiime2.plugin.testing import TestPluginBase
 from qiime2.plugin import ValidationError
+import sklearn
 from sklearn.metrics import mean_squared_error
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.svm import LinearSVC
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.pipeline import Pipeline
+from sklearn.externals import joblib
 import pandas.util.testing as pdt
 import biom
 
@@ -522,7 +529,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
 
     # test that fit_* methods output consistent importance scores
     def test_fit_regressor(self):
-        importances = fit_regressor(
+        pipeline, importances = fit_regressor(
             self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
             n_estimators=2, n_jobs=1)
         exp_imp = pd.DataFrame.from_csv(
@@ -533,7 +540,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     # fit_regressor, so importance score consistency is covered by the above
     # test.
     def test_fit_classifier(self):
-        fit_classifier(
+        pipeline, importances = fit_classifier(
             self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
             n_estimators=2, n_jobs=1, optimize_feature_selection=True,
             parameter_tuning=True)
@@ -629,6 +636,102 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             detect_outliers(self.table_chard_fp, self.md_chard_fp,
                             random_state=123, n_jobs=1, contamination=0.05,
                             subset_column=None, subset_value=1)
+
+
+class SampleEstimatorTestBase(SampleClassifierTestPluginBase):
+    package = 'q2_sample_classifier.tests'
+
+    def setUp(self):
+        super().setUp()
+
+        def _load_biom(table_fp):
+            table_fp = self.get_data_path(table_fp)
+            table = qiime2.Artifact.load(table_fp)
+            table = table.view(biom.Table)
+            return table
+
+        def _load_nmc(md_fp, column):
+            md_fp = self.get_data_path(md_fp)
+            md = pd.DataFrame.from_csv(md_fp, sep='\t')
+            md = qiime2.NumericMetadataColumn(md[column])
+            return md
+
+        table_ecam_fp = _load_biom('ecam-table-maturity.qza')
+        mdc_ecam_fp = _load_nmc('ecam_map_maturity.txt', 'month')
+
+        pipeline, importances = fit_classifier(
+            table_ecam_fp, mdc_ecam_fp, random_state=123,
+            n_estimators=2, n_jobs=1, optimize_feature_selection=True,
+            parameter_tuning=True)
+        transformer = self.get_transformer(
+            Pipeline, SampleEstimatorDirFmt)
+        self._sklp = transformer(pipeline)
+        sklearn_pipeline = self._sklp.sklearn_pipeline.view(PickleFormat)
+        self.sklearn_pipeline = str(sklearn_pipeline)
+
+    def _custom_setup(self, version):
+        with open(os.path.join(self.temp_dir.name,
+                               'sklearn_version.json'), 'w') as fh:
+            fh.write(json.dumps({'sklearn-version': version}))
+        shutil.copy(self.sklearn_pipeline, self.temp_dir.name)
+        return SampleEstimatorDirFmt(
+            self.temp_dir.name, mode='r')
+
+
+class TestTypes(SampleClassifierTestPluginBase):
+    def test_taxonomic_classifier_semantic_type_registration(self):
+        self.assertRegisteredSemanticType(SampleEstimator)
+
+    def test_taxonomic_classifier_semantic_type_to_format_registration(self):
+        self.assertSemanticTypeRegisteredToFormat(
+            SampleEstimator, SampleEstimatorDirFmt)
+
+
+class TestFormats(SampleEstimatorTestBase):
+    def test_taxonomic_classifier_dir_fmt(self):
+        format = self._custom_setup(sklearn.__version__)
+
+        # Should not error
+        format.validate()
+
+
+class TestTransformers(SampleEstimatorTestBase):
+    def test_old_sklearn_version(self):
+        transformer = self.get_transformer(
+            SampleEstimatorDirFmt, Pipeline)
+        input = self._custom_setup('a very old version')
+        with self.assertRaises(ValueError):
+            transformer(input)
+
+    def test_taxo_class_dir_fmt_to_taxo_class_result(self):
+        input = self._custom_setup(sklearn.__version__)
+
+        transformer = self.get_transformer(
+            SampleEstimatorDirFmt, Pipeline)
+        obs = transformer(input)
+
+        self.assertTrue(obs)
+
+    def test_taxo_class_result_to_taxo_class_dir_fmt(self):
+        def read_pipeline(pipeline_filepath):
+            with tarfile.open(pipeline_filepath) as tar:
+                dirname = tempfile.mkdtemp()
+                tar.extractall(dirname)
+                pipeline = joblib.load(os.path.join(dirname,
+                                       'sklearn_pipeline.pkl'))
+                for fn in tar.getnames():
+                    os.unlink(os.path.join(dirname, fn))
+                os.rmdir(dirname)
+            return pipeline
+
+        exp = read_pipeline(self.sklearn_pipeline)
+        transformer = self.get_transformer(
+            Pipeline, SampleEstimatorDirFmt)
+        obs = transformer(exp)
+        sklearn_pipeline = obs.sklearn_pipeline.view(PickleFormat)
+        obs_pipeline = read_pipeline(str(sklearn_pipeline))
+        obs = obs_pipeline
+        self.assertTrue(obs)
 
 
 md = pd.DataFrame([(1, 'a', 0.11), (1, 'a', 0.12), (1, 'a', 0.13),

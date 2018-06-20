@@ -78,15 +78,13 @@ def fit_classifier(table: biom.Table,
                    n_estimators: int=defaults['n_estimators'],
                    estimator: str=defaults['estimator_c'],
                    optimize_feature_selection: bool=False,
-                   parameter_tuning: bool=False) -> pd.Series:
+                   parameter_tuning: bool=False) -> (Pipeline, pd.DataFrame):
     estimator, importance = _fit_estimator(
         table, metadata, estimator, n_estimators, step, cv, random_state,
         n_jobs, optimize_feature_selection, parameter_tuning,
         classification=True)
 
-    # TODO: BEN PLS MAKE THIS RETURN estimator AND WIRE UP YOUR PIPELINE TYPE
-    # HERE AND IN THE PLUGIN SETUP OUTPUT.
-    return importance
+    return estimator, importance
 
 
 def fit_regressor(table: biom.Table,
@@ -96,15 +94,13 @@ def fit_regressor(table: biom.Table,
                   n_estimators: int=defaults['n_estimators'],
                   estimator: str=defaults['estimator_r'],
                   optimize_feature_selection: bool=False,
-                  parameter_tuning: bool=False) -> pd.Series:
+                  parameter_tuning: bool=False) -> (Pipeline, pd.DataFrame):
     estimator, importance = _fit_estimator(
         table, metadata, estimator, n_estimators, step, cv, random_state,
         n_jobs, optimize_feature_selection, parameter_tuning,
         classification=False)
 
-    # TODO: BEN PLS MAKE THIS RETURN estimator AND WIRE UP YOUR PIPELINE TYPE
-    # HERE AND IN THE PLUGIN SETUP OUTPUT.
-    return importance
+    return estimator, importance
 
 
 def regress_samples(output_dir: str, table: biom.Table,

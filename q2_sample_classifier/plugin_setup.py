@@ -6,9 +6,11 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
+import importlib
+
 from qiime2.plugin import (
     Int, Str, Float, Range, Bool, Plugin, Metadata, Choices, MetadataColumn,
-    Numeric, Categorical, SemanticType, Citations, ValidationError)
+    Numeric, Categorical, Citations)
 from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
@@ -17,10 +19,6 @@ from .classify import (
     classify_samples_ncv, fit_classifier, fit_regressor)
 from .visuals import _custom_palettes
 import q2_sample_classifier
-import qiime2.plugin.model as model
-import pandas as pd
-import qiime2
-
 
 citations = Citations.load('citations.bib', package='q2_sample_classifier')
 
@@ -38,210 +36,11 @@ plugin = Plugin(
     citations=[citations['Bokulich306167']]
 )
 
-
-BooleanSeries = SemanticType(
-    'BooleanSeries', variant_of=SampleData.field['type'])
-
-
-class BooleanSeriesFormat(model.TextFileFormat):
-    def sniff(self):
-        with self.open() as fh:
-            line = fh.readline()
-            for line, _ in zip(fh, range(5)):
-                cells = line.strip().split('\t')
-                if len(cells) != 2 or str(cells[1]) not in ('True', 'False'):
-                    return False
-            return True
-
-
-BooleanSeriesDirectoryFormat = model.SingleFileDirectoryFormat(
-    'BooleanSeriesDirectoryFormat', 'outliers.tsv',
-    BooleanSeriesFormat)
-
-
-Predictions = SemanticType(
-    'Predictions', variant_of=SampleData.field['type'])
-
-
-def _validate_file_not_empty(has_data):
-    if not has_data:
-        raise ValidationError(
-            "There must be at least one data record present in the "
-            "file in addition to the header line.")
-
-
-class PredictionsFormat(model.TextFileFormat):
-    def _validate(self, n_records=None):
-        with self.open() as fh:
-            # validate header
-            # for now we will not validate any information in the header,
-            # since the name of the predicted column should be flexible. The
-            # header name written by methods in q2-sample-classifier will be
-            # "predicted-*", but this should also accommodate user-defined
-            # column names.
-            line = fh.readline()
-
-            # validate body
-            has_data = False
-            for line_number, line in enumerate(fh, start=2):
-                cells = line.strip().split('\t')
-                if len(cells) != 2:
-                    raise ValidationError(
-                        "Expected data record to be TSV with two "
-                        "fields. Detected {0} fields at line {1}:\n\n{2!r}"
-                        .format(len(cells), line_number, cells))
-                has_data = True
-                if n_records is not None and (line_number - 1) >= n_records:
-                    break
-
-            _validate_file_not_empty(has_data)
-
-    def _validate_(self, level):
-        record_count_map = {'min': 5, 'max': None}
-        self._validate(record_count_map[level])
-
-
-PredictionsDirectoryFormat = model.SingleFileDirectoryFormat(
-    'PredictionsDirectoryFormat', 'predictions.tsv',
-    PredictionsFormat)
-
-
-Importance = SemanticType(
-    'Importance', variant_of=FeatureData.field['type'])
-
-
-class ImportanceFormat(model.TextFileFormat):
-    def _validate(self, n_records=None):
-        with self.open() as fh:
-            # validate header
-            # for now we will not validate any information in the header,
-            # since column names, count etc are frequently unique to individual
-            # estimators. Let's keep this flexible.
-            line = fh.readline()
-
-            # validate body
-            has_data = False
-            for line_number, line in enumerate(fh, start=2):
-                cells = line.strip().split('\t')
-                if len(cells) < 2:
-                    raise ValidationError(
-                        "Expected data record to be TSV with two or more "
-                        "fields. Detected {0} fields at line {1}:\n\n{2!r}"
-                        .format(len(cells), line_number, cells))
-                # all values (except row name) should be numbers
-                try:
-                    [float(c) for c in cells[1:]]
-                except ValueError:
-                    raise ValidationError(
-                        "Columns must contain only numeric values. "
-                        "A non-numeric value ({0!r}) was detected at line "
-                        "{1}.".format(cells[1], line_number))
-
-                has_data = True
-                if n_records is not None and (line_number - 1) >= n_records:
-                    break
-
-            _validate_file_not_empty(has_data)
-
-    def _validate_(self, level):
-        record_count_map = {'min': 5, 'max': None}
-        self._validate(record_count_map[level])
-
-
-ImportanceDirectoryFormat = model.SingleFileDirectoryFormat(
-    'ImportanceDirectoryFormat', 'importance.tsv',
-    ImportanceFormat)
-
-
-def _read_dataframe(fh):
-    # Using `dtype=object` and `set_index` to avoid type casting/inference
-    # of any columns or the index.
-    df = pd.read_csv(fh, sep='\t', header=0, dtype='str')
-    df.set_index(df.columns[0], drop=True, append=False, inplace=True)
-    df.index.name = 'id'
-    return df
-
-
-@plugin.register_transformer
-def _1(data: pd.Series) -> (BooleanSeriesFormat):
-    ff = BooleanSeriesFormat()
-    with ff.open() as fh:
-        data.to_csv(fh, sep='\t', header=True)
-    return ff
-
-
-@plugin.register_transformer
-def _2(ff: BooleanSeriesFormat) -> (pd.Series):
-    with ff.open() as fh:
-        df = _read_dataframe(fh)
-        return df.iloc[:, 0]
-
-
-@plugin.register_transformer
-def _3(ff: BooleanSeriesFormat) -> (qiime2.Metadata):
-    with ff.open() as fh:
-        return qiime2.Metadata(_read_dataframe(fh))
-
-
-@plugin.register_transformer
-def _4(data: pd.Series) -> (PredictionsFormat):
-    ff = PredictionsFormat()
-    with ff.open() as fh:
-        data.to_csv(fh, sep='\t', header=True)
-    return ff
-
-
-@plugin.register_transformer
-def _5(ff: PredictionsFormat) -> (pd.Series):
-    with ff.open() as fh:
-        df = _read_dataframe(fh)
-        return df.iloc[:, 0]
-
-
-@plugin.register_transformer
-def _6(ff: PredictionsFormat) -> (qiime2.Metadata):
-    with ff.open() as fh:
-        return qiime2.Metadata(_read_dataframe(fh))
-
-
-@plugin.register_transformer
-def _7(data: pd.DataFrame) -> (ImportanceFormat):
-    ff = ImportanceFormat()
-    with ff.open() as fh:
-        data.to_csv(fh, sep='\t', header=True)
-    return ff
-
-
-@plugin.register_transformer
-def _8(ff: ImportanceFormat) -> (pd.DataFrame):
-    with ff.open() as fh:
-        return _read_dataframe(fh)
-
-
-@plugin.register_transformer
-def _9(ff: ImportanceFormat) -> (qiime2.Metadata):
-    with ff.open() as fh:
-        return qiime2.Metadata(_read_dataframe(fh))
-
-
-plugin.register_formats(BooleanSeriesFormat, BooleanSeriesDirectoryFormat,
-                        ImportanceFormat, ImportanceDirectoryFormat,
-                        PredictionsFormat, PredictionsDirectoryFormat)
-
-plugin.register_semantic_types(BooleanSeries, Importance, Predictions)
-
-plugin.register_semantic_type_to_format(
-    SampleData[BooleanSeries],
-    artifact_format=BooleanSeriesDirectoryFormat)
-
-plugin.register_semantic_type_to_format(
-    SampleData[Predictions],
-    artifact_format=PredictionsDirectoryFormat)
-
-plugin.register_semantic_type_to_format(
-    FeatureData[Importance],
-    artifact_format=ImportanceDirectoryFormat)
-
+_type = importlib.import_module('q2_sample_classifier._type')
+Predictions = _type.Predictions
+SampleEstimator = _type.SampleEstimator
+BooleanSeries = _type.BooleanSeries
+Importance = _type.Importance
 
 description = ('Predicts a {0} sample metadata column using a {1}. Splits '
                'input data into training and test sets. The training set is '
@@ -437,6 +236,9 @@ plugin.methods.register_function(
 )
 
 
+fitter_outputs = [('sample_estimator', SampleEstimator),
+                  ('feature_importance', FeatureData[Importance])]
+
 plugin.methods.register_function(
     function=fit_classifier,
     inputs=inputs,
@@ -446,7 +248,7 @@ plugin.methods.register_function(
         **parameters['cv'],
         'metadata': MetadataColumn[Categorical],
         'estimator': classifiers},
-    outputs=[('feature_importance', FeatureData[Importance])],
+    outputs=fitter_outputs,
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions['base'],
@@ -470,7 +272,7 @@ plugin.methods.register_function(
         **parameters['cv'],
         'metadata': MetadataColumn[Numeric],
         'estimator': regressors},
-    outputs=[('feature_importance', FeatureData[Importance])],
+    outputs=fitter_outputs,
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions['base'],
