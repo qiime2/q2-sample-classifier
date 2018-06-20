@@ -6,10 +6,14 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
+import warnings
+from os.path import join
+
 from sklearn.model_selection import (
     train_test_split, RandomizedSearchCV, KFold, StratifiedKFold)
 from sklearn.metrics import accuracy_score
 from sklearn.feature_selection import RFECV
+from sklearn.feature_extraction import DictVectorizer
 from sklearn.ensemble import (RandomForestRegressor, RandomForestClassifier,
                               ExtraTreesClassifier, ExtraTreesRegressor,
                               AdaBoostClassifier, GradientBoostingClassifier,
@@ -18,15 +22,15 @@ from sklearn.svm import LinearSVC, SVR, SVC
 from sklearn.linear_model import Ridge, Lasso, ElasticNet
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.pipeline import Pipeline
 
 import q2templates
 import pandas as pd
 import numpy as np
-from os.path import join
 import matplotlib.pyplot as plt
 import pkg_resources
-import warnings
 from scipy.stats import randint
+import biom
 
 from .visuals import (_linear_regress, _plot_confusion_matrix, _plot_RFE,
                       _pairwise_stats, _two_way_anova, _regplot_from_dataframe,
@@ -69,6 +73,14 @@ parameters = {
 TEMPLATES = pkg_resources.resource_filename('q2_sample_classifier', 'assets')
 
 
+def _extract_features(feature_data):
+    ids = feature_data.ids('observation')
+    features = np.empty(feature_data.shape[1], dtype=dict)
+    for i, row in enumerate(feature_data.matrix_data.T):
+        features[i] = {ids[ix]: d for ix, d in zip(row.indices, row.data)}
+    return features
+
+
 def _load_data(feature_data, targets_metadata, missing_samples):
     '''Load data and generate training and test sets.
 
@@ -83,26 +95,31 @@ def _load_data(feature_data, targets_metadata, missing_samples):
     if missing_samples == 'error':
         _validate_metadata_is_superset(targets, feature_data)
 
-    # filter features and targets so samples match
-    merged = feature_data.join(targets, how='inner')
-    feature_data = feature_data.loc[merged.index]
-    targets = targets.loc[merged.index]
+    # filter features and targest so samples match
+    index = set(targets.index)
+    index = [ix for ix in feature_data.ids() if ix in index]
+    targets = targets.loc[index]
+    feature_data = feature_data.filter(index, inplace=False)
+    assert sum(ix1 == ix2 for ix1, ix2 in
+               zip(targets.index, feature_data.ids())) == len(targets.index) \
+        and len(targets.index) == len(feature_data.ids())
+    feature_data = _extract_features(feature_data)
 
     return feature_data, targets
 
 
 def _validate_metadata_is_superset(metadata, table):
     metadata_ids = set(metadata.index.tolist())
-    table_ids = set(table.index.tolist())
+    table_ids = set(table.ids())
     missing_ids = table_ids.difference(metadata_ids)
     if len(missing_ids) > 0:
         raise ValueError('Missing samples in metadata: %r' % missing_ids)
 
 
-def _extract_important_features(table, top):
+def _extract_important_features(index, top):
     '''Find top features, match names to indices, sort.
-    table: pandas.DataFrame
-        Source data table containing samples x features.
+    index: ndarray
+        Feature names
     top: array
         Feature importance scores, coef_ scores, or ranking of scores.
     '''
@@ -114,7 +131,7 @@ def _extract_important_features(table, top):
     # ensemble estimators and RFECV return 1-d arrays
     else:
         imp = pd.DataFrame(top, columns=["importance"])
-    imp.index = table.columns
+    imp.index = index
     imp.index.name = 'feature'
     imp = sort_importances(imp, ascending=False)
     return imp
@@ -142,8 +159,14 @@ def _split_training_data(feature_data, targets, column, test_size=0.2,
     targets = targets[column]
 
     if drop_na:
-        targets = targets.dropna(axis=0, how='any')
-        feature_data = feature_data.loc[targets.index]
+        try:
+            targets, feature_data = \
+                zip(*[(t, f) for t, f in zip(targets, feature_data)
+                      if pd.notna(t)])
+        except ValueError:
+            targets, feature_data = [], []
+        targets = pd.Series(targets)
+        targets.name = column
 
     if test_size > 0.0:
         try:
@@ -201,25 +224,26 @@ def _rfecv_feature_selection(feature_data, targets, estimator,
         Can be used to predict target values for test data.
     importance: pandas.DataFrame
         List of top features.
-    top_feature_data: pandas.DataFrame
-        feature_data filtered to contain only top features.
     '''
 
-    rfecv = RFECV(estimator=estimator, step=step, cv=cv,
-                  scoring=scoring, n_jobs=n_jobs)
+    rfecv = Pipeline(
+        [('dv', estimator.named_steps.dv),
+         ('est', RFECV(estimator=estimator.named_steps.est, step=step, cv=cv,
+                       scoring=scoring, n_jobs=n_jobs))])
 
     rfecv.fit(feature_data, targets)
 
     # Describe top features
-    n_opt = rfecv.n_features_
-    importance = _extract_important_features(feature_data, rfecv.ranking_)
+    n_opt = rfecv.named_steps.est.n_features_
+    importance = _extract_important_features(
+        rfecv.named_steps.dv.get_feature_names(),
+        rfecv.named_steps.est.ranking_)
     importance = sort_importances(importance, ascending=True)[:n_opt]
-    top_feature_data = feature_data.loc[:, importance.index]
 
     # Plot RFE accuracy
-    rfep = _plot_RFE(rfecv)
+    rfep = _plot_RFE(rfecv.named_steps.est)
 
-    return rfecv, importance, top_feature_data, rfep
+    return rfecv, importance, rfep
 
 
 def nested_cross_validation(table, metadata, cv, random_state, n_jobs,
@@ -260,7 +284,7 @@ def nested_cross_validation(table, metadata, cv, random_state, n_jobs,
 def _fit_estimator(features, targets, estimator, n_estimators=100, step=0.05,
                    cv=5, random_state=None, n_jobs=1,
                    optimize_feature_selection=False, parameter_tuning=False,
-                   classification=True, missing_samples='error'):
+                   missing_samples='error', classification=True):
     # extract column name from CategoricalMetadataColumn
     column = targets.to_series().name
 
@@ -296,7 +320,7 @@ def _fit_estimator(features, targets, estimator, n_estimators=100, step=0.05,
     estimator.fit(X_train, y_train)
 
     importances = _attempt_to_calculate_feature_importances(
-        X_train, estimator, calc_feature_importance,
+        estimator, calc_feature_importance,
         optimize_feature_selection, importances)
 
     return estimator, importances
@@ -341,18 +365,18 @@ def split_optimize_classify(features, targets, column, estimator,
         classification=classification, palette=palette)
 
     importances = _attempt_to_calculate_feature_importances(
-            X_train, estimator, calc_feature_importance,
+            estimator, calc_feature_importance,
             optimize_feature_selection, importances)
 
     return estimator, predictions, accuracy, importances
 
 
 def _attempt_to_calculate_feature_importances(
-        X_train, estimator, calc_feature_importance,
+        estimator, calc_feature_importance,
         optimize_feature_selection, importances=None):
     # calculate feature importances, if appropriate for the estimator
     if calc_feature_importance:
-        importances = _calculate_feature_importances(X_train, estimator)
+        importances = _calculate_feature_importances(estimator)
     # otherwise, if optimizing feature selection, just return ranking from RFE
     elif optimize_feature_selection:
         pass
@@ -385,30 +409,32 @@ def _prepare_training_data(features, targets, column, test_size,
 
 def _optimize_feature_selection(output_dir, X_train, X_test, y_train,
                                 estimator, cv, step, n_jobs):
-    rfecv, importance, top_feature_data, rfep = _rfecv_feature_selection(
+    rfecv, importance, rfep = _rfecv_feature_selection(
         X_train, y_train, estimator=estimator, cv=cv, step=step, n_jobs=n_jobs)
     if output_dir:
         rfep.savefig(join(output_dir, 'rfe_plot.png'))
         rfep.savefig(join(output_dir, 'rfe_plot.pdf'))
         plt.close('all')
 
-    X_train = X_train.loc[:, importance.index]
+    index = set(importance.index)
+    X_train = [{k: r[k] for k in r.keys() & index} for r in X_train]
     if X_test is not None:
-        X_test = X_test.loc[:, importance.index]
-
+        X_test = [{k: r[k] for k in r.keys() & index} for r in X_test]
     return X_train, X_test, importance
 
 
-def _calculate_feature_importances(X_train, estimator):
+def _calculate_feature_importances(estimator):
     # only set calc_feature_importance=True if estimator has attributes
     # feature_importances_ or coef_ to report feature importance/weights
     try:
         importances = _extract_important_features(
-            X_train, estimator.feature_importances_)
+            estimator.named_steps.dv.get_feature_names(),
+            estimator.named_steps.est.feature_importances_)
     # is there a better way to determine whether estimator has coef_ ?
     except AttributeError:
         importances = _extract_important_features(
-            X_train, estimator.coef_)
+            estimator.named_steps.dv.get_feature_names(),
+            estimator.named_steps.est.coef_)
     return importances
 
 
@@ -529,6 +555,10 @@ def _visualize_maturity_index(table, metadata, group_by, column,
         'maturity_index': True})
 
 
+def _map_params_to_pipeline(param_dist):
+    return {'est__' + param: dist for param, dist in param_dist.items()}
+
+
 def _tune_parameters(X_train, y_train, estimator, param_dist, n_iter_search=20,
                      n_jobs=1, cv=None, random_state=None):
     # run randomized search
@@ -573,8 +603,12 @@ def _fit_and_predict_cv(table, metadata, estimator, param_dist, n_jobs,
     scores = []
     top_params = []
     importances = []
-    for train_index, test_index in _cv.split(table, metadata):
-        X_train = table.iloc[train_index]
+    if isinstance(table, biom.Table):
+        features = _extract_features(table)
+    else:
+        features = table
+    for train_index, test_index in _cv.split(features, metadata):
+        X_train = features[train_index]
         y_train = metadata.iloc[train_index]
         # perform parameter tuning in inner loop
         if parameter_tuning:
@@ -586,21 +620,22 @@ def _fit_and_predict_cv(table, metadata, estimator, param_dist, n_jobs,
             # fit estimator on inner outer training set
             estimator.fit(X_train, y_train)
         # predict values for outer loop test set
-        test_set = table.iloc[test_index]
-        pred = pd.DataFrame(estimator.predict(test_set), index=test_set.index)
+        test_set = features[test_index]
+        index = metadata.iloc[test_index]
+        pred = pd.DataFrame(estimator.predict(test_set), index=index.index)
 
         # log predictions results
         predictions = pd.concat([predictions, pred])
         # log accuracy on that fold
-        scores += [scoring(pred, metadata.iloc[test_index])]
+        scores += [scoring(pred, index)]
         # log feature importances
         if calc_feature_importance:
-            imp = _calculate_feature_importances(X_train, estimator)
+            imp = _calculate_feature_importances(estimator)
             importances += [imp]
         # log top parameters
         # for now we will cast as a str (instead of dict) so that we can count
         # frequency of unique elements below
-        top_params += [str(estimator.get_params())]
+        top_params += [str(estimator.named_steps.est.get_params())]
 
     # Report most frequent best params
     # convert top_params to a set, order by count (hence str conversion above)
@@ -634,7 +669,9 @@ def _mean_feature_importance(importances):
 
 
 def _null_feature_importance(table):
-    imp = pd.DataFrame(index=table.columns)
+    feature_extractor = DictVectorizer()
+    feature_extractor.fit(table)
+    imp = pd.DataFrame(index=feature_extractor.get_feature_names())
     imp.index.name = "feature"
     imp["importance"] = 1
     return imp
@@ -752,16 +789,21 @@ def _train_adaboost_base_estimator(table, metadata, column, n_estimators,
     else:
         base_estimator = DecisionTreeRegressor()
         adaboost_estimator = AdaBoostRegressor
+    base_estimator = Pipeline(
+        [('dv', DictVectorizer()), ('est', base_estimator)])
 
     if parameter_tuning:
         features, targets = _load_data(
             table, metadata, missing_samples=missing_samples)
+        param_dist = _map_params_to_pipeline(param_dist)
         base_estimator = _tune_parameters(
             features, targets[column], base_estimator, param_dist,
             n_jobs=n_jobs, cv=cv, random_state=random_state).best_estimator_
 
-    return adaboost_estimator(
-        base_estimator, n_estimators, random_state=random_state)
+    return Pipeline(
+        [('dv', base_estimator.named_steps.dv),
+         ('est', adaboost_estimator(base_estimator.named_steps.est,
+                                    n_estimators, random_state=random_state))])
 
 
 def _disable_feature_selection(estimator, optimize_feature_selection):
@@ -794,6 +836,8 @@ def _set_parameters_and_estimator(estimator, table, metadata, column,
     else:
         param_dist, estimator = _select_estimator(
             estimator, n_jobs, n_estimators, random_state)
+        estimator = Pipeline([('dv', DictVectorizer()), ('est', estimator)])
+        param_dist = _map_params_to_pipeline(param_dist)
     return estimator, param_dist, parameter_tuning
 
 
