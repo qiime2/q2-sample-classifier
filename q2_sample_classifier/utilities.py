@@ -214,7 +214,7 @@ def nested_cross_validation(table, metadata, cv, random_state, n_jobs,
                             n_estimators, estimator, stratify,
                             parameter_tuning, classification, scoring):
     # extract column name from NumericMetadataColumn
-    column = metadata.to_series().name
+    column = metadata.name
 
     # load feature data, metadata targets
     X_train, y_train = _load_data(table, metadata)

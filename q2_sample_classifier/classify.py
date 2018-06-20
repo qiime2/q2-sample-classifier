@@ -44,7 +44,7 @@ def classify_samples(output_dir: str, table: pd.DataFrame,
                      palette: str=defaults['palette']) -> None:
 
     # extract column name from CategoricalMetadataColumn
-    column = metadata.to_series().name
+    column = metadata.name
 
     # disable feature selection for unsupported estimators
     optimize_feature_selection, calc_feature_importance = \
@@ -78,7 +78,7 @@ def regress_samples(output_dir: str, table: pd.DataFrame,
                     stratify: str=False, parameter_tuning: bool=False) -> None:
 
     # extract column name from NumericMetadataColumn
-    column = metadata.to_series().name
+    column = metadata.name
 
     # disable feature selection for unsupported estimators
     optimize_feature_selection, calc_feature_importance = \
@@ -104,7 +104,7 @@ def regress_samples(output_dir: str, table: pd.DataFrame,
 def split_table(table: pd.DataFrame, metadata: qiime2.MetadataColumn,
                 test_size: float=defaults['test_size'], random_state: int=None,
                 stratify: str=True) -> (pd.DataFrame, pd.DataFrame):
-    column = metadata.to_series().name
+    column = metadata.name
     X_train, X_test, y_train, y_test = _prepare_training_data(
         table, metadata, column, test_size, random_state, load_data=True,
         stratify=True)
