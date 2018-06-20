@@ -19,10 +19,10 @@ from q2_sample_classifier.visuals import (
     _plot_heatmap_from_confusion_matrix)
 from q2_sample_classifier.classify import (
     classify_samples, regress_samples, regress_samples_ncv,
-    classify_samples_ncv, maturity_index, detect_outliers)
+    classify_samples_ncv, fit_classifier, fit_regressor, maturity_index,
+    detect_outliers)
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator, _load_data,
-    _prepare_training_data, _optimize_feature_selection, _fit_and_predict,
     _calculate_feature_importances, _extract_important_features,
     _train_adaboost_base_estimator, _disable_feature_selection,
     _mean_feature_importance, _null_feature_importance)
@@ -514,6 +514,24 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         pdt.assert_series_equal(y_pred, self.exp_pred)
         pdt.assert_frame_equal(importances, self.exp_imp)
 
+    # test that fit_* methods output consistent importance scores
+    def test_fit_regressor(self):
+        importances = fit_regressor(
+            self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
+            n_estimators=2, n_jobs=1, missing_samples='ignore')
+        exp_imp = pd.DataFrame.from_csv(
+            self.get_data_path('importance_cv.tsv'), sep='\t')
+        pdt.assert_frame_equal(importances, exp_imp)
+
+    # just make sure this method runs. Uses the same internal function as
+    # fit_regressor, so importance score consistency is covered by the above
+    # test.
+    def test_fit_classifier(self):
+        fit_classifier(
+            self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
+            n_estimators=2, n_jobs=1, optimize_feature_selection=True,
+            parameter_tuning=True, missing_samples='ignore')
+
     # test that each regressor works and delivers an expected accuracy result
     # when a random seed is set.
     def test_regressors(self):
@@ -539,40 +557,6 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 accuracy, seeded_results[regressor], places=4,
                 msg='Accuracy of %s regressor was %f, but expected %f' % (
                     regressor, accuracy, seeded_results[regressor]))
-
-    # test feature ordering
-    # this bug emerged in maturity_index, where feature sorting was being
-    # performed inadvertently during feature extraction (now fixed).
-    # The issue was that scikit-learn handles dataframes of target data as
-    # arrays without header information; hence, dataframes passed to an
-    # estimator in different orders will cause misclassification. Here we
-    # ensure that the labels in training and testing sets are passed in the
-    # same order during split_optimize_classify (the following replicates a
-    # minimal version of that function).
-    def test_feature_ordering(self):
-        # replicate minimal split_optimize_classify to extract importances
-        estimator, pad, pt = _set_parameters_and_estimator(
-            'RandomForestRegressor', self.table_ecam_fp, self.md_ecam_fp,
-            'month', n_estimators=10, n_jobs=1, cv=1,
-            random_state=123, parameter_tuning=False, classification=False,
-            missing_samples='ignore')
-        X_train, X_test, y_train, y_test = _prepare_training_data(
-            self.table_ecam_fp, self.md_ecam_fp, 'month',
-            test_size=0.1, random_state=123, load_data=True, stratify=False,
-            missing_samples='ignore')
-        X_train, X_test, importance = _optimize_feature_selection(
-            self.temp_dir.name, X_train, X_test, y_train, estimator, cv=3,
-            step=0.2, n_jobs=1)
-        estimator, accuracy, y_pred = _fit_and_predict(
-            X_train, X_test, y_train, y_test, estimator,
-            scoring=mean_squared_error)
-        # pull important features from a different dataframe
-        importances = _calculate_feature_importances(X_train, estimator)
-        table = self.table_ecam_fp.loc[:, importances.index]
-        # confirm ordering of feature (column) names
-        ca = list(X_train.columns.values)
-        cb = list(table.columns.values)
-        self.assertEqual(ca, cb)
 
     # test adaboost base estimator trainer
     def test_train_adaboost_base_estimator(self):

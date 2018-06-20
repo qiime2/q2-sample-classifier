@@ -116,6 +116,7 @@ def _extract_important_features(table, top):
         imp = pd.DataFrame(top, columns=["importance"])
     imp.index = table.columns
     imp.index.name = 'feature'
+    imp = sort_importances(imp, ascending=False)
     return imp
 
 
@@ -256,6 +257,51 @@ def nested_cross_validation(table, metadata, cv, random_state, n_jobs,
     return predictions['prediction'], importances
 
 
+def _fit_estimator(features, targets, estimator, n_estimators=100, step=0.05,
+                   cv=5, random_state=None, n_jobs=1,
+                   optimize_feature_selection=False, parameter_tuning=False,
+                   classification=True, missing_samples='error'):
+    # extract column name from CategoricalMetadataColumn
+    column = targets.to_series().name
+
+    # load data
+    X_train, y_train = _load_data(
+        features, targets, missing_samples=missing_samples)
+
+    # disable feature selection for unsupported estimators
+    optimize_feature_selection, calc_feature_importance = \
+        _disable_feature_selection(estimator, optimize_feature_selection)
+
+    # specify parameters and distributions to sample from for parameter tuning
+    estimator, param_dist, parameter_tuning = _set_parameters_and_estimator(
+        estimator, features, targets, column, n_estimators, n_jobs, cv,
+        random_state, parameter_tuning, classification=True)
+
+    # optimize training feature count
+    if optimize_feature_selection:
+        X_train, X_test, importances = _optimize_feature_selection(
+            output_dir=None, X_train=X_train, X_test=None, y_train=y_train,
+            estimator=estimator, cv=cv, step=step, n_jobs=n_jobs)
+    else:
+        importances = None
+
+    # optimize tuning parameters on your training set
+    if parameter_tuning:
+        # tune parameters
+        estimator = _tune_parameters(
+            X_train, y_train, estimator, param_dist, n_iter_search=20,
+            n_jobs=n_jobs, cv=cv, random_state=random_state).best_estimator_
+
+    # fit estimator
+    estimator.fit(X_train, y_train)
+
+    importances = _attempt_to_calculate_feature_importances(
+        X_train, estimator, calc_feature_importance,
+        optimize_feature_selection, importances)
+
+    return estimator, importances
+
+
 def split_optimize_classify(features, targets, column, estimator,
                             output_dir, test_size=0.2,
                             step=0.05, cv=5, random_state=None, n_jobs=1,
@@ -273,8 +319,10 @@ def split_optimize_classify(features, targets, column, estimator,
 
     # optimize training feature count
     if optimize_feature_selection:
-        X_train, X_test, importance = _optimize_feature_selection(
+        X_train, X_test, importances = _optimize_feature_selection(
             output_dir, X_train, X_test, y_train, estimator, cv, step, n_jobs)
+    else:
+        importances = None
 
     # optimize tuning parameters on your training set
     if parameter_tuning:
@@ -292,17 +340,26 @@ def split_optimize_classify(features, targets, column, estimator,
         output_dir, y_test, y_pred, estimator, accuracy,
         classification=classification, palette=palette)
 
+    importances = _attempt_to_calculate_feature_importances(
+            X_train, estimator, calc_feature_importance,
+            optimize_feature_selection, importances)
+
+    return estimator, predictions, accuracy, importances
+
+
+def _attempt_to_calculate_feature_importances(
+        X_train, estimator, calc_feature_importance,
+        optimize_feature_selection, importances=None):
     # calculate feature importances, if appropriate for the estimator
     if calc_feature_importance:
         importances = _calculate_feature_importances(X_train, estimator)
     # otherwise, if optimizing feature selection, just return ranking from RFE
     elif optimize_feature_selection:
-        importances = importance
+        pass
     # otherwise, we have no weights nor selection, so features==n_features
     else:
         importances = None
-
-    return estimator, predictions, accuracy, importances
+    return importances
 
 
 def _prepare_training_data(features, targets, column, test_size,
@@ -333,10 +390,11 @@ def _optimize_feature_selection(output_dir, X_train, X_test, y_train,
     if output_dir:
         rfep.savefig(join(output_dir, 'rfe_plot.png'))
         rfep.savefig(join(output_dir, 'rfe_plot.pdf'))
-    plt.close('all')
+        plt.close('all')
 
     X_train = X_train.loc[:, importance.index]
-    X_test = X_test.loc[:, importance.index]
+    if X_test is not None:
+        X_test = X_test.loc[:, importance.index]
 
     return X_train, X_test, importance
 
