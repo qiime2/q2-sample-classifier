@@ -763,24 +763,6 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             mse = mean_squared_error(exp, pred)
             self.assertAlmostEqual(mse, seeded_predict_results[regressor])
 
-seeded_predict_results = {
-    'RandomForestClassifier': 18,
-    'ExtraTreesClassifier': 21,
-    'GradientBoostingClassifier': 21,
-    'AdaBoostClassifier': 21,
-    'LinearSVC': 21,
-    'SVC': 21,
-    'KNeighborsClassifier': 14,
-    'RandomForestRegressor': 7.4246031746,
-    'ExtraTreesRegressor': 0.,
-    'GradientBoostingRegressor': 50.1955883469,
-    'AdaBoostRegressor': 0.,
-    'Lasso': 0.173138653701,
-    'Ridge': 7.57617215386,
-    'ElasticNet': 0.0614243397637,
-    'KNeighborsRegressor': 26.8625396825,
-    'SVR': 59.7152380952,
-    'LinearSVR': 0.0099912565770459132}
 
 class SampleEstimatorTestBase(SampleClassifierTestPluginBase):
     package = 'q2_sample_classifier.tests'
@@ -904,3 +886,22 @@ seeded_results = {
     'KNeighborsRegressor': 44.7847619048,
     'LinearSVR': 511.816385601,
     'SVR': 72.6666666667}
+
+seeded_predict_results = {
+    'RandomForestClassifier': 18,
+    'ExtraTreesClassifier': 21,
+    'GradientBoostingClassifier': 21,
+    'AdaBoostClassifier': 21,
+    'LinearSVC': 21,
+    'SVC': 21,
+    'KNeighborsClassifier': 14,
+    'RandomForestRegressor': 7.4246031746,
+    'ExtraTreesRegressor': 0.,
+    'GradientBoostingRegressor': 50.1955883469,
+    'AdaBoostRegressor': 0.,
+    'Lasso': 0.173138653701,
+    'Ridge': 7.57617215386,
+    'ElasticNet': 0.0614243397637,
+    'KNeighborsRegressor': 26.8625396825,
+    'SVR': 59.7152380952,
+    'LinearSVR': 0.0099912565770459132}
