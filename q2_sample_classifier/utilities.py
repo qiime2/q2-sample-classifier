@@ -29,6 +29,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import pkg_resources
+from scipy.sparse import issparse
 from scipy.stats import randint
 import biom
 
@@ -126,6 +127,8 @@ def _extract_important_features(index, top):
     # is top a 1-d or multi-d array?
     # coef_ is a multidimensional array of shape = [n_class-1, n_features]
     if any(isinstance(i, list) for i in top) or top.ndim > 1:
+        if issparse(top):
+            top = top.todense()
         imp = pd.DataFrame(
             top, index=["importance{0}".format(n) for n in range(len(top))]).T
     # ensemble estimators and RFECV return 1-d arrays

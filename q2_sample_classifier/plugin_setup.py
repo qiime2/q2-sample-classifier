@@ -16,7 +16,7 @@ from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
 from .classify import (
     classify_samples, regress_samples, maturity_index, regress_samples_ncv,
-    classify_samples_ncv, fit_classifier, fit_regressor, split_table)
+    classify_samples_ncv, fit_classifier, fit_regressor, split_table, predict)
 from .visuals import _custom_palettes
 import q2_sample_classifier
 
@@ -69,6 +69,12 @@ inputs = {'table': FeatureTable[Frequency]}
 
 input_descriptions = {'table': ('Feature table containing all features that '
                                 'should be used for target prediction.')}
+
+sample_estimator = {'sample_estimator': SampleEstimator}
+
+sample_estimator_description = {
+    'sample_estimator': 'Sample estimator trained with fit_classifier or '
+                        'fit_regressor.'}
 
 parameters = {
     'base': {
@@ -144,6 +150,7 @@ output_descriptions = {
     'predictions': 'Predicted target values for each input sample.',
     'feature_importance': 'Importance of each input feature to model accuracy.'
 }
+
 
 plugin.visualizers.register_function(
     function=classify_samples,
@@ -263,7 +270,8 @@ plugin.methods.register_function(
         'metadata': 'Numeric metadata column to use as prediction target.',
         **parameter_descriptions['estimator']},
     output_descriptions={
-        'feature_importance': output_descriptions['feature_importance']},
+        'feature_importance': output_descriptions['feature_importance'],
+        **sample_estimator_description},
     name='Fit a supervised learning classifier.',
     description=cv_description.format('classifier')
 )
@@ -290,6 +298,28 @@ plugin.methods.register_function(
         'feature_importance': output_descriptions['feature_importance']},
     name='Fit a supervised learning regressor.',
     description=cv_description.format('regressor')
+)
+
+
+plugin.methods.register_function(
+    function=predict,
+    inputs={**inputs, **sample_estimator},
+    parameters={
+        'n_jobs': parameters['base']['n_jobs']},
+    outputs=[('predictions', SampleData[Predictions])],
+    input_descriptions={**input_descriptions, **sample_estimator_description},
+    parameter_descriptions={
+        'n_jobs': parameter_descriptions['base']['n_jobs']},
+    output_descriptions={
+        'predictions': 'Predicted target values for each input sample.'},
+    name='Use trained estimator to predict target values for new samples.',
+    description=(
+        'Use trained estimator to predict target values for new samples. '
+        'These will typically be unseen samples, e.g., test data (derived '
+        'manually or from split_table) or samples with unknown values, but '
+        'can theoretically be any samples present in a feature table that '
+        'contain overlapping features with the feature table used to train '
+        'the estimator.')
 )
 
 
