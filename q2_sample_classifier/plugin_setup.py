@@ -18,6 +18,15 @@ from .classify import (
     classify_samples, regress_samples, maturity_index, regress_samples_ncv,
     classify_samples_ncv, fit_classifier, fit_regressor, split_table)
 from .visuals import _custom_palettes
+from ._format import (SampleEstimatorDirFmt,
+                      BooleanSeriesFormat,
+                      BooleanSeriesDirectoryFormat,
+                      ImportanceFormat,
+                      ImportanceDirectoryFormat,
+                      PredictionsFormat,
+                      PredictionsDirectoryFormat)
+
+from ._type import Predictions, SampleEstimator, BooleanSeries, Importance
 import q2_sample_classifier
 
 citations = Citations.load('citations.bib', package='q2_sample_classifier')
@@ -35,12 +44,6 @@ plugin = Plugin(
         'Plugin for machine learning prediction of sample metadata.'),
     citations=[citations['Bokulich306167']]
 )
-
-_type = importlib.import_module('q2_sample_classifier._type')
-Predictions = _type.Predictions
-SampleEstimator = _type.SampleEstimator
-BooleanSeries = _type.BooleanSeries
-Importance = _type.Importance
 
 description = ('Predicts a {0} sample metadata column using a {1}. Splits '
                'input data into training and test sets. The training set is '
@@ -373,3 +376,25 @@ plugin.visualizers.register_function(
                  'two or more different "treatment" groups.'),
     citations=[citations['subramanian2014persistent']]
 )
+
+
+# Registrations
+plugin.register_semantic_types(
+    SampleEstimator, BooleanSeries, Importance, Predictions)
+plugin.register_semantic_type_to_format(
+    SampleEstimator,
+    artifact_format=SampleEstimatorDirFmt)
+plugin.register_semantic_type_to_format(
+    SampleData[BooleanSeries],
+    artifact_format=BooleanSeriesDirectoryFormat)
+plugin.register_semantic_type_to_format(
+    SampleData[Predictions],
+    artifact_format=PredictionsDirectoryFormat)
+plugin.register_semantic_type_to_format(
+    FeatureData[Importance],
+    artifact_format=ImportanceDirectoryFormat)
+plugin.register_formats(
+    SampleEstimatorDirFmt, BooleanSeriesFormat, BooleanSeriesDirectoryFormat,
+    ImportanceFormat, ImportanceDirectoryFormat, PredictionsFormat,
+    PredictionsDirectoryFormat)
+importlib.import_module('q2_sample_classifier._transformer')
