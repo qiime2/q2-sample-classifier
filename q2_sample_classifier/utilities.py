@@ -460,16 +460,21 @@ def sort_importances(importances, ascending=False):
         by=importances.columns[0], ascending=ascending)
 
 
+def _extract_estimator_parameters(estimator):
+    # summarize model accuracy and params
+    # (drop pipeline params and individual base estimators)
+    estimator_params = {k: v for k, v in estimator.get_params().items() if
+                        k.startswith('est__') and k != 'est__base_estimator'}
+    return pd.Series(estimator_params, name='Parameter setting')
+
+
 def _visualize(output_dir, estimator, cm, accuracy, importances=None,
                optimize_feature_selection=True, title='results'):
-
-    # Need to sort out how to save estimator as sklearn.pipeline
-    # This will be possible once qiime2 support pipeline actions
 
     pd.set_option('display.max_colwidth', -1)
 
     # summarize model accuracy and params
-    result = pd.Series(estimator.get_params(), name='Parameter setting')
+    result = _extract_estimator_parameters(estimator)
     result = q2templates.df_to_html(result.to_frame())
 
     cm.to_csv(join(
@@ -540,7 +545,7 @@ def _visualize_maturity_index(table, metadata, group_by, column,
     g.savefig(join(output_dir, 'maz_heatmaps.png'), bbox_inches='tight')
     g.savefig(join(output_dir, 'maz_heatmaps.pdf'), bbox_inches='tight')
 
-    result = pd.Series(estimator.get_params(), name='Parameter setting')
+    result = _extract_estimator_parameters(estimator)
     result.append(pd.Series([accuracy], index=['Accuracy score']))
     result = q2templates.df_to_html(result.to_frame())
 
