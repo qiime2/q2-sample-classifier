@@ -26,7 +26,7 @@ from q2_sample_classifier.visuals import (
 from q2_sample_classifier.classify import (
     classify_samples, regress_samples, regress_samples_ncv,
     classify_samples_ncv, fit_classifier, fit_regressor, maturity_index,
-    detect_outliers)
+    detect_outliers, split_table)
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator, _load_data,
     _calculate_feature_importances, _extract_important_features,
@@ -645,6 +645,24 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             estimator, cm, accuracy, importances = split_optimize_classify(
                 self.table_chard_fp, md, 'Region', regressor,
                 self.temp_dir.name, missing_samples='error')
+
+    def test_split_table_no_rounding_error(self):
+        X_train, X_test = split_table(
+            self.table_chard_fp, self.mdc_chard_fp, test_size=0.5,
+            random_state=123, stratify=True, missing_samples='ignore')
+        self.assertEqual(len(X_train) + len(X_test), 21)
+
+    def test_split_table_no_split(self):
+        X_train, X_test = split_table(
+            self.table_chard_fp, self.mdc_chard_fp, test_size=0.0,
+            random_state=123, stratify=True, missing_samples='ignore')
+        self.assertEqual(len(X_train), 21)
+
+    def test_split_table_invalid_test_size(self):
+        with self.assertRaisesRegex(ValueError, "at least two samples"):
+            X_train, X_test = split_table(
+                self.table_chard_fp, self.mdc_chard_fp, test_size=1.0,
+                random_state=123, stratify=True, missing_samples='ignore')
 
     # test experimental functions
     def test_maturity_index(self):

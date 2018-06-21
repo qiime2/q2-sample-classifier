@@ -16,7 +16,7 @@ from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
 from .classify import (
     classify_samples, regress_samples, maturity_index, regress_samples_ncv,
-    classify_samples_ncv, fit_classifier, fit_regressor)
+    classify_samples_ncv, fit_classifier, fit_regressor, split_table)
 from .visuals import _custom_palettes
 import q2_sample_classifier
 
@@ -290,6 +290,36 @@ plugin.methods.register_function(
         'feature_importance': output_descriptions['feature_importance']},
     name='Fit a supervised learning regressor.',
     description=cv_description.format('regressor')
+)
+
+
+plugin.methods.register_function(
+    function=split_table,
+    inputs=inputs,
+    parameters={
+        'random_state': parameters['base']['random_state'],
+        'missing_samples': parameters['base']['missing_samples'],
+        **parameters['splitter'],
+        'metadata': MetadataColumn[Numeric | Categorical],
+        **parameters['regressor']},
+    outputs=[('training_table', FeatureTable[Frequency]),
+             ('test_table', FeatureTable[Frequency])],
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        'random_state': parameter_descriptions['base']['random_state'],
+        'missing_samples': parameter_descriptions['base']['missing_samples'],
+        **parameter_descriptions['splitter'],
+        **parameter_descriptions['regressor'],
+        'metadata': 'Numeric metadata column to use as prediction target.'},
+    output_descriptions={
+        'training_table': 'Feature table containing training samples',
+        'test_table': 'Feature table containing test samples'},
+    name='Split a feature table into training and testing sets.',
+    description=(
+        'Split a feature table into training and testing sets. By default '
+        'stratifies training and test sets on a metadata column, such that '
+        'values in that column are evenly represented across training and '
+        'test sets.')
 )
 
 

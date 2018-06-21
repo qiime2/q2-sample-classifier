@@ -18,7 +18,7 @@ import biom
 
 from .utilities import (split_optimize_classify, _visualize, _load_data,
                         _maz_score, _visualize_maturity_index,
-                        _set_parameters_and_estimator,
+                        _set_parameters_and_estimator, _prepare_training_data,
                         _disable_feature_selection, _select_estimator,
                         nested_cross_validation, _fit_estimator,
                         _map_params_to_pipeline)
@@ -50,7 +50,7 @@ def classify_samples(output_dir: str, table: biom.Table,
                      missing_samples: str='error') -> None:
 
     # extract column name from CategoricalMetadataColumn
-    column = metadata.to_series().name
+    column = metadata.name
 
     # disable feature selection for unsupported estimators
     optimize_feature_selection, calc_feature_importance = \
@@ -121,7 +121,7 @@ def regress_samples(output_dir: str, table: biom.Table,
                     missing_samples: str='error') -> None:
 
     # extract column name from NumericMetadataColumn
-    column = metadata.to_series().name
+    column = metadata.name
 
     # disable feature selection for unsupported estimators
     optimize_feature_selection, calc_feature_importance = \
@@ -144,6 +144,20 @@ def regress_samples(output_dir: str, table: biom.Table,
 
     _visualize(output_dir, estimator, cm, accuracy, importances,
                optimize_feature_selection, title='regression predictions')
+
+
+def split_table(table: biom.Table, metadata: qiime2.MetadataColumn,
+                test_size: float=defaults['test_size'], random_state: int=None,
+                stratify: str=True,
+                missing_samples: str='error') -> (biom.Table, biom.Table):
+    column = metadata.name
+    X_train, X_test, y_train, y_test = _prepare_training_data(
+        table, metadata, column, test_size, random_state, load_data=True,
+        stratify=True, missing_samples=missing_samples)
+    # TODO: we can consider returning the metadata (y_train, y_test) if a
+    # SampleData[Metadata] type comes into existence. For now we will just
+    # throw this out.
+    return X_train, X_test
 
 
 def regress_samples_ncv(
