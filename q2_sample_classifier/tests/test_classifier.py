@@ -26,7 +26,7 @@ from q2_sample_classifier.visuals import (
 from q2_sample_classifier.classify import (
     classify_samples, regress_samples, regress_samples_ncv,
     classify_samples_ncv, fit_classifier, fit_regressor, maturity_index,
-    detect_outliers, split_table)
+    detect_outliers, split_table, predict)
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator, _load_data,
     _calculate_feature_importances, _extract_important_features,
@@ -719,6 +719,50 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                             random_state=123, n_jobs=1, contamination=0.05,
                             subset_column=None, subset_value=1)
 
+    # just test that this works by making sure a classifier trained on samples
+    # x, y, and z predicts the correct metadata values for those same samples.
+    def test_predict_classifiers(self):
+        for classifier in ['RandomForestClassifier', 'ExtraTreesClassifier',
+                           'GradientBoostingClassifier', 'AdaBoostClassifier',
+                           'LinearSVC', 'SVC', 'KNeighborsClassifier']:
+            estimator, importances = fit_classifier(
+                self.table_chard_fp, self.mdc_chard_fp, random_state=123,
+                n_estimators=2, estimator=classifier, n_jobs=1,
+                missing_samples='ignore')
+            pred = predict(self.table_chard_fp, estimator)
+            exp = self.mdc_chard_fp.to_series().reindex(pred.index).dropna()
+            # reindex both pred and exp because not all samples present in pred
+            # are present in the metadata! (hence missing_samples='ignore')
+            sample_ids = pred.index.intersection(exp.index)
+            pred = pred.loc[sample_ids]
+            exp = exp.loc[sample_ids]
+            # test that expected number of correct results is achieved (these
+            # are mostly quite high as we would expect (total n=21))
+            correct_results = np.sum(pred == exp)
+            self.assertEqual(
+                correct_results, seeded_predict_results[classifier])
+
+    def test_predict_regressors(self):
+        for regressor in ['RandomForestRegressor', 'ExtraTreesRegressor',
+                          'GradientBoostingRegressor', 'AdaBoostRegressor',
+                          'Lasso', 'Ridge', 'ElasticNet',
+                          'KNeighborsRegressor', 'SVR', 'LinearSVR']:
+            estimator, importances = fit_regressor(
+                self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
+                n_estimators=2, estimator=regressor, n_jobs=1,
+                missing_samples='ignore')
+            pred = predict(self.table_ecam_fp, estimator)
+            exp = self.mdc_ecam_fp.to_series()
+            # reindex both pred and exp because not all samples present in pred
+            # are present in the metadata! (hence missing_samples='ignore')
+            sample_ids = pred.index.intersection(exp.index)
+            pred = pred.loc[sample_ids]
+            exp = exp.loc[sample_ids]
+            # test that expected MSE is achieved (these are mostly quite high
+            # as we would expect)
+            mse = mean_squared_error(exp, pred)
+            self.assertAlmostEqual(mse, seeded_predict_results[regressor])
+
 
 class SampleEstimatorTestBase(SampleClassifierTestPluginBase):
     package = 'q2_sample_classifier.tests'
@@ -842,3 +886,22 @@ seeded_results = {
     'KNeighborsRegressor': 44.7847619048,
     'LinearSVR': 511.816385601,
     'SVR': 72.6666666667}
+
+seeded_predict_results = {
+    'RandomForestClassifier': 18,
+    'ExtraTreesClassifier': 21,
+    'GradientBoostingClassifier': 21,
+    'AdaBoostClassifier': 21,
+    'LinearSVC': 21,
+    'SVC': 21,
+    'KNeighborsClassifier': 14,
+    'RandomForestRegressor': 7.4246031746,
+    'ExtraTreesRegressor': 0.,
+    'GradientBoostingRegressor': 50.1955883469,
+    'AdaBoostRegressor': 0.,
+    'Lasso': 0.173138653701,
+    'Ridge': 7.57617215386,
+    'ElasticNet': 0.0614243397637,
+    'KNeighborsRegressor': 26.8625396825,
+    'SVR': 59.7152380952,
+    'LinearSVR': 0.0099912565770459132}

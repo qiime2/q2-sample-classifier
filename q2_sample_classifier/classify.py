@@ -21,7 +21,7 @@ from .utilities import (split_optimize_classify, _visualize, _load_data,
                         _set_parameters_and_estimator, _prepare_training_data,
                         _disable_feature_selection, _select_estimator,
                         nested_cross_validation, _fit_estimator,
-                        _map_params_to_pipeline)
+                        _map_params_to_pipeline, _extract_features)
 
 
 defaults = {
@@ -144,6 +144,25 @@ def regress_samples(output_dir: str, table: biom.Table,
 
     _visualize(output_dir, estimator, cm, accuracy, importances,
                optimize_feature_selection, title='regression predictions')
+
+
+def predict(table: biom.Table, sample_estimator: Pipeline,
+            n_jobs: int=defaults['n_jobs']) -> pd.Series:
+    # extract feature data from biom
+    feature_data = _extract_features(table)
+
+    # reset n_jobs if this is a valid parameter for the estimator
+    if 'est__n_jobs' in sample_estimator.get_params().keys():
+        sample_estimator.set_params(est__n_jobs=n_jobs)
+
+    # predict values and output as series
+    y_pred = sample_estimator.predict(feature_data)
+    # need to flatten arrays that come out as multidimensional
+    y_pred = y_pred.flatten()
+    y_pred = pd.Series(y_pred, index=table.ids(), name='prediction')
+    y_pred.index.name = 'SampleID'
+
+    return y_pred
 
 
 def split_table(table: biom.Table, metadata: qiime2.MetadataColumn,
