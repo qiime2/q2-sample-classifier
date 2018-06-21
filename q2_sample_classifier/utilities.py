@@ -101,9 +101,6 @@ def _load_data(feature_data, targets_metadata, missing_samples):
     index = [ix for ix in feature_data.ids() if ix in index]
     targets = targets.loc[index]
     feature_data = feature_data.filter(index, inplace=False)
-    assert sum(ix1 == ix2 for ix1, ix2 in
-               zip(targets.index, feature_data.ids())) == len(targets.index) \
-        and len(targets.index) == len(feature_data.ids())
     feature_data = _extract_features(feature_data)
 
     return feature_data, targets
