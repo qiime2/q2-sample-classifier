@@ -6,12 +6,18 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
-import qiime2
-import pandas as pd
-import numpy as np
+import os
 from os import mkdir
 from os.path import join
 from warnings import filterwarnings
+import tempfile
+import shutil
+import json
+import tarfile
+
+import qiime2
+import pandas as pd
+import numpy as np
 from sklearn.exceptions import ConvergenceWarning
 from q2_sample_classifier.visuals import (
     _two_way_anova, _pairwise_stats, _linear_regress,
@@ -25,22 +31,26 @@ from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator, _load_data,
     _calculate_feature_importances, _extract_important_features,
     _train_adaboost_base_estimator, _disable_feature_selection,
-    _mean_feature_importance, _null_feature_importance)
-from q2_sample_classifier.plugin_setup import (
+    _mean_feature_importance, _null_feature_importance, _extract_features)
+from q2_sample_classifier import (
     BooleanSeriesFormat, BooleanSeriesDirectoryFormat, BooleanSeries,
     PredictionsFormat, PredictionsDirectoryFormat, Predictions,
-    ImportanceFormat, ImportanceDirectoryFormat, Importance)
+    ImportanceFormat, ImportanceDirectoryFormat, Importance,
+    SampleEstimatorDirFmt, PickleFormat, SampleEstimator)
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
-import tempfile
-import shutil
 import pkg_resources
 from qiime2.plugin.testing import TestPluginBase
 from qiime2.plugin import ValidationError
+import sklearn
 from sklearn.metrics import mean_squared_error
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.svm import LinearSVC
+from sklearn.feature_extraction import DictVectorizer
+from sklearn.pipeline import Pipeline
+from sklearn.externals import joblib
 import pandas.util.testing as pdt
+import biom
 
 
 filterwarnings("ignore", category=UserWarning)
@@ -86,31 +96,37 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
         exp_lsvm.index.name = 'feature'
         self.exp_lsvm = exp_lsvm
 
-        self.features = pd.DataFrame(
-            {'a': [1, 1, 1, 1, 1], 'b': [1, 1, 1, 1, 1], 'c': [1, 1, 1, 1, 1]})
+        self.features = biom.Table(np.array([[1]*5]*3), ['a', 'b', 'c'],
+                                   list(map(str, range(5))))
 
         self.targets = pd.Series(['a', 'a', 'b', 'b', 'a'], name='bullseye')
 
     def test_extract_important_features_1d_array(self):
         importances = _extract_important_features(
-            self.features, np.ndarray((3,), buffer=np.array([0.1, 0.2, 0.3])))
+            self.features.ids('observation'),
+            np.ndarray((3,), buffer=np.array([0.1, 0.2, 0.3])))
         self.assertEqual(sorted(self.exp_rf), sorted(importances))
 
     def test_extract_important_features_2d_array(self):
         importances = _extract_important_features(
-            self.features, np.ndarray(
+            self.features.ids('observation'),
+            np.ndarray(
                 (2, 3), buffer=np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])))
         self.assertEqual(sorted(self.exp_svm), sorted(importances))
 
     # test feature importance calculation with main classifier types
     def test_calculate_feature_importances_ensemble(self):
-        estimator = RandomForestClassifier().fit(self.features, self.targets)
-        fi = _calculate_feature_importances(self.features, estimator)
+        estimator = Pipeline(
+            [('dv', DictVectorizer()), ('est', RandomForestClassifier())])
+        estimator.fit(_extract_features(self.features), self.targets)
+        fi = _calculate_feature_importances(estimator)
         self.assertEqual(sorted(self.exp_rf), sorted(fi))
 
     def test_calculate_feature_importances_svm(self):
-        estimator = LinearSVC().fit(self.features, self.targets)
-        fi = _calculate_feature_importances(self.features, estimator)
+        estimator = Pipeline(
+            [('dv', DictVectorizer()), ('est', LinearSVC())])
+        estimator.fit(_extract_features(self.features), self.targets)
+        fi = _calculate_feature_importances(estimator)
         self.assertEqual(sorted(self.exp_lsvm), sorted(fi))
 
     # confirm that feature selection incompatibility warnings work
@@ -161,15 +177,16 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
         exp = pd.DataFrame(
             [1, 1, 1], index=['o1', 'o2', 'o3'], columns=['importance'])
         exp.index.name = 'feature'
-        tab = pd.DataFrame([[1., 2., 3.], [3., 2., 1.], [7., 6., 9.]],
-                           columns=['o1', 'o2', 'o3'],
-                           index=['s1', 's2', 's3'])
+        tab = biom.Table(np.array([[1., 2., 3.], [3., 2., 1.], [7., 6., 9.]]),
+                         ['o1', 'o2', 'o3'], ['s1', 's2', 's3'])
+        tab = _extract_features(tab)
         pdt.assert_frame_equal(_null_feature_importance(tab), exp)
 
     def test_load_data(self):
         # phony feature table
-        a = self.features
-        a.index = ['peanut', 'bugs', 'qiime2', 'matt', 'pandas']
+        id_map = {'0': 'peanut', '1': 'bugs', '2': 'qiime2', '3': 'matt',
+                  '4': 'pandas'}
+        a = self.features.update_ids(id_map, axis='sample')
         # phony metadata, convert to qiime2.Metadata
         b = self.targets
         b.index = ['pandas', 'peanut', 'qiime1', 'flapjacks', 'bugs']
@@ -178,7 +195,9 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
         # test that merge of tables is inner merge
         intersection = set(('peanut', 'bugs', 'pandas'))
         feature_data, targets = _load_data(a, b, missing_samples='ignore')
-        self.assertEqual(set(feature_data.index), intersection)
+        exp = [{'c': 1.0, 'a': 1.0, 'b': 1.0}, {'c': 1.0, 'a': 1.0, 'b': 1.0},
+               {'c': 1.0, 'a': 1.0, 'b': 1.0}]
+        np.testing.assert_array_equal(feature_data, exp)
         self.assertEqual(set(targets.index), intersection)
 
 
@@ -306,7 +325,7 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         exp_index = pd.Index(['10249.C001.10SS', '10249.C002.05SS',
                               '10249.C004.01SS', '10249.C004.11SS'],
                              name='id', dtype=object)
-        exp = pd.Series(['5.0', '6.0', '1.5', '5.0'], name='prediction',
+        exp = pd.Series(['4.5', '2.5', '0.5', '4.5'], name='prediction',
                         index=exp_index, dtype=object)
         pdt.assert_series_equal(obs[:4], exp)
 
@@ -316,7 +335,7 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         exp_index = pd.Index(['10249.C001.10SS', '10249.C002.05SS',
                               '10249.C004.01SS', '10249.C004.11SS'],
                              name='id')
-        exp = pd.DataFrame([5., 6., 1.5, 5.], columns=['prediction'],
+        exp = pd.DataFrame([4.5, 2.5, 0.5, 4.5], columns=['prediction'],
                            index=exp_index, dtype='str')
         pdt.assert_frame_equal(obs.to_dataframe()[:4], exp)
 
@@ -374,8 +393,8 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
                               '79280cea51a6fe8a3432b2f266dd34db',
                               'f7686a74ca2d3729eb66305e8a26309b'],
                              name='id')
-        exp = pd.DataFrame([0.44659295550403905, 0.07707168164298116,
-                            0.06553926463821949, 0.061624511537813884],
+        exp = pd.DataFrame([0.44469828320835586, 0.07760118417569697,
+                            0.06570251750505914, 0.061718558716901406],
                            columns=['importance'],
                            index=exp_index, dtype='str')
         pdt.assert_frame_equal(exp, obs[:4])
@@ -388,8 +407,8 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
                               '79280cea51a6fe8a3432b2f266dd34db',
                               'f7686a74ca2d3729eb66305e8a26309b'],
                              name='id')
-        exp = pd.DataFrame([0.44659295550403905, 0.07707168164298116,
-                            0.06553926463821949, 0.061624511537813884],
+        exp = pd.DataFrame([0.44469828320835586, 0.07760118417569697,
+                            0.06570251750505914, 0.061718558716901406],
                            columns=['importance'],
                            index=exp_index, dtype='str')
         pdt.assert_frame_equal(obs.to_dataframe()[:4], exp)
@@ -406,10 +425,10 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     def setUp(self):
         super().setUp()
 
-        def _load_df(table_fp):
+        def _load_biom(table_fp):
             table_fp = self.get_data_path(table_fp)
             table = qiime2.Artifact.load(table_fp)
-            table = table.view(pd.DataFrame)
+            table = table.view(biom.Table)
             return table
 
         def _load_md(md_fp):
@@ -430,16 +449,32 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             md = qiime2.CategoricalMetadataColumn(md[column])
             return md
 
-        self.table_chard_fp = _load_df('chardonnay.table.qza')
+        self.table_chard_fp = _load_biom('chardonnay.table.qza')
         self.md_chard_fp = _load_md('chardonnay.map.txt')
         self.mdc_chard_fp = _load_cmc('chardonnay.map.txt', 'Region')
-        self.table_ecam_fp = _load_df('ecam-table-maturity.qza')
+        self.table_ecam_fp = _load_biom('ecam-table-maturity.qza')
         self.md_ecam_fp = _load_md('ecam_map_maturity.txt')
         self.mdc_ecam_fp = _load_nmc('ecam_map_maturity.txt', 'month')
         self.exp_imp = pd.DataFrame.from_csv(
             self.get_data_path('importance.tsv'), sep='\t')
         self.exp_pred = pd.Series.from_csv(
             self.get_data_path('predictions.tsv'), sep='\t', header=0)
+
+    # test feature extraction
+    def test_extract_features(self):
+        table = self.table_ecam_fp
+        dicts = _extract_features(table)
+        dv = DictVectorizer()
+        dv.fit(dicts)
+        features = table.ids('observation')
+        self.assertEqual(set(dv.get_feature_names()), set(features))
+        self.assertEqual(len(dicts), len(table.ids()))
+        for dict_row, (table_row, _, _) in zip(dicts, table.iter()):
+            for feature, count in zip(features, table_row):
+                if count == 0:
+                    self.assertTrue(feature not in dict_row)
+                else:
+                    self.assertEqual(dict_row[feature], count)
 
     # test that the plugin/visualizer work
     def test_classify_samples(self):
@@ -516,7 +551,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
 
     # test that fit_* methods output consistent importance scores
     def test_fit_regressor(self):
-        importances = fit_regressor(
+        pipeline, importances = fit_regressor(
             self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
             n_estimators=2, n_jobs=1, missing_samples='ignore')
         exp_imp = pd.DataFrame.from_csv(
@@ -527,7 +562,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     # fit_regressor, so importance score consistency is covered by the above
     # test.
     def test_fit_classifier(self):
-        fit_classifier(
+        pipeline, importances = fit_classifier(
             self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
             n_estimators=2, n_jobs=1, optimize_feature_selection=True,
             parameter_tuning=True, missing_samples='ignore')
@@ -565,7 +600,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             n_estimators=10, n_jobs=1, cv=3, random_state=None,
             parameter_tuning=True, classification=True,
             missing_samples='ignore')
-        self.assertEqual(type(abe), AdaBoostClassifier)
+        self.assertEqual(type(abe.named_steps.est), AdaBoostClassifier)
 
     # test some invalid inputs/edge cases
     def test_invalids(self):
@@ -638,6 +673,102 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                             subset_column=None, subset_value=1)
 
 
+class SampleEstimatorTestBase(SampleClassifierTestPluginBase):
+    package = 'q2_sample_classifier.tests'
+
+    def setUp(self):
+        super().setUp()
+
+        def _load_biom(table_fp):
+            table_fp = self.get_data_path(table_fp)
+            table = qiime2.Artifact.load(table_fp)
+            table = table.view(biom.Table)
+            return table
+
+        def _load_nmc(md_fp, column):
+            md_fp = self.get_data_path(md_fp)
+            md = pd.DataFrame.from_csv(md_fp, sep='\t')
+            md = qiime2.NumericMetadataColumn(md[column])
+            return md
+
+        table_ecam_fp = _load_biom('ecam-table-maturity.qza')
+        mdc_ecam_fp = _load_nmc('ecam_map_maturity.txt', 'month')
+
+        pipeline, importances = fit_classifier(
+            table_ecam_fp, mdc_ecam_fp, random_state=123,
+            n_estimators=2, n_jobs=1, optimize_feature_selection=True,
+            parameter_tuning=True, missing_samples='ignore')
+        transformer = self.get_transformer(
+            Pipeline, SampleEstimatorDirFmt)
+        self._sklp = transformer(pipeline)
+        sklearn_pipeline = self._sklp.sklearn_pipeline.view(PickleFormat)
+        self.sklearn_pipeline = str(sklearn_pipeline)
+
+    def _custom_setup(self, version):
+        with open(os.path.join(self.temp_dir.name,
+                               'sklearn_version.json'), 'w') as fh:
+            fh.write(json.dumps({'sklearn-version': version}))
+        shutil.copy(self.sklearn_pipeline, self.temp_dir.name)
+        return SampleEstimatorDirFmt(
+            self.temp_dir.name, mode='r')
+
+
+class TestTypes(SampleClassifierTestPluginBase):
+    def test_taxonomic_classifier_semantic_type_registration(self):
+        self.assertRegisteredSemanticType(SampleEstimator)
+
+    def test_taxonomic_classifier_semantic_type_to_format_registration(self):
+        self.assertSemanticTypeRegisteredToFormat(
+            SampleEstimator, SampleEstimatorDirFmt)
+
+
+class TestFormats(SampleEstimatorTestBase):
+    def test_taxonomic_classifier_dir_fmt(self):
+        format = self._custom_setup(sklearn.__version__)
+
+        # Should not error
+        format.validate()
+
+
+class TestTransformers(SampleEstimatorTestBase):
+    def test_old_sklearn_version(self):
+        transformer = self.get_transformer(
+            SampleEstimatorDirFmt, Pipeline)
+        input = self._custom_setup('a very old version')
+        with self.assertRaises(ValueError):
+            transformer(input)
+
+    def test_taxo_class_dir_fmt_to_taxo_class_result(self):
+        input = self._custom_setup(sklearn.__version__)
+
+        transformer = self.get_transformer(
+            SampleEstimatorDirFmt, Pipeline)
+        obs = transformer(input)
+
+        self.assertTrue(obs)
+
+    def test_taxo_class_result_to_taxo_class_dir_fmt(self):
+        def read_pipeline(pipeline_filepath):
+            with tarfile.open(pipeline_filepath) as tar:
+                dirname = tempfile.mkdtemp()
+                tar.extractall(dirname)
+                pipeline = joblib.load(os.path.join(dirname,
+                                       'sklearn_pipeline.pkl'))
+                for fn in tar.getnames():
+                    os.unlink(os.path.join(dirname, fn))
+                os.rmdir(dirname)
+            return pipeline
+
+        exp = read_pipeline(self.sklearn_pipeline)
+        transformer = self.get_transformer(
+            Pipeline, SampleEstimatorDirFmt)
+        obs = transformer(exp)
+        sklearn_pipeline = obs.sklearn_pipeline.view(PickleFormat)
+        obs_pipeline = read_pipeline(str(sklearn_pipeline))
+        obs = obs_pipeline
+        self.assertTrue(obs)
+
+
 md = pd.DataFrame([(1, 'a', 0.11), (1, 'a', 0.12), (1, 'a', 0.13),
                    (2, 'a', 0.19), (2, 'a', 0.18), (2, 'a', 0.21),
                    (1, 'b', 0.14), (1, 'b', 0.13), (1, 'b', 0.14),
@@ -647,20 +778,20 @@ md = pd.DataFrame([(1, 'a', 0.11), (1, 'a', 0.12), (1, 'a', 0.13),
 tab1 = pd.DataFrame([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], columns=['Junk'])
 
 seeded_results = {
-    'RandomForestClassifier': 0.454545454545,
+    'RandomForestClassifier': 0.63636363636363635,
     'ExtraTreesClassifier': 0.454545454545,
     'GradientBoostingClassifier': 0.272727272727,
     'AdaBoostClassifier': 0.272727272727,
     'LinearSVC': 0.727272727273,
     'SVC': 0.545454545455,
     'KNeighborsClassifier': 0.363636363636,
-    'RandomForestRegressor': 24.0533333333,
-    'ExtraTreesRegressor': 16.1793650794,
-    'GradientBoostingRegressor': 33.530579492,
-    'AdaBoostRegressor': 27.746031746,
-    'Lasso': 747.371448521,
-    'Ridge': 521.402102726,
-    'ElasticNet': 653.306453831,
+    'RandomForestRegressor': 23.226508,
+    'ExtraTreesRegressor': 19.725397,
+    'GradientBoostingRegressor': 34.157100,
+    'AdaBoostRegressor': 30.920635,
+    'Lasso': 722.827623,
+    'Ridge': 123.625210,
+    'ElasticNet': 618.532273,
     'KNeighborsRegressor': 44.7847619048,
     'LinearSVR': 511.816385601,
     'SVR': 72.6666666667}
