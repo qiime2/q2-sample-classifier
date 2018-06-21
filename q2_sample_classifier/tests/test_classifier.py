@@ -37,6 +37,7 @@ from q2_sample_classifier import (
     PredictionsFormat, PredictionsDirectoryFormat, Predictions,
     ImportanceFormat, ImportanceDirectoryFormat, Importance,
     SampleEstimatorDirFmt, PickleFormat, SampleEstimator)
+from q2_sample_classifier._format import JSONFormat
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
 import pkg_resources
@@ -237,12 +238,26 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
     def test_boolean_series_format_validate_positive(self):
         filepath = self.get_data_path('outliers.tsv')
         format = BooleanSeriesFormat(filepath, mode='r')
-        format.validate()
+        # These should both just succeed
+        format.validate('min')
+        format.validate('max')
 
-    def test_boolean_series_format_validate_negative(self):
+    def test_boolean_series_format_validate_negative_col_count(self):
         filepath = self.get_data_path('coordinates.tsv')
         format = BooleanSeriesFormat(filepath, mode='r')
         with self.assertRaisesRegex(ValidationError, 'BooleanSeriesFormat'):
+            format.validate()
+
+    def test_boolean_series_format_validate_negative_cell_values(self):
+        filepath = self.get_data_path('predictions.tsv')
+        format = BooleanSeriesFormat(filepath, mode='r')
+        with self.assertRaisesRegex(ValidationError, 'BooleanSeriesFormat'):
+            format.validate()
+
+    def test_boolean_series_format_validate_negative_empty(self):
+        filepath = self.get_data_path('empty_file.txt')
+        format = BooleanSeriesFormat(filepath, mode='r')
+        with self.assertRaisesRegex(ValidationError, 'one data record'):
             format.validate()
 
     def test_boolean_series_dir_fmt_validate_positive(self):
@@ -260,8 +275,8 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
 
     def test_pd_series_to_boolean_format(self):
         transformer = self.get_transformer(pd.Series, BooleanSeriesFormat)
-        exp_index = pd.Index(['a', 'b', 'c', 'd'], dtype=object)
-        exp = pd.Series([True, False, True, False],
+        exp_index = pd.Index(['a', 'b', 'c', 'd', 'e', 'f'], dtype=object)
+        exp = pd.Series([True, False, True, False, True, False],
                         name='outlier', index=exp_index)
         obs = transformer(exp)
         obs = pd.Series.from_csv(str(obs), sep='\t', header=0)
@@ -270,8 +285,8 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
     def test_boolean_format_to_pd_series(self):
         _, obs = self.transform_format(
             BooleanSeriesFormat, pd.Series, 'outliers.tsv')
-        exp_index = pd.Index(['a', 'b', 'c', 'd'], dtype=object)
-        exp = pd.Series(['True', 'False', 'True', 'False'],
+        exp_index = pd.Index(['a', 'b', 'c', 'd', 'e', 'f'], dtype=object)
+        exp = pd.Series(['True', 'False', 'True', 'False', 'True', 'False'],
                         name='outlier', index=exp_index)
         self.assertEqual(sorted(exp), sorted(obs))
 
@@ -279,8 +294,9 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         _, obs = self.transform_format(
             BooleanSeriesFormat, qiime2.Metadata, 'outliers.tsv')
 
-        exp_index = pd.Index(['a', 'b', 'c', 'd'], name='id')
-        exp = pd.DataFrame([['True'], ['False'], ['True'], ['False']],
+        exp_index = pd.Index(['a', 'b', 'c', 'd', 'e', 'f'], name='id')
+        exp = pd.DataFrame([['True'], ['False'], ['True'],
+                            ['False'], ['True'], ['False']],
                            columns=['outlier'], index=exp_index, dtype='str')
         exp = qiime2.Metadata(exp)
         self.assertEqual(obs, exp)
@@ -412,6 +428,19 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
                            columns=['importance'],
                            index=exp_index, dtype='str')
         pdt.assert_frame_equal(obs.to_dataframe()[:4], exp)
+
+    # test utility formats
+    def test_pickle_format_validate_negative(self):
+        filepath = self.get_data_path('coordinates.tsv')
+        format = PickleFormat(filepath, mode='r')
+        with self.assertRaisesRegex(ValidationError, 'pickled file'):
+            format.validate()
+
+    def test_json_format_validate_negative(self):
+        filepath = self.get_data_path('coordinates.tsv')
+        format = JSONFormat(filepath, mode='r')
+        with self.assertRaisesRegex(ValidationError, 'Expecting value'):
+            format.validate()
 
     # this just checks that palette names are valid input
     def test_custom_palettes(self):
