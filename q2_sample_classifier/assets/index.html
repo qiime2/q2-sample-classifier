@@ -65,11 +65,13 @@
       </a>
     </div>
     {% endif %}
+    {% if result %}
     <h1>Model parameters</h1>
     <div class="col-lg-12">
       {{ result }}
     </div>
-    {% if not importances.empty %}
+    {% endif %}
+    {% if importances and not importances.empty %}
     <h1>Feature Importance</h1>
     <div class="col-lg-12">
       <a href="feature_importance.tsv">

@@ -6,7 +6,8 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
-from sklearn.metrics import mean_squared_error, confusion_matrix
+from sklearn.metrics import (
+    mean_squared_error, confusion_matrix, accuracy_score)
 
 import pandas as pd
 import numpy as np
@@ -197,12 +198,19 @@ def _linear_regress(actual, pred):
 
 def _plot_heatmap_from_confusion_matrix(cm, palette):
     palette = _custom_palettes()[palette]
-    return sns.heatmap(cm, cmap=palette)
+    return sns.heatmap(cm, cmap=palette, cbar_kws={'label': 'Proportion'})
 
 
-def _plot_confusion_matrix(y_test, y_pred, classes, accuracy, normalize,
-                           palette):
+def _add_sample_size_to_xtick_labels(ser):
+    '''ser is a pandas series.'''
+    x_tick_labels = {k: '{0} (n={1})'.format(k, v)
+                     for k, v in ser.value_counts().items()}
+    return x_tick_labels
 
+
+def _plot_confusion_matrix(y_test, y_pred, classes, normalize, palette):
+
+    accuracy = accuracy_score(y_test, pd.DataFrame(y_pred))
     cm = confusion_matrix(y_test, y_pred)
     # normalize
     if normalize:
@@ -210,11 +218,13 @@ def _plot_confusion_matrix(y_test, y_pred, classes, accuracy, normalize,
 
     confusion = _plot_heatmap_from_confusion_matrix(cm, palette)
 
+    x_tick_labels = [v for k, v in sorted(
+        _add_sample_size_to_xtick_labels(y_test).items())]
+
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-    confusion.set_xticklabels(classes, rotation=90, ha='center')
-    confusion.set_yticklabels(
-        sorted(classes), rotation=0, ha='right')
+    confusion.set_xticklabels(x_tick_labels, rotation=90, ha='center')
+    confusion.set_yticklabels(x_tick_labels, rotation=0, ha='right')
 
     # generate confusion matrix as pd.DataFrame for viewing
     predictions = pd.DataFrame(cm, index=classes, columns=classes)

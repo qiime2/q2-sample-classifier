@@ -16,7 +16,8 @@ from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
 from .classify import (
     classify_samples, regress_samples, maturity_index, regress_samples_ncv,
-    classify_samples_ncv, fit_classifier, fit_regressor, split_table, predict)
+    classify_samples_ncv, fit_classifier, fit_regressor, split_table, predict,
+    confusion_matrix, scatterplot)
 from .visuals import _custom_palettes
 from ._format import (SampleEstimatorDirFmt,
                       BooleanSeriesFormat,
@@ -323,6 +324,40 @@ plugin.methods.register_function(
         'can theoretically be any samples present in a feature table that '
         'contain overlapping features with the feature table used to train '
         'the estimator.')
+)
+
+
+plugin.visualizers.register_function(
+    function=scatterplot,
+    inputs={'predictions': SampleData[Predictions]},
+    parameters={
+        'truth': MetadataColumn[Numeric],
+        'missing_samples': parameters['base']['missing_samples']},
+    input_descriptions={'predictions': 'Predicted values to plot on y axis'},
+    parameter_descriptions={
+        'truth': 'Metadata column (true values) to plot on x axis.',
+        'missing_samples': parameter_descriptions['base']['missing_samples']},
+    name='Make a 2D scatterplot and linear regression.',
+    description='Make a 2D scatterplot and linear regression of predicted vs. '
+                'true values for a set of samples.'
+)
+
+
+plugin.visualizers.register_function(
+    function=confusion_matrix,
+    inputs={'predictions': SampleData[Predictions]},
+    parameters={
+        'truth': MetadataColumn[Categorical],
+        'missing_samples': parameters['base']['missing_samples'],
+        'palette': Str % Choices(_custom_palettes().keys())},
+    input_descriptions={'predictions': 'Predicted values to plot on x axis'},
+    parameter_descriptions={
+        'truth': 'Metadata column (true values) to plot on y axis.',
+        'missing_samples': parameter_descriptions['base']['missing_samples'],
+        'palette': 'The color palette to use for plotting.'},
+    name='Make a confusion matrix.',
+    description='Make a confusion matrix and calculate accuracy of predicted '
+                'vs. true values for a set of samples.'
 )
 
 

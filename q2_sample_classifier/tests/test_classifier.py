@@ -22,16 +22,17 @@ from sklearn.exceptions import ConvergenceWarning
 from q2_sample_classifier.visuals import (
     _two_way_anova, _pairwise_stats, _linear_regress,
     _calculate_baseline_accuracy, _custom_palettes,
-    _plot_heatmap_from_confusion_matrix)
+    _plot_heatmap_from_confusion_matrix, _add_sample_size_to_xtick_labels)
 from q2_sample_classifier.classify import (
     classify_samples, regress_samples, regress_samples_ncv,
     classify_samples_ncv, fit_classifier, fit_regressor, maturity_index,
-    detect_outliers, split_table, predict)
+    detect_outliers, split_table, predict, scatterplot, confusion_matrix)
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator, _load_data,
     _calculate_feature_importances, _extract_important_features,
     _train_adaboost_base_estimator, _disable_feature_selection,
-    _mean_feature_importance, _null_feature_importance, _extract_features)
+    _mean_feature_importance, _null_feature_importance, _extract_features,
+    _match_series_or_die)
 from q2_sample_classifier import (
     BooleanSeriesFormat, BooleanSeriesDirectoryFormat, BooleanSeries,
     PredictionsFormat, PredictionsDirectoryFormat, Predictions,
@@ -802,6 +803,48 @@ class SampleEstimatorTestBase(SampleClassifierTestPluginBase):
         shutil.copy(self.sklearn_pipeline, self.temp_dir.name)
         return SampleEstimatorDirFmt(
             self.temp_dir.name, mode='r')
+
+
+# This class really just checks that these visualizers run without error. Yay.
+# Also test some internal nuts/bolts but there's not much else we can do.
+class TestPlottingVisualizers(SampleClassifierTestPluginBase):
+    def setUp(self):
+        super().setUp()
+        self.tmpd = join(self.temp_dir.name, 'viz')
+        mkdir(self.tmpd)
+
+        self.a = pd.Series(['a', 'a', 'b', 'b', 'c', 'c'], name='site',
+                           index=['a1', 'a2', 'b1', 'b2', 'c1', 'c2'])
+        self.a.index.name = 'SampleID'
+        self.bogus = pd.Series(['a', 'a', 'b', 'b', 'c', 'c'], name='site',
+                               index=['a1', 'e3', 'f5', 'b2', 'z1', 'c2'])
+        self.bogus.index.name = 'SampleID'
+
+    def test_confusion_matrix(self):
+        b = qiime2.CategoricalMetadataColumn(self.a)
+        confusion_matrix(self.tmpd, self.a, b)
+
+    def test_scatterplot(self):
+        a = pd.Series([0, 1, 2, 3], index=['a', 'b', 'c', 'd'], name='peanuts')
+        a.index.name = 'SampleID'
+        b = qiime2.NumericMetadataColumn(a)
+        scatterplot(self.tmpd, a, b)
+
+    def test_add_sample_size_to_xtick_labels(self):
+        labels = _add_sample_size_to_xtick_labels(self.a)
+        exp = {'a': 'a (n=2)', 'b': 'b (n=2)', 'c': 'c (n=2)'}
+        self.assertDictEqual(labels, exp)
+
+    def test_match_series_or_die(self):
+        exp = pd.Series(['a', 'b', 'c'], name='site', index=['a1', 'b2', 'c2'])
+        exp.index.name = 'SampleID'
+        a, b = _match_series_or_die(self.a, self.bogus, 'ignore')
+        pdt.assert_series_equal(exp, a)
+        pdt.assert_series_equal(exp, b)
+
+    def test_match_series_or_die_missing_samples(self):
+        with self.assertRaisesRegex(ValueError, "Missing samples"):
+            a, b = _match_series_or_die(self.a, self.bogus, 'error')
 
 
 class TestTypes(SampleClassifierTestPluginBase):
