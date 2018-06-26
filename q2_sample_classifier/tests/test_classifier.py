@@ -205,6 +205,7 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
         np.testing.assert_array_equal(feature_data, exp)
         self.assertEqual(set(targets.index), intersection)
 
+
 class TestRFEExtractor(SampleClassifierTestPluginBase):
 
     def setUp(self):
