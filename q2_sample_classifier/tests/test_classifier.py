@@ -214,59 +214,42 @@ class TestRFEExtractor(SampleClassifierTestPluginBase):
         self.X = np.random.randint(0, 10, (10, 10))
         self.y = np.random.randint(0, 10, (10))
         self.exp1 = pd.Series({
-            1: -11.351605329574243, 2: -15.08939078020828,
-            3: -10.640133812989983, 4: -17.386159772340527,
-            5: -14.435794340256454, 6: -24.631531663168808,
-            7: -17.703267675285762, 8: -12.602446754399853,
-            9: -15.646380378001647, 10: -15.632818444591184}, name='Accuracy')
+            1: -11.35166727089737, 2: -15.097125561105225,
+            3: -10.644463470103215, 4: -17.414578847161845,
+            5: -14.4620304052869, 6: -24.609432864787795,
+            7: -17.705823312410693, 8: -12.62421682839172,
+            9: -15.645639393398847, 10: -15.635680965981695}, name='Accuracy')
         self.exp2 = pd.Series({
-            1: -11.351670055301218, 2: -24.163365677451402,
-            4: -20.967537314694706, 6: -18.37285169122574,
-            8: -13.299390197736574, 10: -15.631890868009545}, name='Accuracy')
+            1: -11.35166727089737, 2: -24.164015049973578,
+            4: -20.910760051002036, 6: -18.394732168014336,
+            8: -13.29792410261592, 10: -15.635680965981695}, name='Accuracy')
         self.exp3 = pd.Series(
-            {1: -19.851283189429434, 10: -15.630032596175642}, name='Accuracy')
+            {1: -19.85128042108258, 10: -15.635680965981695}, name='Accuracy')
+
+    def extract_rfe_scores_template(self, steps, expected):
+        selector = RFECV(LinearSVR(random_state=123), step=steps, cv=5)
+        selector = selector.fit(self.X, self.y)
+        pdt.assert_series_equal(
+            _extract_rfe_scores(selector), expected, check_less_precise=3)
 
     def test_extract_rfe_scores_step_int_one(self):
-        selector = RFECV(LinearSVR(), step=1, cv=5)
-        selector = selector.fit(self.X, self.y)
-        # bloody travis does not get same results I get locally — numpy seed
-        # does not work in same way? different numpy version? who cares; we
-        # will just use approximate matching to 1 decimal since this function
-        # just extracts the scores into a series, it does not actually
-        # calculate those scores, so how well the scores match is sort of
-        # irrelevant.
-        pdt.assert_series_equal(_extract_rfe_scores(selector), self.exp1)
+        self.extract_rfe_scores_template(1, self.exp1)
 
     def test_extract_rfe_scores_step_float_one(self):
-        selector = RFECV(LinearSVR(), step=0.1, cv=5)
-        selector = selector.fit(self.X, self.y)
-        pdt.assert_series_equal(
-            _extract_rfe_scores(selector), self.exp1, check_less_precise=3)
+        self.extract_rfe_scores_template(0.1, self.exp1)
 
     def test_extract_rfe_scores_step_int_two(self):
-        selector = RFECV(LinearSVR(), step=2, cv=5)
-        selector = selector.fit(self.X, self.y)
-        pdt.assert_series_equal(
-            _extract_rfe_scores(selector), self.exp2, check_less_precise=3)
+        self.extract_rfe_scores_template(2, self.exp2)
 
     def test_extract_rfe_scores_step_float_two(self):
-        selector = RFECV(LinearSVR(), step=0.2, cv=5)
-        selector = selector.fit(self.X, self.y)
-        pdt.assert_series_equal(
-            _extract_rfe_scores(selector), self.exp2, check_less_precise=3)
+        self.extract_rfe_scores_template(0.2, self.exp2)
 
     def test_extract_rfe_scores_step_full_range(self):
-        selector = RFECV(LinearSVR(), step=10, cv=5)
-        selector = selector.fit(self.X, self.y)
-        pdt.assert_series_equal(
-            _extract_rfe_scores(selector), self.exp3, check_less_precise=3)
+        self.extract_rfe_scores_template(10, self.exp3)
 
     def test_extract_rfe_scores_step_out_of_range(self):
         # should be equal to full_range
-        selector = RFECV(LinearSVR(), step=10, cv=5)
-        selector = selector.fit(self.X, self.y)
-        pdt.assert_series_equal(
-            _extract_rfe_scores(selector), self.exp3, check_less_precise=3)
+        self.extract_rfe_scores_template(12, self.exp3)
 
 
 class TestRFEExtractor(SampleClassifierTestPluginBase):
