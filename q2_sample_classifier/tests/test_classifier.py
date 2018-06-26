@@ -240,32 +240,32 @@ class TestRFEExtractor(SampleClassifierTestPluginBase):
         selector = RFECV(LinearSVR(), step=0.1, cv=5)
         selector = selector.fit(self.X, self.y)
         pdt.assert_series_equal(
-            _extract_rfe_scores(selector), self.exp1, check_less_precise=1)
+            _extract_rfe_scores(selector), self.exp1, check_less_precise=0)
 
     def test_extract_rfe_scores_step_int_two(self):
         selector = RFECV(LinearSVR(), step=2, cv=5)
         selector = selector.fit(self.X, self.y)
         pdt.assert_series_equal(
-            _extract_rfe_scores(selector), self.exp2, check_less_precise=1)
+            _extract_rfe_scores(selector), self.exp2, check_less_precise=0)
 
     def test_extract_rfe_scores_step_float_two(self):
         selector = RFECV(LinearSVR(), step=0.2, cv=5)
         selector = selector.fit(self.X, self.y)
         pdt.assert_series_equal(
-            _extract_rfe_scores(selector), self.exp2, check_less_precise=1)
+            _extract_rfe_scores(selector), self.exp2, check_less_precise=0)
 
     def test_extract_rfe_scores_step_full_range(self):
         selector = RFECV(LinearSVR(), step=10, cv=5)
         selector = selector.fit(self.X, self.y)
         pdt.assert_series_equal(
-            _extract_rfe_scores(selector), self.exp3, check_less_precise=1)
+            _extract_rfe_scores(selector), self.exp3, check_less_precise=0)
 
     def test_extract_rfe_scores_step_out_of_range(self):
         # should be equal to full_range
         selector = RFECV(LinearSVR(), step=10, cv=5)
         selector = selector.fit(self.X, self.y)
         pdt.assert_series_equal(
-            _extract_rfe_scores(selector), self.exp3, check_less_precise=1)
+            _extract_rfe_scores(selector), self.exp3, check_less_precise=0)
 
 
 class TestRFEExtractor(SampleClassifierTestPluginBase):
