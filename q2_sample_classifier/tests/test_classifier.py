@@ -26,13 +26,14 @@ from q2_sample_classifier.visuals import (
 from q2_sample_classifier.classify import (
     classify_samples, regress_samples, regress_samples_ncv,
     classify_samples_ncv, fit_classifier, fit_regressor, maturity_index,
-    detect_outliers, split_table, predict, scatterplot, confusion_matrix)
+    detect_outliers, split_table, predict, scatterplot, confusion_matrix,
+    summarize)
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator, _load_data,
     _calculate_feature_importances, _extract_important_features,
     _train_adaboost_base_estimator, _disable_feature_selection,
     _mean_feature_importance, _null_feature_importance, _extract_features,
-    _match_series_or_die)
+    _match_series_or_die, _extract_rfe_scores)
 from q2_sample_classifier import (
     BooleanSeriesFormat, BooleanSeriesDirectoryFormat, BooleanSeries,
     PredictionsFormat, PredictionsDirectoryFormat, Predictions,
@@ -47,8 +48,8 @@ from qiime2.plugin import ValidationError
 import sklearn
 from sklearn.metrics import mean_squared_error
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-from sklearn.svm import LinearSVC
-from sklearn.feature_extraction import DictVectorizer
+from sklearn.svm import LinearSVC, LinearSVR
+from sklearn.feature_selection import RFECV
 from sklearn.pipeline import Pipeline
 from sklearn.externals import joblib
 import pandas.util.testing as pdt
@@ -201,6 +202,57 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
                {'c': 1.0, 'a': 1.0, 'b': 1.0}]
         np.testing.assert_array_equal(feature_data, exp)
         self.assertEqual(set(targets.index), intersection)
+
+class TestRFEExtractor(SampleClassifierTestPluginBase):
+
+    def setUp(self):
+        super().setUp()
+        # seed random dataset
+        np.random.seed(1)
+        self.X = np.random.random((10, 10))
+        self.y = np.random.random((10))
+        self.exp1 = pd.Series({
+            1: -8.096688828901732, 2: -6.13346873360013, 3: -6.593460246071776,
+            4: -5.867486382262684, 5: -4.37235696316988, 6: -4.597087855542542,
+            7: -5.19027933768765, 8: -5.35099558668613, 9: -5.520965375750838,
+            10: -5.474324752627846}, name='Accuracy')
+        self.exp2 = pd.Series({
+            1: -8.096782942785572, 2: -5.357676394544744,
+            4: -6.361483301106081, 6: -4.3655971980195, 8: -5.351542537040678,
+            10: -5.474285818138156}, name='Accuracy')
+        self.exp3 = pd.Series(
+            {1: -7.499776492891667, 10: -5.474002989868334}, name='Accuracy')
+
+    def test_extract_rfe_scores_step_int_one(self):
+        selector = RFECV(LinearSVR(), step=1, cv=5)
+        selector = selector.fit(self.X, self.y)
+        pdt.assert_series_equal(_extract_rfe_scores(selector), self.exp1)
+
+    def test_extract_rfe_scores_step_float_one(self):
+        selector = RFECV(LinearSVR(), step=0.1, cv=5)
+        selector = selector.fit(self.X, self.y)
+        pdt.assert_series_equal(_extract_rfe_scores(selector), self.exp1)
+
+    def test_extract_rfe_scores_step_int_two(self):
+        selector = RFECV(LinearSVR(), step=2, cv=5)
+        selector = selector.fit(self.X, self.y)
+        pdt.assert_series_equal(_extract_rfe_scores(selector), self.exp2)
+
+    def test_extract_rfe_scores_step_float_two(self):
+        selector = RFECV(LinearSVR(), step=0.2, cv=5)
+        selector = selector.fit(self.X, self.y)
+        pdt.assert_series_equal(_extract_rfe_scores(selector), self.exp2)
+
+    def test_extract_rfe_scores_step_full_range(self):
+        selector = RFECV(LinearSVR(), step=10, cv=5)
+        selector = selector.fit(self.X, self.y)
+        pdt.assert_series_equal(_extract_rfe_scores(selector), self.exp3)
+
+    def test_extract_rfe_scores_step_out_of_range(self):
+        # should be equal to full_range
+        selector = RFECV(LinearSVR(), step=10, cv=5)
+        selector = selector.fit(self.X, self.y)
+        pdt.assert_series_equal(_extract_rfe_scores(selector), self.exp3)
 
 
 class VisualsTests(SampleClassifierTestPluginBase):
