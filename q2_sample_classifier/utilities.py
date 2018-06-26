@@ -240,10 +240,22 @@ def _rfecv_feature_selection(feature_data, targets, estimator,
         rfecv.named_steps.est.ranking_)
     importance = sort_importances(importance, ascending=True)[:n_opt]
 
-    # Plot RFE accuracy
-    rfep = _plot_RFE(rfecv.named_steps.est)
+    rfe_scores = _extract_rfe_scores(rfecv.named_steps.est)
 
-    return rfecv, importance, rfep
+    return importance, rfe_scores
+
+
+def _extract_rfe_scores(rfecv):
+    n_features = len(rfecv.ranking_)
+    # If using fractional step, step = integer of fraction * n_features
+    if rfecv.step < 1:
+        rfecv.step = int(rfecv.step * n_features)
+    # Need to manually calculate x-axis, as rfecv.grid_scores_ are a 1-d array
+    x = [n_features - (n * rfecv.step)
+         for n in range(len(rfecv.grid_scores_)-1, -1, -1)]
+    if x[0] < 1:
+        x[0] = 1
+    return pd.Series(rfecv.grid_scores_, index=x, name='Accuracy')
 
 
 def nested_cross_validation(table, metadata, cv, random_state, n_jobs,
@@ -303,7 +315,7 @@ def _fit_estimator(features, targets, estimator, n_estimators=100, step=0.05,
 
     # optimize training feature count
     if optimize_feature_selection:
-        X_train, X_test, importances = _optimize_feature_selection(
+        X_train, X_test, importances, rfe_scores = _optimize_feature_selection(
             output_dir=None, X_train=X_train, X_test=None, y_train=y_train,
             estimator=estimator, cv=cv, step=step, n_jobs=n_jobs)
     else:
@@ -322,6 +334,9 @@ def _fit_estimator(features, targets, estimator, n_estimators=100, step=0.05,
     importances = _attempt_to_calculate_feature_importances(
         estimator, calc_feature_importance,
         optimize_feature_selection, importances)
+
+    if optimize_feature_selection:
+        estimator.rfe_scores = rfe_scores
 
     return estimator, importances
 
@@ -343,7 +358,7 @@ def split_optimize_classify(features, targets, column, estimator,
 
     # optimize training feature count
     if optimize_feature_selection:
-        X_train, X_test, importances = _optimize_feature_selection(
+        X_train, X_test, importances, rfe_scores = _optimize_feature_selection(
             output_dir, X_train, X_test, y_train, estimator, cv, step, n_jobs)
     else:
         importances = None
@@ -409,9 +424,11 @@ def _prepare_training_data(features, targets, column, test_size,
 
 def _optimize_feature_selection(output_dir, X_train, X_test, y_train,
                                 estimator, cv, step, n_jobs):
-    rfecv, importance, rfep = _rfecv_feature_selection(
+    importance, rfe_scores = _rfecv_feature_selection(
         X_train, y_train, estimator=estimator, cv=cv, step=step, n_jobs=n_jobs)
     if output_dir:
+        # Plot RFE accuracy
+        rfep = _plot_RFE(rfe_scores.index, rfe_scores)
         rfep.savefig(join(output_dir, 'rfe_plot.png'))
         rfep.savefig(join(output_dir, 'rfe_plot.pdf'))
         plt.close('all')
@@ -420,7 +437,7 @@ def _optimize_feature_selection(output_dir, X_train, X_test, y_train,
     X_train = [{k: r[k] for k in r.keys() & index} for r in X_train]
     if X_test is not None:
         X_test = [{k: r[k] for k in r.keys() & index} for r in X_test]
-    return X_train, X_test, importance
+    return X_train, X_test, importance, rfe_scores
 
 
 def _calculate_feature_importances(estimator):
@@ -503,6 +520,22 @@ def _extract_estimator_parameters(estimator):
     return pd.Series(estimator_params, name='Parameter setting')
 
 
+def _summarize_estimator(output_dir, sample_estimator):
+    try:
+        rfep = _plot_RFE(
+            x=sample_estimator.rfe_scores.index, y=sample_estimator.rfe_scores)
+        rfep.savefig(join(output_dir, 'rfe_plot.png'))
+        rfep.savefig(join(output_dir, 'rfe_plot.pdf'))
+        plt.close('all')
+        optimize_feature_selection = True
+    # if the rfe_scores attribute does not exist, do nothing
+    except AttributeError:
+        optimize_feature_selection = False
+
+    _visualize(output_dir, sample_estimator, None, None, None,
+               optimize_feature_selection, title='Estimator Summary')
+
+
 def _visualize(output_dir, estimator, cm, importances=None,
                optimize_feature_selection=True, title='results'):
 
@@ -515,9 +548,10 @@ def _visualize(output_dir, estimator, cm, importances=None,
     else:
         result = False
 
-    cm.to_csv(join(
-        output_dir, 'predictive_accuracy.tsv'), sep='\t', index=True)
-    cm = q2templates.df_to_html(cm)
+    if cm is not None:
+        cm.to_csv(join(
+            output_dir, 'predictive_accuracy.tsv'), sep='\t', index=True)
+        cm = q2templates.df_to_html(cm)
 
     if importances is not None:
         importances = sort_importances(importances)
