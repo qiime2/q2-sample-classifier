@@ -204,6 +204,7 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
         np.testing.assert_array_equal(feature_data, exp)
         self.assertEqual(set(targets.index), intersection)
 
+
 class TestRFEExtractor(SampleClassifierTestPluginBase):
 
     def setUp(self):
@@ -836,8 +837,6 @@ class SampleEstimatorTestBase(SampleClassifierTestPluginBase):
             md = qiime2.CategoricalMetadataColumn(md[column])
             return md
 
-        #table_ecam_fp = _load_biom('ecam-table-maturity.qza')
-        #mdc_ecam_fp = _load_nmc('ecam_map_maturity.txt', 'month')
         table_chard_fp = _load_biom('chardonnay.table.qza')
         mdc_chard_fp = _load_cmc('chardonnay.map.txt', 'Region')
 
