@@ -210,24 +210,20 @@ class TestRFEExtractor(SampleClassifierTestPluginBase):
     def setUp(self):
         super().setUp()
         # seed random dataset
-        np.random.seed(1)
-        self.X = np.random.randint(0, 10, (10, 10))
-        self.y = np.random.randint(0, 10, (10))
+        self.X = np.array([[5, 8, 9, 5, 0], [0, 1, 7, 6, 9], [2, 4, 5, 2, 4]])
+        self.y = np.array([2, 4, 7])
         self.exp1 = pd.Series({
-            1: -11.35166727089737, 2: -15.097125561105225,
-            3: -10.644463470103215, 4: -17.414578847161845,
-            5: -14.4620304052869, 6: -24.609432864787795,
-            7: -17.705823312410693, 8: -12.62421682839172,
-            9: -15.645639393398847, 10: -15.635680965981695}, name='Accuracy')
+            1: -34.56065088757396, 2: -23.52777777777777,
+            3: -19.92954815695601, 4: -24.050468262226843,
+            5: -24.225665748393013}, name='Accuracy')
         self.exp2 = pd.Series({
-            1: -11.35166727089737, 2: -24.164015049973578,
-            4: -20.910760051002036, 6: -18.394732168014336,
-            8: -13.29792410261592, 10: -15.635680965981695}, name='Accuracy')
+            1: -34.56065088757396, 3: -19.92954815695601,
+            5: -24.225665748393013}, name='Accuracy')
         self.exp3 = pd.Series(
-            {1: -19.85128042108258, 10: -15.635680965981695}, name='Accuracy')
+            {1: -34.56065088757396, 5: -24.225665748393013}, name='Accuracy')
 
     def extract_rfe_scores_template(self, steps, expected):
-        selector = RFECV(LinearSVR(random_state=123), step=steps, cv=5)
+        selector = RFECV(LinearSVR(random_state=123), step=steps, cv=2)
         selector = selector.fit(self.X, self.y)
         pdt.assert_series_equal(
             _extract_rfe_scores(selector), expected, check_less_precise=3)
@@ -236,13 +232,13 @@ class TestRFEExtractor(SampleClassifierTestPluginBase):
         self.extract_rfe_scores_template(1, self.exp1)
 
     def test_extract_rfe_scores_step_float_one(self):
-        self.extract_rfe_scores_template(0.1, self.exp1)
+        self.extract_rfe_scores_template(0.2, self.exp1)
 
     def test_extract_rfe_scores_step_int_two(self):
         self.extract_rfe_scores_template(2, self.exp2)
 
     def test_extract_rfe_scores_step_float_two(self):
-        self.extract_rfe_scores_template(0.2, self.exp2)
+        self.extract_rfe_scores_template(0.4, self.exp2)
 
     def test_extract_rfe_scores_step_full_range(self):
         self.extract_rfe_scores_template(10, self.exp3)
