@@ -49,6 +49,7 @@ import sklearn
 from sklearn.metrics import mean_squared_error
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.svm import LinearSVC, LinearSVR
+from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_selection import RFECV
 from sklearn.pipeline import Pipeline
 from sklearn.externals import joblib
@@ -829,17 +830,19 @@ class SampleEstimatorTestBase(SampleClassifierTestPluginBase):
             table = table.view(biom.Table)
             return table
 
-        def _load_nmc(md_fp, column):
+        def _load_cmc(md_fp, column):
             md_fp = self.get_data_path(md_fp)
             md = pd.DataFrame.from_csv(md_fp, sep='\t')
-            md = qiime2.NumericMetadataColumn(md[column])
+            md = qiime2.CategoricalMetadataColumn(md[column])
             return md
 
-        table_ecam_fp = _load_biom('ecam-table-maturity.qza')
-        mdc_ecam_fp = _load_nmc('ecam_map_maturity.txt', 'month')
+        #table_ecam_fp = _load_biom('ecam-table-maturity.qza')
+        #mdc_ecam_fp = _load_nmc('ecam_map_maturity.txt', 'month')
+        table_chard_fp = _load_biom('chardonnay.table.qza')
+        mdc_chard_fp = _load_cmc('chardonnay.map.txt', 'Region')
 
         pipeline, importances = fit_classifier(
-            table_ecam_fp, mdc_ecam_fp, random_state=123,
+            table_chard_fp, mdc_chard_fp, random_state=123,
             n_estimators=2, n_jobs=1, optimize_feature_selection=True,
             parameter_tuning=True, missing_samples='ignore')
         transformer = self.get_transformer(
@@ -847,6 +850,7 @@ class SampleEstimatorTestBase(SampleClassifierTestPluginBase):
         self._sklp = transformer(pipeline)
         sklearn_pipeline = self._sklp.sklearn_pipeline.view(PickleFormat)
         self.sklearn_pipeline = str(sklearn_pipeline)
+        self.pipeline = pipeline
 
     def _custom_setup(self, version):
         with open(os.path.join(self.temp_dir.name,
@@ -953,6 +957,40 @@ class TestTransformers(SampleEstimatorTestBase):
         obs_pipeline = read_pipeline(str(sklearn_pipeline))
         obs = obs_pipeline
         self.assertTrue(obs)
+
+
+# make sure summarize visualizer works and that rfe_scores are stored properly
+class TestSummarize(SampleEstimatorTestBase):
+
+    '''def setUp(self):
+        super().setUp()
+
+        def _load_biom(table_fp):
+            table_fp = self.get_data_path(table_fp)
+            table = qiime2.Artifact.load(table_fp)
+            table = table.view(biom.Table)
+            return table
+
+        def _load_cmc(md_fp, column):
+            md_fp = self.get_data_path(md_fp)
+            md = pd.DataFrame.from_csv(md_fp, sep='\t')
+            md = qiime2.CategoricalMetadataColumn(md[column])
+            return md
+
+        table_chard_fp = _load_biom('chardonnay.table.qza')
+        mdc_chard_fp = _load_cmc('chardonnay.map.txt', 'Region')
+
+        self.est, importances = fit_classifier(
+            table_chard_fp, mdc_chard_fp, random_state=123,
+            n_estimators=2, n_jobs=1, optimize_feature_selection=True,
+            parameter_tuning=True, missing_samples='ignore')'''
+
+    def test_summary_with_rfecv(self):
+        summarize(self.temp_dir.name, self.pipeline)
+
+    def test_summary_without_rfecv(self):
+        del self.pipeline.rfe_scores
+        summarize(self.temp_dir.name, self.pipeline)
 
 
 md = pd.DataFrame([(1, 'a', 0.11), (1, 'a', 0.12), (1, 'a', 0.13),
