@@ -210,7 +210,7 @@ class TestRFEExtractor(SampleClassifierTestPluginBase):
 
     def setUp(self):
         super().setUp()
-        # seed random dataset
+
         self.X = np.array([[5, 8, 9, 5, 0], [0, 1, 7, 6, 9], [2, 4, 5, 2, 4]])
         self.y = np.array([2, 4, 7])
         self.exp1 = pd.Series({
