@@ -209,7 +209,7 @@ class TestRFEExtractor(SampleClassifierTestPluginBase):
 
     def setUp(self):
         super().setUp()
-        # seed random dataset
+
         self.X = np.array([[5, 8, 9, 5, 0], [0, 1, 7, 6, 9], [2, 4, 5, 2, 4]])
         self.y = np.array([2, 4, 7])
         self.exp1 = pd.Series({
@@ -951,29 +951,6 @@ class TestTransformers(SampleEstimatorTestBase):
 
 # make sure summarize visualizer works and that rfe_scores are stored properly
 class TestSummarize(SampleEstimatorTestBase):
-
-    '''def setUp(self):
-        super().setUp()
-
-        def _load_biom(table_fp):
-            table_fp = self.get_data_path(table_fp)
-            table = qiime2.Artifact.load(table_fp)
-            table = table.view(biom.Table)
-            return table
-
-        def _load_cmc(md_fp, column):
-            md_fp = self.get_data_path(md_fp)
-            md = pd.DataFrame.from_csv(md_fp, sep='\t')
-            md = qiime2.CategoricalMetadataColumn(md[column])
-            return md
-
-        table_chard_fp = _load_biom('chardonnay.table.qza')
-        mdc_chard_fp = _load_cmc('chardonnay.map.txt', 'Region')
-
-        self.est, importances = fit_classifier(
-            table_chard_fp, mdc_chard_fp, random_state=123,
-            n_estimators=2, n_jobs=1, optimize_feature_selection=True,
-            parameter_tuning=True, missing_samples='ignore')'''
 
     def test_summary_with_rfecv(self):
         summarize(self.temp_dir.name, self.pipeline)
