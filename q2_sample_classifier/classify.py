@@ -229,10 +229,10 @@ def maturity_index(output_dir: str, table: biom.Table,
 
     # split input data into control and treatment groups
     table, metadata = _load_data(
-        table, metadata, missing_samples=missing_samples)
+        table, metadata, missing_samples=missing_samples, extract=False)
     fancy_index = metadata[group_by] == control
     md_control = metadata[fancy_index]
-    table_control = [t for t, f in zip(table, fancy_index) if f]
+    table_control = table.filter(md_control.index, inplace=False)
 
     # train model on control data
     estimator, cm, accuracy, importances = split_optimize_classify(
@@ -246,6 +246,7 @@ def maturity_index(output_dir: str, table: biom.Table,
 
     # predict treatment data
     index = importances.index
+    table = _extract_features(table)
     table = [{k: r[k] for k in r.keys() & index} for r in table]
     y_pred = estimator.predict(table)
     predicted_column = 'predicted {0}'.format(column)
