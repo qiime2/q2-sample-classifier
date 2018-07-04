@@ -319,7 +319,7 @@ def _fit_estimator(features, targets, estimator, n_estimators=100, step=0.05,
     # specify parameters and distributions to sample from for parameter tuning
     estimator, param_dist, parameter_tuning = _set_parameters_and_estimator(
         estimator, features, targets, column, n_estimators, n_jobs, cv,
-        random_state, parameter_tuning, classification=True)
+        random_state, parameter_tuning, classification=classification)
 
     # optimize training feature count
     if optimize_feature_selection:
@@ -345,6 +345,15 @@ def _fit_estimator(features, targets, estimator, n_estimators=100, step=0.05,
 
     if optimize_feature_selection:
         estimator.rfe_scores = rfe_scores
+
+    # methods cannot output an empty importances artifact; only KNN has no
+    # feature importance, but just warn and output all features as
+    # importance = 1
+    if importances is None:
+        _warn_feature_selection()
+        importances = pd.DataFrame(index=features.ids('observation'))
+        importances["importance"] = 1.
+        importances.index.name = 'feature'
 
     return estimator, importances
 

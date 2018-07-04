@@ -24,10 +24,9 @@ from q2_sample_classifier.visuals import (
     _calculate_baseline_accuracy, _custom_palettes,
     _plot_heatmap_from_confusion_matrix, _add_sample_size_to_xtick_labels)
 from q2_sample_classifier.classify import (
-    classify_samples, regress_samples, regress_samples_ncv,
-    classify_samples_ncv, fit_classifier, fit_regressor, maturity_index,
-    detect_outliers, split_table, predict, scatterplot, confusion_matrix,
-    summarize)
+    regress_samples_ncv, classify_samples_ncv, fit_classifier, fit_regressor,
+    maturity_index, detect_outliers, split_table, predict, scatterplot,
+    confusion_matrix, summarize)
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator, _load_data,
     _calculate_feature_importances, _extract_important_features,
@@ -47,7 +46,7 @@ from qiime2.plugin.testing import TestPluginBase
 from qiime2.plugin import ValidationError
 from qiime2.plugins import sample_classifier
 import sklearn
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, accuracy_score
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.svm import LinearSVC, LinearSVR
 from sklearn.feature_extraction import DictVectorizer
@@ -595,38 +594,24 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 else:
                     self.assertEqual(dict_row[feature], count)
 
-    # test that the plugin/visualizer work
-    def test_classify_samples(self):
-        tmpd = join(self.temp_dir.name, 'RandomForestClassifier')
-        mkdir(tmpd)
-        classify_samples(tmpd, self.table_chard_fp, self.mdc_chard_fp,
-                         test_size=0.5, cv=3,
-                         n_estimators=2, n_jobs=1,
-                         estimator='RandomForestClassifier',
-                         parameter_tuning=True,
-                         optimize_feature_selection=True,
-                         missing_samples='ignore')
-
     # test that each classifier works and delivers an expected accuracy result
     # when a random seed is set.
     def test_classifiers(self):
         for classifier in ['RandomForestClassifier', 'ExtraTreesClassifier',
                            'GradientBoostingClassifier', 'AdaBoostClassifier',
                            'LinearSVC', 'SVC', 'KNeighborsClassifier']:
-            tmpd = join(self.temp_dir.name, classifier)
-            mkdir(tmpd)
-            estimator, pad, pt = _set_parameters_and_estimator(
-                classifier, self.table_chard_fp, self.md_chard_fp, 'Region',
-                n_estimators=10, n_jobs=1, cv=1,
-                random_state=123, parameter_tuning=False, classification=True,
+            table_fp = self.get_data_path('chardonnay.table.qza')
+            table = qiime2.Artifact.load(table_fp)
+            res = sample_classifier.actions.classify_samples(
+                table=table, metadata=self.mdc_chard_fp,
+                test_size=0.5, cv=1, n_estimators=10, n_jobs=1,
+                estimator=classifier, random_state=123,
+                parameter_tuning=False, optimize_feature_selection=False,
                 missing_samples='ignore')
-            estimator, cm, accuracy, importances = split_optimize_classify(
-                self.table_chard_fp, self.md_chard_fp, 'Region', estimator,
-                tmpd, test_size=0.5, cv=1, random_state=123,
-                n_jobs=1, optimize_feature_selection=False,
-                parameter_tuning=False, param_dist=None,
-                calc_feature_importance=False, missing_samples='ignore')
-            self.assertAlmostEqual(accuracy, seeded_results[classifier])
+            pred = res[2].view(pd.Series)
+            pred, truth = _match_series_or_die(
+                pred, self.mdc_chard_fp.to_series(), 'ignore')
+            accuracy = accuracy_score(truth, pred)
             self.assertAlmostEqual(
                 accuracy, seeded_results[classifier], places=4,
                 msg='Accuracy of %s classifier was %f, but expected %f' % (
@@ -650,15 +635,6 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
             n_estimators=2, n_jobs=1, stratify=False, parameter_tuning=False,
             estimator='KNeighborsRegressor', missing_samples='ignore')
-
-    def test_regress_samples(self):
-        tmpd = join(self.temp_dir.name, 'RandomForestRegressor')
-        mkdir(tmpd)
-        regress_samples(tmpd, self.table_ecam_fp, self.mdc_ecam_fp,
-                        test_size=0.5, cv=3,
-                        n_estimators=2, n_jobs=1,
-                        estimator='RandomForestRegressor',
-                        missing_samples='ignore')
 
     # test that ncv gives expected results
     def test_regress_samples_ncv_accuracy(self):
@@ -693,20 +669,18 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                           'GradientBoostingRegressor', 'AdaBoostRegressor',
                           'Lasso', 'Ridge', 'ElasticNet',
                           'KNeighborsRegressor', 'LinearSVR', 'SVR']:
-            tmpd = join(self.temp_dir.name, regressor)
-            mkdir(tmpd)
-            estimator, pad, pt = _set_parameters_and_estimator(
-                regressor, self.table_ecam_fp, self.md_ecam_fp, 'month',
-                n_estimators=10, n_jobs=1, cv=1,
-                random_state=123, parameter_tuning=False, classification=False,
+            table_fp = self.get_data_path('ecam-table-maturity.qza')
+            table = qiime2.Artifact.load(table_fp)
+            res = sample_classifier.actions.regress_samples(
+                table=table, metadata=self.mdc_ecam_fp,
+                test_size=0.5, cv=1, n_estimators=10, n_jobs=1,
+                estimator=regressor, random_state=123,
+                parameter_tuning=False, optimize_feature_selection=False,
                 missing_samples='ignore')
-            estimator, cm, accuracy, importances = split_optimize_classify(
-                self.table_ecam_fp, self.md_ecam_fp, 'month', estimator,
-                tmpd, test_size=0.5, cv=1, random_state=123,
-                n_jobs=1, optimize_feature_selection=False,
-                parameter_tuning=False, param_dist=None, classification=False,
-                calc_feature_importance=False, scoring=mean_squared_error,
-                missing_samples='ignore')
+            pred = res[2].view(pd.Series)
+            pred, truth = _match_series_or_die(
+                pred, self.mdc_ecam_fp.to_series(), 'ignore')
+            accuracy = mean_squared_error(truth, pred)
             self.assertAlmostEqual(
                 accuracy, seeded_results[regressor], places=4,
                 msg='Accuracy of %s regressor was %f, but expected %f' % (
@@ -830,7 +804,10 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             # are mostly quite high as we would expect (total n=21))
             correct_results = np.sum(pred == exp)
             self.assertEqual(
-                correct_results, seeded_predict_results[classifier])
+                correct_results, seeded_predict_results[classifier],
+                msg='Accuracy of %s classifier was %f, but expected %f' % (
+                    classifier, correct_results,
+                    seeded_predict_results[classifier]))
 
     def test_predict_regressors(self):
         for regressor in ['RandomForestRegressor', 'ExtraTreesRegressor',
@@ -851,7 +828,10 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             # test that expected MSE is achieved (these are mostly quite high
             # as we would expect)
             mse = mean_squared_error(exp, pred)
-            self.assertAlmostEqual(mse, seeded_predict_results[regressor])
+            self.assertAlmostEqual(
+                mse, seeded_predict_results[regressor],
+                msg='Accuracy of %s regressor was %f, but expected %f' % (
+                    regressor, mse, seeded_predict_results[regressor]))
 
 
 class NowLetsTestTheActions(SampleClassifierTestPluginBase):
@@ -1064,7 +1044,7 @@ seeded_predict_results = {
     'RandomForestRegressor': 7.4246031746,
     'ExtraTreesRegressor': 0.,
     'GradientBoostingRegressor': 50.1955883469,
-    'AdaBoostRegressor': 0.,
+    'AdaBoostRegressor': 9.7857142857142865,
     'Lasso': 0.173138653701,
     'Ridge': 7.57617215386,
     'ElasticNet': 0.0614243397637,

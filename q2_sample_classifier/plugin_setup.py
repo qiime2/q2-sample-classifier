@@ -10,7 +10,7 @@ import importlib
 
 from qiime2.plugin import (
     Int, Str, Float, Range, Bool, Plugin, Metadata, Choices, MetadataColumn,
-    Numeric, Categorical, Citations)
+    Numeric, Categorical, Citations, Visualization)
 from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
@@ -43,7 +43,7 @@ plugin = Plugin(
         'learning methods.'),
     short_description=(
         'Plugin for machine learning prediction of sample metadata.'),
-    citations=[citations['Bokulich306167']]
+    citations=[citations['Bokulich306167'], citations['pedregosa2011scikit']]
 )
 
 description = ('Predicts a {0} sample metadata column using a {1}. Splits '
@@ -155,58 +155,84 @@ output_descriptions = {
     'feature_importance': 'Importance of each input feature to model accuracy.'
 }
 
+fitter_outputs = [('sample_estimator', SampleEstimator),
+                  ('feature_importance', FeatureData[Importance])]
 
-plugin.visualizers.register_function(
+pipeline_parameters = {
+    **parameters['base'],
+    **parameters['rfe'],
+    **parameters['splitter'],
+    **parameters['cv']}
+
+classifier_pipeline_parameters = {
+    **pipeline_parameters,
+    'metadata': MetadataColumn[Categorical],
+    'estimator': classifiers,
+    'palette': Str % Choices(_custom_palettes().keys())}
+
+regressor_pipeline_parameters = {
+    **pipeline_parameters,
+    'metadata': MetadataColumn[Numeric],
+    **parameters['regressor'],
+    'estimator': regressors}
+
+pipeline_parameter_descriptions = {
+    **parameter_descriptions['base'],
+    **parameter_descriptions['rfe'],
+    **parameter_descriptions['splitter'],
+    **parameter_descriptions['estimator'],
+    **parameter_descriptions['cv']}
+
+classifier_pipeline_parameter_descriptions = {
+    **pipeline_parameter_descriptions,
+    'metadata': 'Categorical metadata column to use as prediction target.',
+    'palette': 'The color palette to use for plotting.'}
+
+regressor_pipeline_parameter_descriptions = {
+    **pipeline_parameter_descriptions,
+    **parameter_descriptions['regressor'],
+    'metadata': 'Numeric metadata column to use as prediction target.'}
+
+pipeline_outputs = fitter_outputs + [
+    ('predictions', SampleData[Predictions]),
+    ('model_summary', Visualization),
+    ('accuracy_results', Visualization)]
+
+pipeline_output_descriptions = {
+    **sample_estimator_description,
+    **output_descriptions,
+    'model_summary': 'Summarized parameter and (if enabled) feature '
+                     'selection information for the trained estimator.',
+    'accuracy_results': 'Accuracy results visualization.'}
+
+
+plugin.pipelines.register_function(
     function=classify_samples,
     inputs=inputs,
-    parameters={
-        **parameters['base'],
-        **parameters['rfe'],
-        **parameters['splitter'],
-        **parameters['cv'],
-        'metadata': MetadataColumn[Categorical],
-        'estimator': classifiers,
-        'palette': Str % Choices(_custom_palettes().keys())},
+    parameters=classifier_pipeline_parameters,
+    outputs=pipeline_outputs,
     input_descriptions=input_descriptions,
-    parameter_descriptions={
-        **parameter_descriptions['base'],
-        **parameter_descriptions['rfe'],
-        **parameter_descriptions['splitter'],
-        **parameter_descriptions['cv'],
-        'metadata': ('Categorical metadata column to use as prediction '
-                     'target.'),
-        **parameter_descriptions['estimator'],
-        'palette': 'The color palette to use for plotting.'},
+    parameter_descriptions=classifier_pipeline_parameter_descriptions,
+    output_descriptions=pipeline_output_descriptions,
     name='Train and test a cross-validated supervised learning classifier.',
     description=description.format(
         'categorical', 'supervised learning classifier')
 )
 
 
-plugin.visualizers.register_function(
+plugin.pipelines.register_function(
     function=regress_samples,
     inputs=inputs,
-    parameters={
-        **parameters['base'],
-        **parameters['rfe'],
-        **parameters['splitter'],
-        **parameters['cv'],
-        'metadata': MetadataColumn[Numeric],
-        **parameters['regressor'],
-        'estimator': regressors},
+    parameters=regressor_pipeline_parameters,
+    outputs=pipeline_outputs,
     input_descriptions=input_descriptions,
-    parameter_descriptions={
-        **parameter_descriptions['base'],
-        **parameter_descriptions['rfe'],
-        **parameter_descriptions['splitter'],
-        **parameter_descriptions['cv'],
-        **parameter_descriptions['regressor'],
-        'metadata': 'Numeric metadata column to use as prediction target.',
-        **parameter_descriptions['estimator']},
+    parameter_descriptions=regressor_pipeline_parameter_descriptions,
+    output_descriptions=pipeline_output_descriptions,
     name='Train and test a cross-validated supervised learning regressor.',
     description=description.format(
         'continuous', 'supervised learning regressor')
 )
+
 
 plugin.methods.register_function(
     function=regress_samples_ncv,
@@ -252,9 +278,6 @@ plugin.methods.register_function(
         'categorical', 'supervised learning classifier')
 )
 
-
-fitter_outputs = [('sample_estimator', SampleEstimator),
-                  ('feature_importance', FeatureData[Importance])]
 
 plugin.methods.register_function(
     function=fit_classifier,
