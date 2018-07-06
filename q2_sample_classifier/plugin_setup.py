@@ -455,27 +455,24 @@ plugin.visualizers.register_function(
 )
 
 
-plugin.visualizers.register_function(
+plugin.pipelines.register_function(
     function=maturity_index,
     inputs=inputs,
     parameters={'group_by': Str,
                 'control': Str,
                 'estimator': regressors,
-                **parameters['base'],
-                **parameters['rfe'],
-                **parameters['cv'],
-                **parameters['splitter'],
+                **pipeline_parameters,
                 'metadata': Metadata,
                 'column': Str,
                 **parameters['regressor'],
-                'maz_stats': Bool,
                 },
+    outputs=pipeline_outputs + [
+        ('maz_scores', SampleData[Predictions]),
+        ('clustermap', Visualization),
+        ('lineplots', Visualization)],
     input_descriptions=input_descriptions,
     parameter_descriptions={
-        **parameter_descriptions['base'],
-        **parameter_descriptions['rfe'],
-        **parameter_descriptions['cv'],
-        **parameter_descriptions['splitter'],
+        **pipeline_parameter_descriptions,
         'column': 'Numeric metadata column to use as prediction target.',
         'group_by': ('Categorical metadata column to use for plotting and '
                      'significance testing between main treatment groups.'),
@@ -486,8 +483,14 @@ plugin.visualizers.register_function(
             'this group.'),
         'estimator': 'Regression model to use for prediction.',
         **parameter_descriptions['regressor'],
-        'maz_stats': 'Calculate anova and pairwise tests on MAZ scores.',
     },
+    output_descriptions={
+        **pipeline_output_descriptions,
+        'maz_scores': 'Microbiota-for-age z-score predictions.',
+        'clustermap': 'Heatmap of important feature abundance at each time '
+                      'point in each group.',
+        'lineplots': 'Interactive line plots of MAZ scores, target (column) '
+                     'predictions, and other metadata.'},
     name='Microbial maturity index prediction.',
     description=('Calculates a "microbial maturity" index from a regression '
                  'model trained on feature data to predict a given continuous '

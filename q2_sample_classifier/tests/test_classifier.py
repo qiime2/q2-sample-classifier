@@ -429,7 +429,15 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
                         name='prediction', index=['a', 'b', 'c', 'd'])
         obs = transformer(exp)
         obs = pd.Series.from_csv(str(obs), sep='\t', header=0)
-        pdt.assert_series_equal(obs[:4], exp)
+        pdt.assert_series_equal(obs, exp)
+
+    def test_pd_series_to_Predictions_format_allow_nans(self):
+        transformer = self.get_transformer(pd.Series, PredictionsFormat)
+        exp = pd.Series([1, np.nan, 3, np.nan],
+                        name='prediction', index=['a', 'b', 'c', 'd'])
+        obs = transformer(exp)
+        obs = pd.Series.from_csv(str(obs), sep='\t', header=0)
+        pdt.assert_series_equal(obs, exp)
 
     def test_Predictions_format_to_pd_series(self):
         _, obs = self.transform_format(
@@ -693,6 +701,24 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 msg='Accuracy of %s regressor was %f, but expected %f' % (
                     regressor, accuracy, seeded_results[regressor]))
 
+    # test that this method works, produces expected results
+    # internal pipeline actions are tested independently so this method
+    # tests that predictions and MAZ scores are calculated correctly.
+    def test_maturity_index(self):
+        table_fp = self.get_data_path('ecam-table-maturity.qza')
+        table = qiime2.Artifact.load(table_fp)
+        res = sample_classifier.actions.maturity_index(
+            table, self.md_ecam_fp, column='month', n_estimators=2,
+            group_by='delivery', random_state=123, n_jobs=1, control='Vaginal',
+            test_size=0.4, missing_samples='ignore')
+        maz = pd.to_numeric(res[5].view(pd.Series))
+        exp_maz = pd.read_csv(
+            self.get_data_path('maz.tsv'), sep='\t', squeeze=True, index_col=0,
+            header=0)
+        pdt.assert_series_equal(
+            maz, exp_maz, check_dtype=False, check_index_type=False,
+            check_series_type=False, check_names=False)
+
     # test adaboost base estimator trainer
     def test_train_adaboost_base_estimator(self):
         abe = _train_adaboost_base_estimator(
@@ -765,12 +791,6 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 random_state=123, stratify=True, missing_samples='ignore')
 
     # test experimental functions
-    def test_maturity_index(self):
-        maturity_index(self.temp_dir.name, self.table_ecam_fp, self.md_ecam_fp,
-                       column='month', group_by='delivery', random_state=123,
-                       n_jobs=1, control='Vaginal', test_size=0.4,
-                       missing_samples='ignore')
-
     def test_detect_outliers(self):
         detect_outliers(self.table_chard_fp, self.md_chard_fp,
                         random_state=123, n_jobs=1, contamination=0.05)
