@@ -20,13 +20,17 @@ import pandas as pd
 import numpy as np
 from sklearn.exceptions import ConvergenceWarning
 from q2_sample_classifier.visuals import (
-    _two_way_anova, _pairwise_stats, _linear_regress,
-    _calculate_baseline_accuracy, _custom_palettes,
+    _linear_regress, _calculate_baseline_accuracy, _custom_palettes,
     _plot_heatmap_from_confusion_matrix, _add_sample_size_to_xtick_labels)
 from q2_sample_classifier.classify import (
     regress_samples_ncv, classify_samples_ncv, fit_classifier, fit_regressor,
+<<<<<<< HEAD
     maturity_index, detect_outliers, split_table, predict_classification,
     predict_regression, scatterplot, confusion_matrix, summarize)
+=======
+    detect_outliers, split_table, predict, scatterplot,
+    confusion_matrix, summarize)
+>>>>>>> garbage collection
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator, _load_data,
     _calculate_feature_importances, _extract_important_features,
@@ -292,19 +296,6 @@ class TestRFEExtractor(SampleClassifierTestPluginBase):
 
 
 class VisualsTests(SampleClassifierTestPluginBase):
-
-    def test_two_way_anova(self):
-        aov, mod_sum = _two_way_anova(tab1, md, 'Value', 'Time', 'Group')
-        self.assertAlmostEqual(aov['PR(>F)']['Group'], 0.00013294988301061492)
-        self.assertAlmostEqual(aov['PR(>F)']['Time'], 4.1672315658105502e-07)
-        self.assertAlmostEqual(aov['PR(>F)']['Time:Group'], 0.0020603144625217)
-
-    def test_pairwise_tests(self):
-        res = _pairwise_stats(tab1, md, 'Value', 'Time', 'Group')
-        self.assertAlmostEqual(
-            res['q-value'][(1, 'a')][(1, 'b')], 0.066766544811987918)
-        self.assertAlmostEqual(
-            res['q-value'][(1, 'a')][(2, 'b')], 0.00039505928148818022)
 
     def test_linear_regress(self):
         res = _linear_regress(md['Value'], md['Time'])

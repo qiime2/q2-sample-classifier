@@ -17,13 +17,11 @@ import pandas as pd
 import biom
 
 from .utilities import (split_optimize_classify, _visualize, _load_data,
-                        _maz_score, _visualize_maturity_index,
-                        _set_parameters_and_estimator, _prepare_training_data,
-                        _disable_feature_selection, _select_estimator,
+                        _maz_score, _set_parameters_and_estimator,
+                        _prepare_training_data, _disable_feature_selection,
                         nested_cross_validation, _fit_estimator,
-                        _map_params_to_pipeline, _extract_features,
-                        _plot_accuracy, _summarize_estimator,
-                        _validate_metadata_is_superset)
+                        _extract_features, _plot_accuracy,
+                        _summarize_estimator, _validate_metadata_is_superset)
 
 
 defaults = {
@@ -406,8 +404,8 @@ def maturity_index(ctx,
     pred_md['prediction'] = pd.to_numeric(pred_md['prediction'])
     pred_md = _maz_score(pred_md, 'prediction', column, group_by, control)
     maz = '{0} MAZ score'.format(column)
-    pred_md.to_csv('/Users/nbokulich/Desktop/projects/old_q2_longitudinal/tutorial_data/pred.txt', sep='\t')
-    maz_scores = qiime2.Artifact.import_data('SampleData[Predictions]', pred_md[maz])
+    maz_scores = qiime2.Artifact.import_data(
+        'SampleData[Predictions]', pred_md[maz])
 
     # make heatmap
     # trim table to important features for viewing as heatmap
@@ -439,61 +437,6 @@ def maturity_index(ctx,
     return (
         sample_estimator, importance, predictions, summary, accuracy_results,
         maz_scores, clustermap, lineplots)
-
-
-def maturity_index_basic(output_dir: str, table: biom.Table,
-                         metadata: qiime2.Metadata, column: str, group_by: str,
-                         control: str, estimator: str=defaults['estimator_r'],
-                         n_estimators: int=defaults['n_estimators'],
-                         test_size: float=defaults['test_size'],
-                         step: float=defaults['step'], cv: int=defaults['cv'],
-                         random_state: int=None,
-                         n_jobs: int=defaults['n_jobs'], parameter_tuning: bool=True,
-                         optimize_feature_selection: bool=True, stratify: str=False,
-                         maz_stats: bool=True,
-                         missing_samples: str=defaults['missing_samples']) -> None:
-
-    # select estimator
-    param_dist, estimator = _select_estimator(estimator, n_jobs, n_estimators)
-    estimator = Pipeline([('dv', DictVectorizer()), ('est', estimator)])
-    param_dist = _map_params_to_pipeline(param_dist)
-
-    # split input data into control and treatment groups
-    table, metadata = _load_data(
-        table, metadata, missing_samples=missing_samples, extract=False)
-    fancy_index = metadata[group_by] == control
-    md_control = metadata[fancy_index]
-    table_control = table.filter(md_control.index, inplace=False)
-
-    # train model on control data
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table_control, md_control, column, estimator, output_dir,
-        random_state=random_state, n_jobs=n_jobs, test_size=test_size,
-        step=step, cv=cv, parameter_tuning=parameter_tuning,
-        optimize_feature_selection=optimize_feature_selection,
-        param_dist=param_dist, calc_feature_importance=True, load_data=False,
-        scoring=mean_squared_error, stratify=stratify, classification=False,
-        missing_samples='ignore')
-
-    # predict treatment data
-    index = importances.index
-    table = _extract_features(table)
-    table = [{k: r[k] for k in r.keys() & index} for r in table]
-    y_pred = estimator.predict(table)
-    predicted_column = 'predicted {0}'.format(column)
-    metadata[predicted_column] = y_pred
-
-    # calculate MAZ score
-    metadata = _maz_score(
-        metadata, predicted_column, column, group_by, control)
-
-    # visualize
-    table = estimator.named_steps.dv.transform(table).todense()
-    table = pd.DataFrame(table, index=metadata.index,
-                         columns=estimator.named_steps.dv.get_feature_names())
-    _visualize_maturity_index(table, metadata, group_by, column,
-                              predicted_column, importances, estimator,
-                              accuracy, output_dir, maz_stats=maz_stats)
 
 
 # The following method is experimental and is not registered in the current
