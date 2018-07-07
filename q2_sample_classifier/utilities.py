@@ -361,8 +361,8 @@ def split_optimize_classify(features, targets, column, estimator,
 
     # Predict test set values and plot data, as appropriate for estimator type
     predictions, predict_plot = _predict_and_plot(
-        output_dir, y_test, y_pred, estimator, accuracy,
-        classification=classification, palette=palette)
+        output_dir, y_test, y_pred, classification=classification,
+        palette=palette)
 
     importances = _attempt_to_calculate_feature_importances(
             estimator, calc_feature_importance,
@@ -438,12 +438,12 @@ def _calculate_feature_importances(estimator):
     return importances
 
 
-def _predict_and_plot(output_dir, y_test, y_pred, estimator, accuracy,
-                      classification=True, palette='sirocco'):
+def _predict_and_plot(output_dir, y_test, y_pred, classification=True,
+                      palette='sirocco'):
     if classification:
+        classes = sorted(y_test.unique())
         predictions, predict_plot = _plot_confusion_matrix(
-            y_test, y_pred, sorted(estimator.classes_), accuracy,
-            normalize=True, palette=palette)
+            y_test, y_pred, classes, normalize=True, palette=palette)
     else:
         predictions = _linear_regress(y_test, y_pred)
         predict_plot = _regplot_from_dataframe(y_test, y_pred)
@@ -453,6 +453,41 @@ def _predict_and_plot(output_dir, y_test, y_pred, estimator, accuracy,
         predict_plot.get_figure().savefig(
             join(output_dir, 'predictions.pdf'), bbox_inches='tight')
     return predictions, predict_plot
+
+
+def _match_series_or_die(predictions, truth, missing_samples='error'):
+    # validate input metadata and predictions
+    truth_ids = truth.index
+    predictions_ids = predictions.index
+    sample_ids = predictions_ids.intersection(truth_ids)
+    if missing_samples == 'error' and len(sample_ids) < len(predictions_ids):
+        missing_ids = predictions_ids.difference(sample_ids)
+        raise ValueError('Missing samples in metadata: %r' % missing_ids)
+
+    # match metadata / prediction IDs
+    predictions = predictions.loc[sample_ids]
+    truth = truth.loc[sample_ids]
+
+    return predictions, truth
+
+
+def _plot_accuracy(output_dir, predictions, truth, missing_samples,
+                   classification, palette, plot_title):
+    '''Plot accuracy results and send to visualizer on either categorical
+    or numeric data inside two pd.Series
+    '''
+    truth = truth.to_series()
+    predictions, truth = _match_series_or_die(
+        predictions, truth, missing_samples)
+
+    # calculate prediction accuracy and plot results
+    predictions, predict_plot = _predict_and_plot(
+        output_dir, truth, predictions, classification=classification,
+        palette=palette)
+
+    # output to viz
+    _visualize(output_dir, None, predictions, importances=None,
+               optimize_feature_selection=False, title=plot_title)
 
 
 def sort_importances(importances, ascending=False):
@@ -468,14 +503,17 @@ def _extract_estimator_parameters(estimator):
     return pd.Series(estimator_params, name='Parameter setting')
 
 
-def _visualize(output_dir, estimator, cm, accuracy, importances=None,
+def _visualize(output_dir, estimator, cm, importances=None,
                optimize_feature_selection=True, title='results'):
 
     pd.set_option('display.max_colwidth', -1)
 
     # summarize model accuracy and params
-    result = _extract_estimator_parameters(estimator)
-    result = q2templates.df_to_html(result.to_frame())
+    if estimator is not None:
+        result = _extract_estimator_parameters(estimator)
+        result = q2templates.df_to_html(result.to_frame())
+    else:
+        result = False
 
     cm.to_csv(join(
         output_dir, 'predictive_accuracy.tsv'), sep='\t', index=True)
