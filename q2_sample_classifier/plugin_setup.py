@@ -356,13 +356,16 @@ plugin.visualizers.register_function(
     parameters={
         'truth': MetadataColumn[Numeric],
         'missing_samples': parameters['base']['missing_samples']},
-    input_descriptions={'predictions': 'Predicted values to plot on y axis'},
+    input_descriptions={'predictions': (
+        'Predicted values to plot on y axis. Must be predictions of '
+        'numeric data produced by a sample regressor.')},
     parameter_descriptions={
         'truth': 'Metadata column (true values) to plot on x axis.',
         'missing_samples': parameter_descriptions['base']['missing_samples']},
-    name='Make a 2D scatterplot and linear regression.',
+    name='Make 2D scatterplot and linear regression of regressor predictions.',
     description='Make a 2D scatterplot and linear regression of predicted vs. '
-                'true values for a set of samples.'
+                'true values for a set of samples predicted using a sample '
+                'regressor.'
 )
 
 
@@ -373,14 +376,17 @@ plugin.visualizers.register_function(
         'truth': MetadataColumn[Categorical],
         'missing_samples': parameters['base']['missing_samples'],
         'palette': Str % Choices(_custom_palettes().keys())},
-    input_descriptions={'predictions': 'Predicted values to plot on x axis'},
+    input_descriptions={'predictions': (
+        'Predicted values to plot on x axis. Should be predictions of '
+        'categorical data produced by a sample classifier.')},
     parameter_descriptions={
         'truth': 'Metadata column (true values) to plot on y axis.',
         'missing_samples': parameter_descriptions['base']['missing_samples'],
         'palette': 'The color palette to use for plotting.'},
-    name='Make a confusion matrix.',
+    name='Make a confusion matrix from sample classifier predictions.',
     description='Make a confusion matrix and calculate accuracy of predicted '
-                'vs. true values for a set of samples.'
+                'vs. true values for a set of samples classified using a '
+                'sample classifier.'
 )
 
 

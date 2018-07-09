@@ -32,7 +32,7 @@ from q2_sample_classifier.utilities import (
     _calculate_feature_importances, _extract_important_features,
     _train_adaboost_base_estimator, _disable_feature_selection,
     _mean_feature_importance, _null_feature_importance, _extract_features,
-    _match_series_or_die, _extract_rfe_scores)
+    _match_series_or_die, _extract_rfe_scores, _predict_and_plot)
 from q2_sample_classifier import (
     BooleanSeriesFormat, BooleanSeriesDirectoryFormat, BooleanSeries,
     PredictionsFormat, PredictionsDirectoryFormat, Predictions,
@@ -896,21 +896,102 @@ class TestPlottingVisualizers(SampleClassifierTestPluginBase):
         self.bogus = pd.Series(['a', 'a', 'b', 'b', 'c', 'c'], name='site',
                                index=['a1', 'e3', 'f5', 'b2', 'z1', 'c2'])
         self.bogus.index.name = 'SampleID'
+        self.c = pd.Series(
+            [0, 1, 2, 3], index=['a', 'b', 'c', 'd'], name='peanuts')
+        self.c.index.name = 'SampleID'
 
     def test_confusion_matrix(self):
         b = qiime2.CategoricalMetadataColumn(self.a)
         confusion_matrix(self.tmpd, self.a, b)
 
+    def test_confusion_matrix_class_overlap_error(self):
+        b = pd.Series([1, 2, 3, 4, 5, 6], name='site',
+                      index=['a1', 'a2', 'b1', 'b2', 'c1', 'c2'])
+        b.index.name = 'id'
+        b = qiime2.NumericMetadataColumn(b)
+        with self.assertRaisesRegex(ValueError, "do not overlap"):
+            confusion_matrix(self.tmpd, self.a, b)
+
+    # test confusion matrix plotting independently to see how it handles
+    # partially overlapping classes when true labels are superset
+    def test_predict_and_plot_true_labels_are_superset(self):
+        b = pd.Series(['a', 'a', 'b', 'b', 'b', 'b'], name='site',
+                      index=['a1', 'a2', 'b1', 'b2', 'c1', 'c2'])
+        exp = pd.DataFrame(
+            [[1., 0., 0., ''],
+             [0., 1., 0., ''],
+             [0., 1., 0., ''],
+             ['', '', '', 0.666666666],
+             ['', '', '', 0.3333333333],
+             ['', '', '', 2.]],
+            columns=['a', 'b', 'c', 'Overall Accuracy'],
+            index=['a', 'b', 'c', 'Overall Accuracy', 'Baseline Accuracy',
+                   'Accuracy Ratio'])
+        predictions, confusion = _predict_and_plot(self.tmpd, self.a, b)
+        pdt.assert_frame_equal(exp, predictions)
+
+    # test confusion matrix plotting independently to see how it handles
+    # partially overlapping classes when true labels are superset
+    def test_predict_and_plot_true_labels_are_subset(self):
+        b = pd.Series(['a', 'a', 'b', 'b', 'c', 'd'], name='site',
+                      index=['a1', 'a2', 'b1', 'b2', 'c1', 'c2'])
+        exp = pd.DataFrame(
+            [[1., 0., 0., 0., ''],
+             [0., 1., 0., 0., ''],
+             [0., 0., 0.5, 0.5, ''],
+             [0., 0., 0., 0., ''],
+             ['', '', '', '', 0.8333333333],
+             ['', '', '', '', 0.3333333333],
+             ['', '', '', '', 2.5]],
+            columns=['a', 'b', 'c', 'd', 'Overall Accuracy'],
+            index=['a', 'b', 'c', 'd', 'Overall Accuracy', 'Baseline Accuracy',
+                   'Accuracy Ratio'])
+        predictions, confusion = _predict_and_plot(self.tmpd, self.a, b)
+        pdt.assert_frame_equal(exp, predictions)
+
+    # test confusion matrix plotting independently to see how it handles
+    # partially overlapping classes when true labels are mutually exclusive
+    def test_predict_and_plot_true_labels_are_mutually_exclusive(self):
+        b = pd.Series(['a', 'a', 'e', 'e', 'd', 'd'], name='site',
+                      index=['a1', 'a2', 'b1', 'b2', 'c1', 'c2'])
+        exp = pd.DataFrame(
+            [[1., 0., 0., 0., 0., ''],
+             [0., 0., 0., 0., 1., ''],
+             [0., 0., 0., 1., 0., ''],
+             [0., 0., 0., 0., 0., ''],
+             [0., 0., 0., 0., 0., ''],
+             ['', '', '', '', '', 0.3333333333],
+             ['', '', '', '', '', 0.3333333333],
+             ['', '', '', '', '', 1.]],
+            columns=['a', 'b', 'c', 'd', 'e', 'Overall Accuracy'],
+            index=['a', 'b', 'c', 'd', 'e', 'Overall Accuracy',
+                   'Baseline Accuracy', 'Accuracy Ratio'])
+        predictions, confusion = _predict_and_plot(self.tmpd, self.a, b)
+        pdt.assert_frame_equal(exp, predictions)
+
     def test_scatterplot(self):
-        a = pd.Series([0, 1, 2, 3], index=['a', 'b', 'c', 'd'], name='peanuts')
-        a.index.name = 'SampleID'
-        b = qiime2.NumericMetadataColumn(a)
-        scatterplot(self.tmpd, a, b)
+        b = qiime2.NumericMetadataColumn(self.c)
+        scatterplot(self.tmpd, self.c, b)
+
+    def test_scatterplot_nonnumeric_predictions_error(self):
+        b = pd.Series([1, 2, 3, 4, 5, 6], name='site',
+                      index=['a1', 'a2', 'b1', 'b2', 'c1', 'c2'])
+        b.index.name = 'id'
+        b = qiime2.NumericMetadataColumn(b)
+        with self.assertRaisesRegex(ValueError, "data are non-numeric"):
+            scatterplot(self.tmpd, self.a, b)
 
     def test_add_sample_size_to_xtick_labels(self):
-        labels = _add_sample_size_to_xtick_labels(self.a)
-        exp = {'a': 'a (n=2)', 'b': 'b (n=2)', 'c': 'c (n=2)'}
-        self.assertDictEqual(labels, exp)
+        labels = _add_sample_size_to_xtick_labels(self.a, ['a', 'b', 'c'])
+        exp = ['a (n=2)', 'b (n=2)', 'c (n=2)']
+        self.assertListEqual(labels, exp)
+
+    # now test performance when extra classes are present
+    def test_add_sample_size_to_xtick_labels_extra_classes(self):
+        labels = _add_sample_size_to_xtick_labels(
+            self.a, [0, 'a', 'b', 'bb', 'c'])
+        exp = ['0 (n=0)', 'a (n=2)', 'b (n=2)', 'bb (n=0)', 'c (n=2)']
+        self.assertListEqual(labels, exp)
 
     def test_match_series_or_die(self):
         exp = pd.Series(['a', 'b', 'c'], name='site', index=['a1', 'b2', 'c2'])

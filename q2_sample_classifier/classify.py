@@ -304,7 +304,13 @@ def classify_samples_ncv(
 def scatterplot(output_dir: str, predictions: pd.Series,
                 truth: qiime2.NumericMetadataColumn,
                 missing_samples: str=defaults['missing_samples']) -> None:
-    predictions = pd.to_numeric(predictions)
+    try:
+        predictions = pd.to_numeric(predictions)
+    except ValueError:
+        raise ValueError((
+            'Prediction data are non-numeric. Use confusion_matrix to test '
+            'accuracy results.'))
+
     _plot_accuracy(output_dir, predictions, truth, missing_samples,
                    classification=False, palette=None,
                    plot_title='regression scatterplot')

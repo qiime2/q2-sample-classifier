@@ -395,6 +395,8 @@ def split_optimize_classify(features, targets, column, estimator,
             X_train, X_test, y_train, y_test, estimator, scoring=scoring)
 
     # Predict test set values and plot data, as appropriate for estimator type
+    y_test = pd.Series(y_test)
+    y_pred = pd.Series(y_pred, index=y_test.index)
     predictions, predict_plot = _predict_and_plot(
         output_dir, y_test, y_pred, classification=classification,
         palette=palette)
@@ -477,7 +479,14 @@ def _calculate_feature_importances(estimator):
 def _predict_and_plot(output_dir, y_test, y_pred, classification=True,
                       palette='sirocco'):
     if classification:
-        classes = sorted(y_test.unique())
+        x_classes = set(y_test.unique())
+        y_classes = set(y_pred.unique())
+        # validate: if classes are exclusive, accuracy is zero; user probably
+        # input the wrong data!
+        if len(x_classes.intersection(y_classes)) < 1:
+            raise _class_overlap_error()
+        else:
+            classes = sorted(list(x_classes.union(y_classes)))
         predictions, predict_plot = _plot_confusion_matrix(
             y_test, y_pred, classes, normalize=True, palette=palette)
     else:
@@ -489,6 +498,18 @@ def _predict_and_plot(output_dir, y_test, y_pred, classification=True,
         predict_plot.get_figure().savefig(
             join(output_dir, 'predictions.pdf'), bbox_inches='tight')
     return predictions, predict_plot
+
+
+def _class_overlap_error():
+    raise ValueError(
+        'Predicted and true metadata values do not overlap. Check your '
+        'inputs to ensure that you are using the correct data. Is the '
+        'correct metadata column being compared to these predictions? Was '
+        'your model trained on the correct type of data? Prediction '
+        'sample classes (metadata values) should match or be a subset of '
+        'training sample classes. If you are attempting to calculate '
+        'accuracy scores on predictions from a sample regressor, use '
+        'scatterplot instead.')
 
 
 def _match_series_or_die(predictions, truth, missing_samples='error'):

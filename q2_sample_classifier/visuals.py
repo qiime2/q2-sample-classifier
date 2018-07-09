@@ -201,11 +201,10 @@ def _plot_heatmap_from_confusion_matrix(cm, palette):
     return sns.heatmap(cm, cmap=palette, cbar_kws={'label': 'Proportion'})
 
 
-def _add_sample_size_to_xtick_labels(ser):
+def _add_sample_size_to_xtick_labels(ser, classes):
     '''ser is a pandas series.'''
-    x_tick_labels = {k: '{0} (n={1})'.format(k, v)
-                     for k, v in ser.value_counts().items()}
-    return x_tick_labels
+    labels = ['{0} (n={1})'.format(c, ser[ser == c].count()) for c in classes]
+    return labels
 
 
 def _plot_confusion_matrix(y_test, y_pred, classes, normalize, palette):
@@ -216,15 +215,19 @@ def _plot_confusion_matrix(y_test, y_pred, classes, normalize, palette):
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
+    # fill na values (e.g., true values that were not predicted) otherwise
+    # these will appear as whitespace in plots and results table.
+    cm = np.nan_to_num(cm)
+
     confusion = _plot_heatmap_from_confusion_matrix(cm, palette)
 
-    x_tick_labels = [v for k, v in sorted(
-        _add_sample_size_to_xtick_labels(y_test).items())]
+    x_tick_labels = _add_sample_size_to_xtick_labels(y_pred, classes)
+    y_tick_labels = _add_sample_size_to_xtick_labels(y_test, classes)
 
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     confusion.set_xticklabels(x_tick_labels, rotation=90, ha='center')
-    confusion.set_yticklabels(x_tick_labels, rotation=0, ha='right')
+    confusion.set_yticklabels(y_tick_labels, rotation=0, ha='right')
 
     # generate confusion matrix as pd.DataFrame for viewing
     predictions = pd.DataFrame(cm, index=classes, columns=classes)
