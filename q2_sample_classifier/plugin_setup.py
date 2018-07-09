@@ -17,7 +17,7 @@ from q2_types.feature_data import FeatureData
 from .classify import (
     classify_samples, regress_samples, maturity_index, regress_samples_ncv,
     classify_samples_ncv, fit_classifier, fit_regressor, split_table, predict,
-    confusion_matrix, scatterplot)
+    confusion_matrix, scatterplot, summarize)
 from .visuals import _custom_palettes
 from ._format import (SampleEstimatorDirFmt,
                       BooleanSeriesFormat,
@@ -388,6 +388,19 @@ plugin.methods.register_function(
         'stratifies training and test sets on a metadata column, such that '
         'values in that column are evenly represented across training and '
         'test sets.')
+)
+
+
+plugin.visualizers.register_function(
+    function=summarize,
+    inputs=sample_estimator,
+    parameters={},
+    input_descriptions=sample_estimator_description,
+    parameter_descriptions={},
+    name='Summarize parameter and feature extraction information for a '
+         'trained estimator.',
+    description='Summarize parameter and feature extraction information for a '
+                'trained estimator.'
 )
 
 

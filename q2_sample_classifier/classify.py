@@ -22,7 +22,7 @@ from .utilities import (split_optimize_classify, _visualize, _load_data,
                         _disable_feature_selection, _select_estimator,
                         nested_cross_validation, _fit_estimator,
                         _map_params_to_pipeline, _extract_features,
-                        _plot_accuracy)
+                        _plot_accuracy, _summarize_estimator)
 
 
 defaults = {
@@ -234,6 +234,10 @@ def confusion_matrix(output_dir: str, predictions: pd.Series,
     _plot_accuracy(output_dir, predictions, truth, missing_samples,
                    classification=True, palette=palette,
                    plot_title='confusion matrix')
+
+
+def summarize(output_dir: str, sample_estimator: Pipeline):
+    _summarize_estimator(output_dir, sample_estimator)
 
 
 def maturity_index(output_dir: str, table: biom.Table,

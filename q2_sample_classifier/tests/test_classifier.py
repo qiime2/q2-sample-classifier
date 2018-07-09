@@ -26,13 +26,14 @@ from q2_sample_classifier.visuals import (
 from q2_sample_classifier.classify import (
     classify_samples, regress_samples, regress_samples_ncv,
     classify_samples_ncv, fit_classifier, fit_regressor, maturity_index,
-    detect_outliers, split_table, predict, scatterplot, confusion_matrix)
+    detect_outliers, split_table, predict, scatterplot, confusion_matrix,
+    summarize)
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator, _load_data,
     _calculate_feature_importances, _extract_important_features,
     _train_adaboost_base_estimator, _disable_feature_selection,
     _mean_feature_importance, _null_feature_importance, _extract_features,
-    _match_series_or_die)
+    _match_series_or_die, _extract_rfe_scores)
 from q2_sample_classifier import (
     BooleanSeriesFormat, BooleanSeriesDirectoryFormat, BooleanSeries,
     PredictionsFormat, PredictionsDirectoryFormat, Predictions,
@@ -47,8 +48,9 @@ from qiime2.plugin import ValidationError
 import sklearn
 from sklearn.metrics import mean_squared_error
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-from sklearn.svm import LinearSVC
+from sklearn.svm import LinearSVC, LinearSVR
 from sklearn.feature_extraction import DictVectorizer
+from sklearn.feature_selection import RFECV
 from sklearn.pipeline import Pipeline
 from sklearn.externals import joblib
 import pandas.util.testing as pdt
@@ -201,6 +203,49 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
                {'c': 1.0, 'a': 1.0, 'b': 1.0}]
         np.testing.assert_array_equal(feature_data, exp)
         self.assertEqual(set(targets.index), intersection)
+
+
+class TestRFEExtractor(SampleClassifierTestPluginBase):
+
+    def setUp(self):
+        super().setUp()
+
+        self.X = np.array([[5, 8, 9, 5, 0], [0, 1, 7, 6, 9], [2, 4, 5, 2, 4]])
+        self.y = np.array([2, 4, 7])
+        self.exp1 = pd.Series({
+            1: -34.56065088757396, 2: -23.52777777777777,
+            3: -19.92954815695601, 4: -24.050468262226843,
+            5: -24.225665748393013}, name='Accuracy')
+        self.exp2 = pd.Series({
+            1: -34.56065088757396, 3: -19.92954815695601,
+            5: -24.225665748393013}, name='Accuracy')
+        self.exp3 = pd.Series(
+            {1: -34.56065088757396, 5: -24.225665748393013}, name='Accuracy')
+
+    def extract_rfe_scores_template(self, steps, expected):
+        selector = RFECV(LinearSVR(random_state=123), step=steps, cv=2)
+        selector = selector.fit(self.X, self.y)
+        pdt.assert_series_equal(
+            _extract_rfe_scores(selector), expected, check_less_precise=3)
+
+    def test_extract_rfe_scores_step_int_one(self):
+        self.extract_rfe_scores_template(1, self.exp1)
+
+    def test_extract_rfe_scores_step_float_one(self):
+        self.extract_rfe_scores_template(0.2, self.exp1)
+
+    def test_extract_rfe_scores_step_int_two(self):
+        self.extract_rfe_scores_template(2, self.exp2)
+
+    def test_extract_rfe_scores_step_float_two(self):
+        self.extract_rfe_scores_template(0.4, self.exp2)
+
+    def test_extract_rfe_scores_step_full_range(self):
+        self.extract_rfe_scores_template(10, self.exp3)
+
+    def test_extract_rfe_scores_step_out_of_range(self):
+        # should be equal to full_range
+        self.extract_rfe_scores_template(12, self.exp3)
 
 
 class VisualsTests(SampleClassifierTestPluginBase):
@@ -777,17 +822,17 @@ class SampleEstimatorTestBase(SampleClassifierTestPluginBase):
             table = table.view(biom.Table)
             return table
 
-        def _load_nmc(md_fp, column):
+        def _load_cmc(md_fp, column):
             md_fp = self.get_data_path(md_fp)
             md = pd.DataFrame.from_csv(md_fp, sep='\t')
-            md = qiime2.NumericMetadataColumn(md[column])
+            md = qiime2.CategoricalMetadataColumn(md[column])
             return md
 
-        table_ecam_fp = _load_biom('ecam-table-maturity.qza')
-        mdc_ecam_fp = _load_nmc('ecam_map_maturity.txt', 'month')
+        table_chard_fp = _load_biom('chardonnay.table.qza')
+        mdc_chard_fp = _load_cmc('chardonnay.map.txt', 'Region')
 
         pipeline, importances = fit_classifier(
-            table_ecam_fp, mdc_ecam_fp, random_state=123,
+            table_chard_fp, mdc_chard_fp, random_state=123,
             n_estimators=2, n_jobs=1, optimize_feature_selection=True,
             parameter_tuning=True, missing_samples='ignore')
         transformer = self.get_transformer(
@@ -795,6 +840,7 @@ class SampleEstimatorTestBase(SampleClassifierTestPluginBase):
         self._sklp = transformer(pipeline)
         sklearn_pipeline = self._sklp.sklearn_pipeline.view(PickleFormat)
         self.sklearn_pipeline = str(sklearn_pipeline)
+        self.pipeline = pipeline
 
     def _custom_setup(self, version):
         with open(os.path.join(self.temp_dir.name,
@@ -901,6 +947,17 @@ class TestTransformers(SampleEstimatorTestBase):
         obs_pipeline = read_pipeline(str(sklearn_pipeline))
         obs = obs_pipeline
         self.assertTrue(obs)
+
+
+# make sure summarize visualizer works and that rfe_scores are stored properly
+class TestSummarize(SampleEstimatorTestBase):
+
+    def test_summary_with_rfecv(self):
+        summarize(self.temp_dir.name, self.pipeline)
+
+    def test_summary_without_rfecv(self):
+        del self.pipeline.rfe_scores
+        summarize(self.temp_dir.name, self.pipeline)
 
 
 md = pd.DataFrame([(1, 'a', 0.11), (1, 'a', 0.12), (1, 'a', 0.13),

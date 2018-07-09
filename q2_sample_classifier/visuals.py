@@ -252,18 +252,9 @@ def _calculate_baseline_accuracy(y_test, accuracy):
     return n_samples, n_samples_largest_class, basline_accuracy, accuracy_ratio
 
 
-def _plot_RFE(rfecv):
-    # If using fractional step, step = integer of fraction * n_features
-    if rfecv.step < 1:
-        rfecv.step = int(rfecv.step * len(rfecv.ranking_))
-    # Need to manually calculate x-axis, as rfecv.grid_scores_ are a 1-d array
-    x = [len(rfecv.ranking_) - (n * rfecv.step)
-         for n in range(len(rfecv.grid_scores_)-1, -1, -1)]
-    if x[0] < 1:
-        x[0] = 1
-
+def _plot_RFE(x, y):
     rfe = plt.figure()
     plt.xlabel("Feature Count")
     plt.ylabel("Accuracy")
-    plt.plot(x, rfecv.grid_scores_, 'grey')
+    plt.plot(x, y, 'grey')
     return rfe
