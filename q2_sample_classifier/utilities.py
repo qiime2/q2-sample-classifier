@@ -532,7 +532,7 @@ def _summarize_estimator(output_dir, sample_estimator):
     except AttributeError:
         optimize_feature_selection = False
 
-    _visualize(output_dir, sample_estimator, None, None, None,
+    _visualize(output_dir, sample_estimator, None, None,
                optimize_feature_selection, title='Estimator Summary')
 
 
@@ -559,6 +559,8 @@ def _visualize(output_dir, estimator, cm, importances=None,
         importances.to_csv(join(
             output_dir, 'feature_importance.tsv'), sep='\t', index=True)
         importances = q2templates.df_to_html(importances, index=True)
+    else:
+        importances = False
 
     index = join(TEMPLATES, 'index.html')
     q2templates.render(index, output_dir, context={
