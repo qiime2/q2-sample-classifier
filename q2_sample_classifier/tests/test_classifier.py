@@ -24,13 +24,8 @@ from q2_sample_classifier.visuals import (
     _plot_heatmap_from_confusion_matrix, _add_sample_size_to_xtick_labels)
 from q2_sample_classifier.classify import (
     regress_samples_ncv, classify_samples_ncv, fit_classifier, fit_regressor,
-<<<<<<< HEAD
     maturity_index, detect_outliers, split_table, predict_classification,
     predict_regression, scatterplot, confusion_matrix, summarize)
-=======
-    detect_outliers, split_table, predict, scatterplot,
-    confusion_matrix, summarize)
->>>>>>> garbage collection
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator, _load_data,
     _calculate_feature_importances, _extract_important_features,
