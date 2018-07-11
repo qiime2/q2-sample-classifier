@@ -45,6 +45,7 @@ from q2_types.feature_data import FeatureData
 import pkg_resources
 from qiime2.plugin.testing import TestPluginBase
 from qiime2.plugin import ValidationError
+from qiime2.plugins import sample_classifier
 import sklearn
 from sklearn.metrics import mean_squared_error
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
@@ -725,13 +726,13 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         X_train, X_test = split_table(
             self.table_chard_fp, self.mdc_chard_fp, test_size=0.5,
             random_state=123, stratify=True, missing_samples='ignore')
-        self.assertEqual(len(X_train) + len(X_test), 21)
+        self.assertEqual(len(X_train.ids()) + len(X_test.ids()), 21)
 
     def test_split_table_no_split(self):
         X_train, X_test = split_table(
             self.table_chard_fp, self.mdc_chard_fp, test_size=0.0,
             random_state=123, stratify=True, missing_samples='ignore')
-        self.assertEqual(len(X_train), 21)
+        self.assertEqual(len(X_train.ids()), 21)
 
     def test_split_table_invalid_test_size(self):
         with self.assertRaisesRegex(ValueError, "at least two samples"):
@@ -808,6 +809,28 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             # as we would expect)
             mse = mean_squared_error(exp, pred)
             self.assertAlmostEqual(mse, seeded_predict_results[regressor])
+
+
+class NowLetsTestTheActions(SampleClassifierTestPluginBase):
+
+    def setUp(self):
+        super().setUp()
+        md = pd.Series(['a', 'a', 'b', 'b', 'b'],
+                       index=['a', 'b', 'c', 'd', 'e'], name='bugs')
+        md.index.name = 'SampleID'
+        self.md = qiime2.CategoricalMetadataColumn(md)
+        tab = biom.Table(
+            np.array([[3, 6, 7, 3, 6], [3, 4, 5, 6, 2], [8, 6, 4, 1, 0],
+                      [8, 6, 4, 1, 0], [8, 6, 4, 1, 0]]),
+            observation_ids=['v', 'w', 'x', 'y', 'z'],
+            sample_ids=['a', 'b', 'c', 'd', 'e'])
+        self.tab = qiime2.Artifact.import_data('FeatureTable[Frequency]', tab)
+
+    # let's make sure the correct transformers are in place! See issue 114
+    # if this runs without error, that's good enough for me. We already
+    # validate the function above.
+    def test_action_split_table(self):
+        sample_classifier.actions.split_table(self.tab, self.md, test_size=0.5)
 
 
 class SampleEstimatorTestBase(SampleClassifierTestPluginBase):

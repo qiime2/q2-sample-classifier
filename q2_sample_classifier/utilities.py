@@ -82,7 +82,7 @@ def _extract_features(feature_data):
     return features
 
 
-def _load_data(feature_data, targets_metadata, missing_samples):
+def _load_data(feature_data, targets_metadata, missing_samples, extract=True):
     '''Load data and generate training and test sets.
 
     feature_data: pd.DataFrame
@@ -101,7 +101,8 @@ def _load_data(feature_data, targets_metadata, missing_samples):
     index = [ix for ix in feature_data.ids() if ix in index]
     targets = targets.loc[index]
     feature_data = feature_data.filter(index, inplace=False)
-    feature_data = _extract_features(feature_data)
+    if extract:
+        feature_data = _extract_features(feature_data)
 
     return feature_data, targets
 
@@ -141,7 +142,7 @@ def _split_training_data(feature_data, targets, column, test_size=0.2,
                          stratify=None, random_state=None, drop_na=True):
     '''Split data sets into training and test sets.
 
-    feature_data: pandas.DataFrame
+    feature_data: biom.Table
         feature X sample values.
     targets: pandas.DataFrame
         target (columns) X sample (rows) values.
@@ -159,37 +160,44 @@ def _split_training_data(feature_data, targets, column, test_size=0.2,
     targets = targets[column]
 
     if drop_na:
-        try:
-            targets, feature_data = \
-                zip(*[(t, f) for t, f in zip(targets, feature_data)
-                      if pd.notna(t)])
-        except ValueError:
-            targets, feature_data = [], []
-        targets = pd.Series(targets)
-        targets.name = column
+        targets = targets.dropna()
 
     if test_size > 0.0:
         try:
-            X_train, X_test, y_train, y_test = train_test_split(
-                feature_data, targets, test_size=test_size, stratify=stratify,
+            y_train, y_test = train_test_split(
+                targets, test_size=test_size, stratify=stratify,
                 random_state=random_state)
         except ValueError:
-            raise ValueError((
-                'You have chosen to predict a metadata column that contains '
-                'one or more values that match only one sample. For proper '
-                'stratification of data into training and test sets, each '
-                'class (value) must contain at least two samples. This is a '
-                'requirement for classification problems, but stratification '
-                'can be disabled for regression by setting stratify=False. '
-                'Alternatively, remove all samples that bear a unique class '
-                'label for your chosen metadata column. Note that disabling '
-                'stratification can negatively impact predictive accuracy for '
-                'small data sets.'))
+            _stratification_error()
     else:
         X_train, X_test, y_train, y_test = (
             feature_data, feature_data, targets, targets)
 
+    tri = y_train.index
+    # filter and sort biom tables to match split/filtered metadata ids
+    # skip filtering if no splitting/dropna was performed
+    # if test_size > 0.0 is implicit, so don't need to worry about initializing
+    # X_train and X_test in an else statement.
+    if list(tri) != list(feature_data.ids()):
+        tei = y_test.index
+        X_train = feature_data.filter(tri, inplace=False).sort_order(tri)
+        X_test = feature_data.filter(tei, inplace=False).sort_order(tei)
+
     return X_train, X_test, y_train, y_test
+
+
+def _stratification_error():
+    raise ValueError((
+        'You have chosen to predict a metadata column that contains '
+        'one or more values that match only one sample. For proper '
+        'stratification of data into training and test sets, each '
+        'class (value) must contain at least two samples. This is a '
+        'requirement for classification problems, but stratification '
+        'can be disabled for regression by setting stratify=False. '
+        'Alternatively, remove all samples that bear a unique class '
+        'label for your chosen metadata column. Note that disabling '
+        'stratification can negatively impact predictive accuracy for '
+        'small data sets.'))
 
 
 def _rfecv_feature_selection(feature_data, targets, estimator,
@@ -200,7 +208,7 @@ def _rfecv_feature_selection(feature_data, targets, estimator,
     __________
     Parameters
     __________
-    feature_data: pandas.DataFrame
+    feature_data: list of dicts
         Training set feature data x samples.
     targets: pandas.DataFrame
         Training set target value data x samples.
@@ -355,6 +363,8 @@ def split_optimize_classify(features, targets, column, estimator,
         features, targets, column, test_size, random_state,
         load_data=load_data, stratify=stratify,
         missing_samples=missing_samples)
+    X_train = _extract_features(X_train)
+    X_test = _extract_features(X_test)
 
     # optimize training feature count
     if optimize_feature_selection:
@@ -407,7 +417,7 @@ def _prepare_training_data(features, targets, column, test_size,
     # load data
     if load_data:
         features, targets = _load_data(
-            features, targets, missing_samples=missing_samples)
+            features, targets, missing_samples=missing_samples, extract=False)
 
     # split into training and test sets
     if stratify:
@@ -416,8 +426,7 @@ def _prepare_training_data(features, targets, column, test_size,
         strata = None
 
     X_train, X_test, y_train, y_test = _split_training_data(
-        features, targets, column, test_size, strata,
-        random_state)
+        features, targets, column, test_size, strata, random_state)
 
     return X_train, X_test, y_train, y_test
 
