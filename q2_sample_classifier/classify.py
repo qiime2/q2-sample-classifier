@@ -38,18 +38,98 @@ defaults = {
 }
 
 
-def classify_samples(output_dir: str, table: biom.Table,
-                     metadata: qiime2.CategoricalMetadataColumn,
-                     test_size: float=defaults['test_size'],
-                     step: float=defaults['step'],
-                     cv: int=defaults['cv'], random_state: int=None,
-                     n_jobs: int=defaults['n_jobs'],
-                     n_estimators: int=defaults['n_estimators'],
-                     estimator: str=defaults['estimator_c'],
-                     optimize_feature_selection: bool=False,
-                     parameter_tuning: bool=False,
-                     palette: str=defaults['palette'],
-                     missing_samples: str=defaults['missing_samples']) -> None:
+def classify_samples(ctx,
+                     table,
+                     metadata,
+                     test_size=defaults['test_size'],
+                     step=defaults['step'],
+                     cv=defaults['cv'],
+                     random_state=None,
+                     n_jobs=defaults['n_jobs'],
+                     n_estimators=defaults['n_estimators'],
+                     estimator=defaults['estimator_c'],
+                     optimize_feature_selection=False,
+                     parameter_tuning=False,
+                     palette=defaults['palette'],
+                     missing_samples=defaults['missing_samples']):
+
+    split = ctx.get_action('sample_classifier', 'split_table')
+    fit = ctx.get_action('sample_classifier', 'fit_classifier')
+    predict_test = ctx.get_action('sample_classifier', 'predict')
+    summarize_estimator = ctx.get_action('sample_classifier', 'summarize')
+    confusion = ctx.get_action('sample_classifier', 'confusion_matrix')
+
+    X_train, X_test = split(table, metadata, test_size, random_state,
+                            stratify=True, missing_samples=missing_samples)
+
+    sample_estimator, importance = fit(
+        X_train, metadata, step, cv, random_state, n_jobs, n_estimators,
+        estimator, optimize_feature_selection, parameter_tuning,
+        missing_samples='ignore')
+
+    predictions, = predict_test(X_test, sample_estimator, n_jobs)
+
+    summary, = summarize_estimator(sample_estimator)
+
+    accuracy_results, = confusion(
+        predictions, metadata, missing_samples='ignore', palette=palette)
+
+    return sample_estimator, importance, predictions, summary, accuracy_results
+
+
+def regress_samples(ctx,
+                    table,
+                    metadata,
+                    test_size=defaults['test_size'],
+                    step=defaults['step'],
+                    cv=defaults['cv'],
+                    random_state=None,
+                    n_jobs=defaults['n_jobs'],
+                    n_estimators=defaults['n_estimators'],
+                    estimator=defaults['estimator_r'],
+                    optimize_feature_selection=False,
+                    stratify=False,
+                    parameter_tuning=False,
+                    missing_samples=defaults['missing_samples']):
+
+    split = ctx.get_action('sample_classifier', 'split_table')
+    fit = ctx.get_action('sample_classifier', 'fit_regressor')
+    predict_test = ctx.get_action('sample_classifier', 'predict')
+    summarize_estimator = ctx.get_action('sample_classifier', 'summarize')
+    scatter = ctx.get_action('sample_classifier', 'scatterplot')
+
+    X_train, X_test = split(table, metadata, test_size, random_state,
+                            stratify, missing_samples=missing_samples)
+
+    sample_estimator, importance = fit(
+        X_train, metadata, step, cv, random_state, n_jobs, n_estimators,
+        estimator, optimize_feature_selection, parameter_tuning,
+        missing_samples='ignore')
+
+    predictions, = predict_test(X_test, sample_estimator, n_jobs)
+
+    summary, = summarize_estimator(sample_estimator)
+
+    accuracy_results, = scatter(predictions, metadata, 'ignore')
+
+    return sample_estimator, importance, predictions, summary, accuracy_results
+
+
+# this action has been replaced by the classify_samples pipeline and is no
+# longer registered. Will be removed in a separate PR.
+def classify_samples_basic(output_dir: str, table: biom.Table,
+                           metadata: qiime2.CategoricalMetadataColumn,
+                           test_size: float=defaults['test_size'],
+                           step: float=defaults['step'],
+                           cv: int=defaults['cv'], random_state: int=None,
+                           n_jobs: int=defaults['n_jobs'],
+                           n_estimators: int=defaults['n_estimators'],
+                           estimator: str=defaults['estimator_c'],
+                           optimize_feature_selection: bool=False,
+                           parameter_tuning: bool=False,
+                           palette: str=defaults['palette'],
+                           missing_samples: str=defaults['missing_samples']
+                           ) -> None:
 
     # extract column name from CategoricalMetadataColumn
     column = metadata.name
@@ -112,17 +192,20 @@ def fit_regressor(table: biom.Table,
     return estimator, importance
 
 
-def regress_samples(output_dir: str, table: biom.Table,
-                    metadata: qiime2.NumericMetadataColumn,
-                    test_size: float=defaults['test_size'],
-                    step: float=defaults['step'],
-                    cv: int=defaults['cv'], random_state: int=None,
-                    n_jobs: int=defaults['n_jobs'],
-                    n_estimators: int=defaults['n_estimators'],
-                    estimator: str=defaults['estimator_r'],
-                    optimize_feature_selection: bool=False,
-                    stratify: str=False, parameter_tuning: bool=False,
-                    missing_samples: str=defaults['missing_samples']) -> None:
+# this action has been replaced by the regress_samples pipeline and is no
+# longer registered. Will be removed in a separate PR.
+def regress_samples_basic(output_dir: str, table: biom.Table,
+                          metadata: qiime2.NumericMetadataColumn,
+                          test_size: float=defaults['test_size'],
+                          step: float=defaults['step'],
+                          cv: int=defaults['cv'], random_state: int=None,
+                          n_jobs: int=defaults['n_jobs'],
+                          n_estimators: int=defaults['n_estimators'],
+                          estimator: str=defaults['estimator_r'],
+                          optimize_feature_selection: bool=False,
+                          stratify: str=False, parameter_tuning: bool=False,
+                          missing_samples: str=defaults['missing_samples']
+                          ) -> None:
 
     # extract column name from NumericMetadataColumn
     column = metadata.name
