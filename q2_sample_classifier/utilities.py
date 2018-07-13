@@ -346,6 +346,7 @@ def _fit_estimator(features, targets, estimator, n_estimators=100, step=0.05,
     if optimize_feature_selection:
         estimator.rfe_scores = rfe_scores
 
+    # TODO: drop this when we get around to supporting optional outputs
     # methods cannot output an empty importances artifact; only KNN has no
     # feature importance, but just warn and output all features as
     # importance = 1
