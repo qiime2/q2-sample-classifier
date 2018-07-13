@@ -11,6 +11,7 @@ import tarfile
 import json
 
 import pandas as pd
+import numpy as np
 import qiime2
 import qiime2.plugin.model as model
 import sklearn
@@ -77,7 +78,7 @@ def _6(ff: PredictionsFormat) -> (qiime2.Metadata):
 def _7(data: pd.DataFrame) -> (ImportanceFormat):
     ff = ImportanceFormat()
     with ff.open() as fh:
-        data.to_csv(fh, sep='\t', header=True)
+        data.to_csv(fh, sep='\t', header=True, na_rep=np.nan)
     return ff
 
 

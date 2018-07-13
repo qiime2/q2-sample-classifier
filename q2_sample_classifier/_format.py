@@ -130,7 +130,9 @@ class ImportanceFormat(model.TextFileFormat):
             # validate body
             has_data = False
             for line_number, line in enumerate(fh, start=2):
-                cells = line.strip().split('\t')
+                # we want to strip each cell, not the original line
+                # otherwise empty cells are dropped, causing a TypeError
+                cells = [c.strip() for c in line.split('\t')]
                 if len(cells) < 2:
                     raise ValidationError(
                         "Expected data record to be TSV with two or more "
