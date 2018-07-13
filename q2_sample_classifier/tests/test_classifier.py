@@ -204,48 +204,6 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
         np.testing.assert_array_equal(feature_data, exp)
         self.assertEqual(set(targets.index), intersection)
 
-class TestRFEExtractor(SampleClassifierTestPluginBase):
-
-    def setUp(self):
-        super().setUp()
-
-        self.X = np.array([[5, 8, 9, 5, 0], [0, 1, 7, 6, 9], [2, 4, 5, 2, 4]])
-        self.y = np.array([2, 4, 7])
-        self.exp1 = pd.Series({
-            1: -34.56065088757396, 2: -23.52777777777777,
-            3: -19.92954815695601, 4: -24.050468262226843,
-            5: -24.225665748393013}, name='Accuracy')
-        self.exp2 = pd.Series({
-            1: -34.56065088757396, 3: -19.92954815695601,
-            5: -24.225665748393013}, name='Accuracy')
-        self.exp3 = pd.Series(
-            {1: -34.56065088757396, 5: -24.225665748393013}, name='Accuracy')
-
-    def extract_rfe_scores_template(self, steps, expected):
-        selector = RFECV(LinearSVR(random_state=123), step=steps, cv=2)
-        selector = selector.fit(self.X, self.y)
-        pdt.assert_series_equal(
-            _extract_rfe_scores(selector), expected, check_less_precise=3)
-
-    def test_extract_rfe_scores_step_int_one(self):
-        self.extract_rfe_scores_template(1, self.exp1)
-
-    def test_extract_rfe_scores_step_float_one(self):
-        self.extract_rfe_scores_template(0.2, self.exp1)
-
-    def test_extract_rfe_scores_step_int_two(self):
-        self.extract_rfe_scores_template(2, self.exp2)
-
-    def test_extract_rfe_scores_step_float_two(self):
-        self.extract_rfe_scores_template(0.4, self.exp2)
-
-    def test_extract_rfe_scores_step_full_range(self):
-        self.extract_rfe_scores_template(10, self.exp3)
-
-    def test_extract_rfe_scores_step_out_of_range(self):
-        # should be equal to full_range
-        self.extract_rfe_scores_template(12, self.exp3)
-
 
 class TestRFEExtractor(SampleClassifierTestPluginBase):
 
