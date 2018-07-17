@@ -25,8 +25,8 @@ from q2_sample_classifier.visuals import (
     _plot_heatmap_from_confusion_matrix, _add_sample_size_to_xtick_labels)
 from q2_sample_classifier.classify import (
     regress_samples_ncv, classify_samples_ncv, fit_classifier, fit_regressor,
-    maturity_index, detect_outliers, split_table, predict, scatterplot,
-    confusion_matrix, summarize)
+    maturity_index, detect_outliers, split_table, predict_classifier,
+    predict_regressor, scatterplot, confusion_matrix, summarize)
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator, _load_data,
     _calculate_feature_importances, _extract_important_features,
@@ -35,9 +35,10 @@ from q2_sample_classifier.utilities import (
     _match_series_or_die, _extract_rfe_scores, _predict_and_plot)
 from q2_sample_classifier import (
     BooleanSeriesFormat, BooleanSeriesDirectoryFormat, BooleanSeries,
-    PredictionsFormat, PredictionsDirectoryFormat, Predictions,
-    ImportanceFormat, ImportanceDirectoryFormat, Importance,
-    SampleEstimatorDirFmt, PickleFormat, SampleEstimator)
+    PredictionsFormat, PredictionsDirectoryFormat, ClassifierPredictions,
+    RegressorPredictions, ImportanceFormat, ImportanceDirectoryFormat,
+    Importance, SampleEstimatorDirFmt, PickleFormat, SampleEstimator,
+    Classifier, Regressor)
 from q2_sample_classifier._format import JSONFormat
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
@@ -366,12 +367,19 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         format = PredictionsDirectoryFormat(self.temp_dir.name, mode='r')
         format.validate()
 
-    def test_Predictions_semantic_type_registration(self):
-        self.assertRegisteredSemanticType(Predictions)
+    def test_RegressorPredictions_semantic_type_registration(self):
+        self.assertRegisteredSemanticType(RegressorPredictions)
 
-    def test_sample_data_Predictions_to_Predictions_dir_fmt_registration(self):
+    def test_ClassifierPredictions_semantic_type_registration(self):
+        self.assertRegisteredSemanticType(ClassifierPredictions)
+
+    def test_RegressorPredictions_to_Predictions_dir_fmt_registration(self):
         self.assertSemanticTypeRegisteredToFormat(
-            SampleData[Predictions], PredictionsDirectoryFormat)
+            SampleData[RegressorPredictions], PredictionsDirectoryFormat)
+
+    def test_ClassifierPredictions_to_Predictions_dir_fmt_registration(self):
+        self.assertSemanticTypeRegisteredToFormat(
+            SampleData[ClassifierPredictions], PredictionsDirectoryFormat)
 
     def test_pd_series_to_Predictions_format(self):
         transformer = self.get_transformer(pd.Series, PredictionsFormat)
@@ -750,7 +758,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 self.table_chard_fp, self.mdc_chard_fp, random_state=123,
                 n_estimators=2, estimator=classifier, n_jobs=1,
                 missing_samples='ignore')
-            pred = predict(self.table_chard_fp, estimator)
+            pred = predict_classifier(self.table_chard_fp, estimator)
             exp = self.mdc_chard_fp.to_series().reindex(pred.index).dropna()
             # reindex both pred and exp because not all samples present in pred
             # are present in the metadata! (hence missing_samples='ignore')
@@ -775,7 +783,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
                 n_estimators=2, estimator=regressor, n_jobs=1,
                 missing_samples='ignore')
-            pred = predict(self.table_ecam_fp, estimator)
+            pred = predict_regressor(self.table_ecam_fp, estimator)
             exp = self.mdc_ecam_fp.to_series()
             # reindex both pred and exp because not all samples present in pred
             # are present in the metadata! (hence missing_samples='ignore')
@@ -973,14 +981,6 @@ class TestPlottingVisualizers(SampleClassifierTestPluginBase):
         b = qiime2.NumericMetadataColumn(self.c)
         scatterplot(self.tmpd, self.c, b)
 
-    def test_scatterplot_nonnumeric_predictions_error(self):
-        b = pd.Series([1, 2, 3, 4, 5, 6], name='site',
-                      index=['a1', 'a2', 'b1', 'b2', 'c1', 'c2'])
-        b.index.name = 'id'
-        b = qiime2.NumericMetadataColumn(b)
-        with self.assertRaisesRegex(ValueError, "data are non-numeric"):
-            scatterplot(self.tmpd, self.a, b)
-
     def test_add_sample_size_to_xtick_labels(self):
         labels = _add_sample_size_to_xtick_labels(self.a, ['a', 'b', 'c'])
         exp = ['a (n=2)', 'b (n=2)', 'c (n=2)']
@@ -1006,16 +1006,26 @@ class TestPlottingVisualizers(SampleClassifierTestPluginBase):
 
 
 class TestTypes(SampleClassifierTestPluginBase):
-    def test_taxonomic_classifier_semantic_type_registration(self):
+    def test_sample_estimator_semantic_type_registration(self):
         self.assertRegisteredSemanticType(SampleEstimator)
 
-    def test_taxonomic_classifier_semantic_type_to_format_registration(self):
+    def test_classifier_semantic_type_registration(self):
+        self.assertRegisteredSemanticType(Classifier)
+
+    def test_regressor_semantic_type_registration(self):
+        self.assertRegisteredSemanticType(Regressor)
+
+    def test_sample_classifier_semantic_type_to_format_registration(self):
         self.assertSemanticTypeRegisteredToFormat(
-            SampleEstimator, SampleEstimatorDirFmt)
+            SampleEstimator[Classifier], SampleEstimatorDirFmt)
+
+    def test_sample_regressor_semantic_type_to_format_registration(self):
+        self.assertSemanticTypeRegisteredToFormat(
+            SampleEstimator[Regressor], SampleEstimatorDirFmt)
 
 
 class TestFormats(SampleEstimatorTestBase):
-    def test_taxonomic_classifier_dir_fmt(self):
+    def test_sample_classifier_dir_fmt(self):
         format = self._custom_setup(sklearn.__version__)
 
         # Should not error
