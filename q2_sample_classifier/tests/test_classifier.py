@@ -812,6 +812,34 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
     def test_action_split_table(self):
         sample_classifier.actions.split_table(self.tab, self.md, test_size=0.5)
 
+    # make sure predict still works when features are given in a different
+    # order from training set.
+    def test_predict_feature_order_aint_no_thing(self):
+        table = self.table_ecam_fp
+        estimator, importances = fit_regressor(
+            table, self.mdc_ecam_fp, random_state=123, n_estimators=2,
+            n_jobs=1, missing_samples='ignore')
+
+        # randomly shuffle and reorder features in biom table.
+        feature_ids = table.ids(axis='observation')
+        # look ma no seed! we should get the same result no matter the order.
+        np.random.shuffle(feature_ids)
+        shuffled_table = table.sort_order(feature_ids, axis='observation')
+
+        # now predict values on shuffled data
+        pred = predict(shuffled_table, estimator)
+        exp = self.mdc_ecam_fp.to_series()
+        # reindex both pred and exp because not all samples present in pred
+        # are present in the metadata! (hence missing_samples='ignore')
+        sample_ids = pred.index.intersection(exp.index)
+        pred = pred.loc[sample_ids]
+        exp = exp.loc[sample_ids]
+        # test that expected MSE is achieved (these are mostly quite high
+        # as we would expect)
+        mse = mean_squared_error(exp, pred)
+        self.assertAlmostEqual(
+            mse, seeded_predict_results['RandomForestRegressor'])
+
 
 class SampleEstimatorTestBase(SampleClassifierTestPluginBase):
     package = 'q2_sample_classifier.tests'
