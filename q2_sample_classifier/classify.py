@@ -55,7 +55,7 @@ def classify_samples(ctx,
 
     split = ctx.get_action('sample_classifier', 'split_table')
     fit = ctx.get_action('sample_classifier', 'fit_classifier')
-    predict_test = ctx.get_action('sample_classifier', 'predict')
+    predict_test = ctx.get_action('sample_classifier', 'predict_classifier')
     summarize_estimator = ctx.get_action('sample_classifier', 'summarize')
     confusion = ctx.get_action('sample_classifier', 'confusion_matrix')
 
@@ -94,7 +94,7 @@ def regress_samples(ctx,
 
     split = ctx.get_action('sample_classifier', 'split_table')
     fit = ctx.get_action('sample_classifier', 'fit_regressor')
-    predict_test = ctx.get_action('sample_classifier', 'predict')
+    predict_test = ctx.get_action('sample_classifier', 'predict_regressor')
     summarize_estimator = ctx.get_action('sample_classifier', 'summarize')
     scatter = ctx.get_action('sample_classifier', 'scatterplot')
 
@@ -257,7 +257,7 @@ def predict_classifier(table: biom.Table, sample_estimator: Pipeline,
 
 
 def predict_regressor(table: biom.Table, sample_estimator: Pipeline,
-                       n_jobs: int=defaults['n_jobs']) -> pd.Series:
+                      n_jobs: int=defaults['n_jobs']) -> pd.Series:
     return predict_base(table, sample_estimator, n_jobs)
 
 

@@ -192,8 +192,7 @@ regressor_pipeline_parameter_descriptions = {
     **parameter_descriptions['regressor'],
     'metadata': 'Numeric metadata column to use as prediction target.'}
 
-pipeline_outputs = fitter_outputs + [
-    ('predictions', SampleData[Predictions]),
+pipeline_outputs = [
     ('model_summary', Visualization),
     ('accuracy_results', Visualization)]
 
@@ -209,9 +208,10 @@ plugin.pipelines.register_function(
     function=classify_samples,
     inputs=inputs,
     parameters=classifier_pipeline_parameters,
-    outputs=[('sample_estimator', SampleEstimator[Classifier]),
-             ('feature_importance', FeatureData[Importance])] +
-            pipeline_outputs,
+    outputs=[
+        ('sample_estimator', SampleEstimator[Classifier]),
+        ('feature_importance', FeatureData[Importance]),
+        ('predictions', SampleData[ClassifierPredictions])] + pipeline_outputs,
     input_descriptions=input_descriptions,
     parameter_descriptions=classifier_pipeline_parameter_descriptions,
     output_descriptions=pipeline_output_descriptions,
@@ -225,9 +225,10 @@ plugin.pipelines.register_function(
     function=regress_samples,
     inputs=inputs,
     parameters=regressor_pipeline_parameters,
-    outputs=[('sample_estimator', SampleEstimator[Regressor]),
-             ('feature_importance', FeatureData[Importance])] +
-            pipeline_outputs,
+    outputs=[
+        ('sample_estimator', SampleEstimator[Regressor]),
+        ('feature_importance', FeatureData[Importance]),
+        ('predictions', SampleData[RegressorPredictions])] + pipeline_outputs,
     input_descriptions=input_descriptions,
     parameter_descriptions=regressor_pipeline_parameter_descriptions,
     output_descriptions=pipeline_output_descriptions,

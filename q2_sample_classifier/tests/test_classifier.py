@@ -813,7 +813,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         shuffled_table = table.sort_order(feature_ids, axis='observation')
 
         # now predict values on shuffled data
-        pred = predict(shuffled_table, estimator)
+        pred = predict_regressor(shuffled_table, estimator)
         exp = self.mdc_ecam_fp.to_series()
         # reindex both pred and exp because not all samples present in pred
         # are present in the metadata! (hence missing_samples='ignore')
