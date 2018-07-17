@@ -790,28 +790,6 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 msg='Accuracy of %s regressor was %f, but expected %f' % (
                     regressor, mse, seeded_predict_results[regressor]))
 
-
-class NowLetsTestTheActions(SampleClassifierTestPluginBase):
-
-    def setUp(self):
-        super().setUp()
-        md = pd.Series(['a', 'a', 'b', 'b', 'b'],
-                       index=['a', 'b', 'c', 'd', 'e'], name='bugs')
-        md.index.name = 'SampleID'
-        self.md = qiime2.CategoricalMetadataColumn(md)
-        tab = biom.Table(
-            np.array([[3, 6, 7, 3, 6], [3, 4, 5, 6, 2], [8, 6, 4, 1, 0],
-                      [8, 6, 4, 1, 0], [8, 6, 4, 1, 0]]),
-            observation_ids=['v', 'w', 'x', 'y', 'z'],
-            sample_ids=['a', 'b', 'c', 'd', 'e'])
-        self.tab = qiime2.Artifact.import_data('FeatureTable[Frequency]', tab)
-
-    # let's make sure the correct transformers are in place! See issue 114
-    # if this runs without error, that's good enough for me. We already
-    # validate the function above.
-    def test_action_split_table(self):
-        sample_classifier.actions.split_table(self.tab, self.md, test_size=0.5)
-
     # make sure predict still works when features are given in a different
     # order from training set.
     def test_predict_feature_order_aint_no_thing(self):
@@ -839,6 +817,28 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
         mse = mean_squared_error(exp, pred)
         self.assertAlmostEqual(
             mse, seeded_predict_results['RandomForestRegressor'])
+
+
+class NowLetsTestTheActions(SampleClassifierTestPluginBase):
+
+    def setUp(self):
+        super().setUp()
+        md = pd.Series(['a', 'a', 'b', 'b', 'b'],
+                       index=['a', 'b', 'c', 'd', 'e'], name='bugs')
+        md.index.name = 'SampleID'
+        self.md = qiime2.CategoricalMetadataColumn(md)
+        tab = biom.Table(
+            np.array([[3, 6, 7, 3, 6], [3, 4, 5, 6, 2], [8, 6, 4, 1, 0],
+                      [8, 6, 4, 1, 0], [8, 6, 4, 1, 0]]),
+            observation_ids=['v', 'w', 'x', 'y', 'z'],
+            sample_ids=['a', 'b', 'c', 'd', 'e'])
+        self.tab = qiime2.Artifact.import_data('FeatureTable[Frequency]', tab)
+
+    # let's make sure the correct transformers are in place! See issue 114
+    # if this runs without error, that's good enough for me. We already
+    # validate the function above.
+    def test_action_split_table(self):
+        sample_classifier.actions.split_table(self.tab, self.md, test_size=0.5)
 
 
 class SampleEstimatorTestBase(SampleClassifierTestPluginBase):
