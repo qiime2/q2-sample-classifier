@@ -25,8 +25,8 @@ from q2_sample_classifier.visuals import (
     _plot_heatmap_from_confusion_matrix, _add_sample_size_to_xtick_labels)
 from q2_sample_classifier.classify import (
     regress_samples_ncv, classify_samples_ncv, fit_classifier, fit_regressor,
-    maturity_index, detect_outliers, split_table, predict_classifier,
-    predict_regressor, scatterplot, confusion_matrix, summarize)
+    maturity_index, detect_outliers, split_table, predict_classification,
+    predict_regression, scatterplot, confusion_matrix, summarize)
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator, _load_data,
     _calculate_feature_importances, _extract_important_features,
@@ -750,7 +750,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
 
     # just test that this works by making sure a classifier trained on samples
     # x, y, and z predicts the correct metadata values for those same samples.
-    def test_predict_classifiers(self):
+    def test_predict_classifications(self):
         for classifier in ['RandomForestClassifier', 'ExtraTreesClassifier',
                            'GradientBoostingClassifier', 'AdaBoostClassifier',
                            'LinearSVC', 'SVC', 'KNeighborsClassifier']:
@@ -758,7 +758,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 self.table_chard_fp, self.mdc_chard_fp, random_state=123,
                 n_estimators=2, estimator=classifier, n_jobs=1,
                 missing_samples='ignore')
-            pred = predict_classifier(self.table_chard_fp, estimator)
+            pred = predict_classification(self.table_chard_fp, estimator)
             exp = self.mdc_chard_fp.to_series().reindex(pred.index).dropna()
             # reindex both pred and exp because not all samples present in pred
             # are present in the metadata! (hence missing_samples='ignore')
@@ -774,7 +774,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                     classifier, correct_results,
                     seeded_predict_results[classifier]))
 
-    def test_predict_regressors(self):
+    def test_predict_regressions(self):
         for regressor in ['RandomForestRegressor', 'ExtraTreesRegressor',
                           'GradientBoostingRegressor', 'AdaBoostRegressor',
                           'Lasso', 'Ridge', 'ElasticNet',
@@ -783,7 +783,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
                 n_estimators=2, estimator=regressor, n_jobs=1,
                 missing_samples='ignore')
-            pred = predict_regressor(self.table_ecam_fp, estimator)
+            pred = predict_regression(self.table_ecam_fp, estimator)
             exp = self.mdc_ecam_fp.to_series()
             # reindex both pred and exp because not all samples present in pred
             # are present in the metadata! (hence missing_samples='ignore')
@@ -813,7 +813,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         shuffled_table = table.sort_order(feature_ids, axis='observation')
 
         # now predict values on shuffled data
-        pred = predict_regressor(shuffled_table, estimator)
+        pred = predict_regression(shuffled_table, estimator)
         exp = self.mdc_ecam_fp.to_series()
         # reindex both pred and exp because not all samples present in pred
         # are present in the metadata! (hence missing_samples='ignore')

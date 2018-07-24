@@ -17,7 +17,7 @@ from q2_types.feature_data import FeatureData
 from .classify import (
     classify_samples, regress_samples, maturity_index, regress_samples_ncv,
     classify_samples_ncv, fit_classifier, fit_regressor, split_table,
-    predict_classifier, predict_regressor, confusion_matrix, scatterplot,
+    predict_classification, predict_regression, confusion_matrix, scatterplot,
     summarize)
 from .visuals import _custom_palettes
 from ._format import (SampleEstimatorDirFmt,
@@ -337,7 +337,7 @@ plugin.methods.register_function(
 
 
 plugin.methods.register_function(
-    function=predict_classifier,
+    function=predict_classification,
     inputs={**inputs, 'sample_estimator': SampleEstimator[Classifier]},
     parameters={'n_jobs': parameters['base']['n_jobs']},
     outputs=[('predictions', SampleData[ClassifierPredictions])],
@@ -354,7 +354,7 @@ plugin.methods.register_function(
 
 
 plugin.methods.register_function(
-    function=predict_regressor,
+    function=predict_regression,
     inputs={**inputs, 'sample_estimator': SampleEstimator[Regressor]},
     parameters={'n_jobs': parameters['base']['n_jobs']},
     outputs=[('predictions', SampleData[RegressorPredictions])],
