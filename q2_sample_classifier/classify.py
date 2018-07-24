@@ -55,7 +55,7 @@ def classify_samples(ctx,
 
     split = ctx.get_action('sample_classifier', 'split_table')
     fit = ctx.get_action('sample_classifier', 'fit_classifier')
-    predict_test = ctx.get_action('sample_classifier', 'predict')
+    predict_test = ctx.get_action('sample_classifier', 'predict_classifier')
     summarize_estimator = ctx.get_action('sample_classifier', 'summarize')
     confusion = ctx.get_action('sample_classifier', 'confusion_matrix')
 
@@ -94,7 +94,7 @@ def regress_samples(ctx,
 
     split = ctx.get_action('sample_classifier', 'split_table')
     fit = ctx.get_action('sample_classifier', 'fit_regressor')
-    predict_test = ctx.get_action('sample_classifier', 'predict')
+    predict_test = ctx.get_action('sample_classifier', 'predict_regressor')
     summarize_estimator = ctx.get_action('sample_classifier', 'summarize')
     scatter = ctx.get_action('sample_classifier', 'scatterplot')
 
@@ -233,8 +233,7 @@ def regress_samples_basic(output_dir: str, table: biom.Table,
                optimize_feature_selection, title='regression predictions')
 
 
-def predict(table: biom.Table, sample_estimator: Pipeline,
-            n_jobs: int=defaults['n_jobs']) -> pd.Series:
+def predict_base(table, sample_estimator, n_jobs):
     # extract feature data from biom
     feature_data = _extract_features(table)
 
@@ -250,6 +249,16 @@ def predict(table: biom.Table, sample_estimator: Pipeline,
     y_pred.index.name = 'SampleID'
 
     return y_pred
+
+
+def predict_classifier(table: biom.Table, sample_estimator: Pipeline,
+                       n_jobs: int=defaults['n_jobs']) -> pd.Series:
+    return predict_base(table, sample_estimator, n_jobs)
+
+
+def predict_regressor(table: biom.Table, sample_estimator: Pipeline,
+                      n_jobs: int=defaults['n_jobs']) -> pd.Series:
+    return predict_base(table, sample_estimator, n_jobs)
 
 
 def split_table(table: biom.Table, metadata: qiime2.MetadataColumn,
@@ -305,6 +314,7 @@ def scatterplot(output_dir: str, predictions: pd.Series,
                 truth: qiime2.NumericMetadataColumn,
                 missing_samples: str=defaults['missing_samples']) -> None:
     predictions = pd.to_numeric(predictions)
+
     _plot_accuracy(output_dir, predictions, truth, missing_samples,
                    classification=False, palette=None,
                    plot_title='regression scatterplot')

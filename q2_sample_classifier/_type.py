@@ -11,9 +11,15 @@ from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
 
 
-Predictions = SemanticType(
-    'Predictions', variant_of=SampleData.field['type'])
-SampleEstimator = SemanticType('SampleEstimator')
+ClassifierPredictions = SemanticType(
+    'ClassifierPredictions', variant_of=SampleData.field['type'])
+RegressorPredictions = SemanticType(
+    'RegressorPredictions', variant_of=SampleData.field['type'])
+SampleEstimator = SemanticType('SampleEstimator', field_names='type')
+Classifier = SemanticType(
+    'Classifier', variant_of=SampleEstimator.field['type'])
+Regressor = SemanticType(
+    'Regressor', variant_of=SampleEstimator.field['type'])
 BooleanSeries = SemanticType(
     'BooleanSeries', variant_of=SampleData.field['type'])
 Importance = SemanticType(

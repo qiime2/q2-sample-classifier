@@ -16,8 +16,9 @@ from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
 from .classify import (
     classify_samples, regress_samples, maturity_index, regress_samples_ncv,
-    classify_samples_ncv, fit_classifier, fit_regressor, split_table, predict,
-    confusion_matrix, scatterplot, summarize)
+    classify_samples_ncv, fit_classifier, fit_regressor, split_table,
+    predict_classifier, predict_regressor, confusion_matrix, scatterplot,
+    summarize)
 from .visuals import _custom_palettes
 from ._format import (SampleEstimatorDirFmt,
                       BooleanSeriesFormat,
@@ -27,7 +28,9 @@ from ._format import (SampleEstimatorDirFmt,
                       PredictionsFormat,
                       PredictionsDirectoryFormat)
 
-from ._type import Predictions, SampleEstimator, BooleanSeries, Importance
+from ._type import (ClassifierPredictions, RegressorPredictions,
+                    SampleEstimator, BooleanSeries, Importance,
+                    Classifier, Regressor)
 import q2_sample_classifier
 
 citations = Citations.load('citations.bib', package='q2_sample_classifier')
@@ -69,16 +72,18 @@ cv_description = ('Fit a supervised learning {0}. Outputs the fit estimator '
                   'automatic recursive feature elimination and hyperparameter '
                   'tuning.')
 
+predict_description = (
+    'Use trained estimator to predict target values for new samples. '
+    'These will typically be unseen samples, e.g., test data (derived '
+    'manually or from split_table) or samples with unknown values, but '
+    'can theoretically be any samples present in a feature table that '
+    'contain overlapping features with the feature table used to train '
+    'the estimator.')
+
 inputs = {'table': FeatureTable[Frequency]}
 
 input_descriptions = {'table': ('Feature table containing all features that '
                                 'should be used for target prediction.')}
-
-sample_estimator = {'sample_estimator': SampleEstimator}
-
-sample_estimator_description = {
-    'sample_estimator': 'Sample estimator trained with fit_classifier or '
-                        'fit_regressor.'}
 
 parameters = {
     'base': {
@@ -147,16 +152,10 @@ regressors = Str % Choices(
      'GradientBoostingRegressor', 'AdaBoostRegressor', 'ElasticNet',
      'Ridge', 'Lasso', 'KNeighborsRegressor', 'LinearSVR', 'SVR'])
 
-outputs = [('predictions', SampleData[Predictions]),
-           ('feature_importance', FeatureData[Importance])]
-
 output_descriptions = {
     'predictions': 'Predicted target values for each input sample.',
     'feature_importance': 'Importance of each input feature to model accuracy.'
 }
-
-fitter_outputs = [('sample_estimator', SampleEstimator),
-                  ('feature_importance', FeatureData[Importance])]
 
 pipeline_parameters = {
     **parameters['base'],
@@ -193,13 +192,12 @@ regressor_pipeline_parameter_descriptions = {
     **parameter_descriptions['regressor'],
     'metadata': 'Numeric metadata column to use as prediction target.'}
 
-pipeline_outputs = fitter_outputs + [
-    ('predictions', SampleData[Predictions]),
+pipeline_outputs = [
     ('model_summary', Visualization),
     ('accuracy_results', Visualization)]
 
 pipeline_output_descriptions = {
-    **sample_estimator_description,
+    'sample_estimator': 'Trained sample estimator.',
     **output_descriptions,
     'model_summary': 'Summarized parameter and (if enabled) feature '
                      'selection information for the trained estimator.',
@@ -210,7 +208,10 @@ plugin.pipelines.register_function(
     function=classify_samples,
     inputs=inputs,
     parameters=classifier_pipeline_parameters,
-    outputs=pipeline_outputs,
+    outputs=[
+        ('sample_estimator', SampleEstimator[Classifier]),
+        ('feature_importance', FeatureData[Importance]),
+        ('predictions', SampleData[ClassifierPredictions])] + pipeline_outputs,
     input_descriptions=input_descriptions,
     parameter_descriptions=classifier_pipeline_parameter_descriptions,
     output_descriptions=pipeline_output_descriptions,
@@ -224,7 +225,10 @@ plugin.pipelines.register_function(
     function=regress_samples,
     inputs=inputs,
     parameters=regressor_pipeline_parameters,
-    outputs=pipeline_outputs,
+    outputs=[
+        ('sample_estimator', SampleEstimator[Regressor]),
+        ('feature_importance', FeatureData[Importance]),
+        ('predictions', SampleData[RegressorPredictions])] + pipeline_outputs,
     input_descriptions=input_descriptions,
     parameter_descriptions=regressor_pipeline_parameter_descriptions,
     output_descriptions=pipeline_output_descriptions,
@@ -243,7 +247,8 @@ plugin.methods.register_function(
         'metadata': MetadataColumn[Numeric],
         **parameters['regressor'],
         'estimator': regressors},
-    outputs=outputs,
+    outputs=[('predictions', SampleData[RegressorPredictions]),
+             ('feature_importance', FeatureData[Importance])],
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions['base'],
@@ -265,7 +270,8 @@ plugin.methods.register_function(
         **parameters['cv'],
         'metadata': MetadataColumn[Categorical],
         'estimator': classifiers},
-    outputs=outputs,
+    outputs=[('predictions', SampleData[ClassifierPredictions]),
+             ('feature_importance', FeatureData[Importance])],
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions['base'],
@@ -288,7 +294,8 @@ plugin.methods.register_function(
         **parameters['cv'],
         'metadata': MetadataColumn[Categorical],
         'estimator': classifiers},
-    outputs=fitter_outputs,
+    outputs=[('sample_estimator', SampleEstimator[Classifier]),
+             ('feature_importance', FeatureData[Importance])],
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions['base'],
@@ -298,7 +305,7 @@ plugin.methods.register_function(
         **parameter_descriptions['estimator']},
     output_descriptions={
         'feature_importance': output_descriptions['feature_importance'],
-        **sample_estimator_description},
+        'sample_estimator': 'Trained sample classifier.'},
     name='Fit a supervised learning classifier.',
     description=cv_description.format('classifier')
 )
@@ -313,7 +320,8 @@ plugin.methods.register_function(
         **parameters['cv'],
         'metadata': MetadataColumn[Numeric],
         'estimator': regressors},
-    outputs=fitter_outputs,
+    outputs=[('sample_estimator', SampleEstimator[Regressor]),
+             ('feature_importance', FeatureData[Importance])],
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions['base'],
@@ -329,58 +337,76 @@ plugin.methods.register_function(
 
 
 plugin.methods.register_function(
-    function=predict,
-    inputs={**inputs, **sample_estimator},
-    parameters={
-        'n_jobs': parameters['base']['n_jobs']},
-    outputs=[('predictions', SampleData[Predictions])],
-    input_descriptions={**input_descriptions, **sample_estimator_description},
+    function=predict_classifier,
+    inputs={**inputs, 'sample_estimator': SampleEstimator[Classifier]},
+    parameters={'n_jobs': parameters['base']['n_jobs']},
+    outputs=[('predictions', SampleData[ClassifierPredictions])],
+    input_descriptions={
+        **input_descriptions,
+        'sample_estimator': 'Sample classifier trained with fit_classifier.'},
     parameter_descriptions={
         'n_jobs': parameter_descriptions['base']['n_jobs']},
     output_descriptions={
         'predictions': 'Predicted target values for each input sample.'},
-    name='Use trained estimator to predict target values for new samples.',
-    description=(
-        'Use trained estimator to predict target values for new samples. '
-        'These will typically be unseen samples, e.g., test data (derived '
-        'manually or from split_table) or samples with unknown values, but '
-        'can theoretically be any samples present in a feature table that '
-        'contain overlapping features with the feature table used to train '
-        'the estimator.')
+    name='Use trained classifier to predict target values for new samples.',
+    description=predict_description
+)
+
+
+plugin.methods.register_function(
+    function=predict_regressor,
+    inputs={**inputs, 'sample_estimator': SampleEstimator[Regressor]},
+    parameters={'n_jobs': parameters['base']['n_jobs']},
+    outputs=[('predictions', SampleData[RegressorPredictions])],
+    input_descriptions={
+        **input_descriptions,
+        'sample_estimator': 'Sample regressor trained with fit_regressor.'},
+    parameter_descriptions={
+        'n_jobs': parameter_descriptions['base']['n_jobs']},
+    output_descriptions={
+        'predictions': 'Predicted target values for each input sample.'},
+    name='Use trained regressor to predict target values for new samples.',
+    description=predict_description
 )
 
 
 plugin.visualizers.register_function(
     function=scatterplot,
-    inputs={'predictions': SampleData[Predictions]},
+    inputs={'predictions': SampleData[RegressorPredictions]},
     parameters={
         'truth': MetadataColumn[Numeric],
         'missing_samples': parameters['base']['missing_samples']},
-    input_descriptions={'predictions': 'Predicted values to plot on y axis'},
+    input_descriptions={'predictions': (
+        'Predicted values to plot on y axis. Must be predictions of '
+        'numeric data produced by a sample regressor.')},
     parameter_descriptions={
         'truth': 'Metadata column (true values) to plot on x axis.',
         'missing_samples': parameter_descriptions['base']['missing_samples']},
-    name='Make a 2D scatterplot and linear regression.',
+    name='Make 2D scatterplot and linear regression of regressor predictions.',
     description='Make a 2D scatterplot and linear regression of predicted vs. '
-                'true values for a set of samples.'
+                'true values for a set of samples predicted using a sample '
+                'regressor.'
 )
 
 
 plugin.visualizers.register_function(
     function=confusion_matrix,
-    inputs={'predictions': SampleData[Predictions]},
+    inputs={'predictions': SampleData[ClassifierPredictions]},
     parameters={
         'truth': MetadataColumn[Categorical],
         'missing_samples': parameters['base']['missing_samples'],
         'palette': Str % Choices(_custom_palettes().keys())},
-    input_descriptions={'predictions': 'Predicted values to plot on x axis'},
+    input_descriptions={'predictions': (
+        'Predicted values to plot on x axis. Should be predictions of '
+        'categorical data produced by a sample classifier.')},
     parameter_descriptions={
         'truth': 'Metadata column (true values) to plot on y axis.',
         'missing_samples': parameter_descriptions['base']['missing_samples'],
         'palette': 'The color palette to use for plotting.'},
-    name='Make a confusion matrix.',
+    name='Make a confusion matrix from sample classifier predictions.',
     description='Make a confusion matrix and calculate accuracy of predicted '
-                'vs. true values for a set of samples.'
+                'vs. true values for a set of samples classified using a '
+                'sample classifier.'
 )
 
 
@@ -416,9 +442,11 @@ plugin.methods.register_function(
 
 plugin.visualizers.register_function(
     function=summarize,
-    inputs=sample_estimator,
+    inputs={'sample_estimator': SampleEstimator[Classifier | Regressor]},
     parameters={},
-    input_descriptions=sample_estimator_description,
+    input_descriptions={
+        'sample_estimator': 'Sample estimator trained with fit_classifier or '
+                            'fit_regressor.'},
     parameter_descriptions={},
     name='Summarize parameter and feature extraction information for a '
          'trained estimator.',
@@ -481,15 +509,22 @@ plugin.visualizers.register_function(
 
 # Registrations
 plugin.register_semantic_types(
-    SampleEstimator, BooleanSeries, Importance, Predictions)
+    SampleEstimator, BooleanSeries, Importance, ClassifierPredictions,
+    RegressorPredictions, Classifier, Regressor)
 plugin.register_semantic_type_to_format(
-    SampleEstimator,
+    SampleEstimator[Classifier],
+    artifact_format=SampleEstimatorDirFmt)
+plugin.register_semantic_type_to_format(
+    SampleEstimator[Regressor],
     artifact_format=SampleEstimatorDirFmt)
 plugin.register_semantic_type_to_format(
     SampleData[BooleanSeries],
     artifact_format=BooleanSeriesDirectoryFormat)
 plugin.register_semantic_type_to_format(
-    SampleData[Predictions],
+    SampleData[RegressorPredictions],
+    artifact_format=PredictionsDirectoryFormat)
+plugin.register_semantic_type_to_format(
+    SampleData[ClassifierPredictions],
     artifact_format=PredictionsDirectoryFormat)
 plugin.register_semantic_type_to_format(
     FeatureData[Importance],
