@@ -24,7 +24,7 @@ from q2_sample_classifier.visuals import (
     _plot_heatmap_from_confusion_matrix, _add_sample_size_to_xtick_labels)
 from q2_sample_classifier.classify import (
     regress_samples_ncv, classify_samples_ncv, fit_classifier, fit_regressor,
-    maturity_index, detect_outliers, split_table, predict_classification,
+    detect_outliers, split_table, predict_classification,
     predict_regression, scatterplot, confusion_matrix, summarize)
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator, _load_data,
@@ -652,7 +652,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         table_fp = self.get_data_path('ecam-table-maturity.qza')
         table = qiime2.Artifact.load(table_fp)
         res = sample_classifier.actions.maturity_index(
-            table, self.md_ecam_fp, column='month', n_estimators=2,
+            table, self.md_ecam_fp, state_column='month', n_estimators=2,
             group_by='delivery', random_state=123, n_jobs=1, control='Vaginal',
             test_size=0.4, missing_samples='ignore')
         maz = pd.to_numeric(res[5].view(pd.Series))

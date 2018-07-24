@@ -196,6 +196,11 @@ pipeline_outputs = [
     ('model_summary', Visualization),
     ('accuracy_results', Visualization)]
 
+regressor_pipeline_outputs = [
+    ('sample_estimator', SampleEstimator[Regressor]),
+    ('feature_importance', FeatureData[Importance]),
+    ('predictions', SampleData[RegressorPredictions])] + pipeline_outputs
+
 pipeline_output_descriptions = {
     'sample_estimator': 'Trained sample estimator.',
     **output_descriptions,
@@ -225,10 +230,7 @@ plugin.pipelines.register_function(
     function=regress_samples,
     inputs=inputs,
     parameters=regressor_pipeline_parameters,
-    outputs=[
-        ('sample_estimator', SampleEstimator[Regressor]),
-        ('feature_importance', FeatureData[Importance]),
-        ('predictions', SampleData[RegressorPredictions])] + pipeline_outputs,
+    outputs=regressor_pipeline_outputs,
     input_descriptions=input_descriptions,
     parameter_descriptions=regressor_pipeline_parameter_descriptions,
     output_descriptions=pipeline_output_descriptions,
@@ -460,20 +462,22 @@ plugin.pipelines.register_function(
     inputs=inputs,
     parameters={'group_by': Str,
                 'control': Str,
+                'individual_id_column': Str,
                 'estimator': regressors,
                 **pipeline_parameters,
                 'metadata': Metadata,
-                'column': Str,
+                'state_column': Str,
                 **parameters['regressor'],
                 },
-    outputs=pipeline_outputs + [
-        ('maz_scores', SampleData[Predictions]),
+    outputs=regressor_pipeline_outputs + [
+        ('maz_scores', SampleData[RegressorPredictions]),
         ('clustermap', Visualization),
         ('lineplots', Visualization)],
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **pipeline_parameter_descriptions,
-        'column': 'Numeric metadata column to use as prediction target.',
+        'state_column': ('Numeric metadata column containing sampling time '
+                         '(state) data to use as prediction target.'),
         'group_by': ('Categorical metadata column to use for plotting and '
                      'significance testing between main treatment groups.'),
         'control': (
@@ -481,6 +485,10 @@ plugin.pipelines.register_function(
             'will be trained using only control group data, and the maturity '
             'scores of other groups consequently will be assessed relative to '
             'this group.'),
+        'individual_id_column': (
+            'Optional metadata column containing IDs for individual subjects. '
+            'Adds individual subject (spaghetti) vectors to volatility charts '
+            'if a column name is provided.'),
         'estimator': 'Regression model to use for prediction.',
         **parameter_descriptions['regressor'],
     },
