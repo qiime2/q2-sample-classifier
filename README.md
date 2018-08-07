@@ -26,4 +26,4 @@ For user support, see the [QIIME 2 Forum](https://forum.qiime2.org). Bug reports
 
 ## Contributing
 
-QIIME 2 is an open-source project, and we are very interested in contributions from the community. Please get in touch through the [QIIME 2 Forum](https://forum.qiime2.org) if you'd like to get involved.
+QIIME 2 is an open-source project, and we are very interested in contributions from the community. Please see the [contributing guidelines](https://github.com/qiime2/q2-sample-classifier/blob/master/.github/CONTRIBUTING.md) if you would like to get involved.
