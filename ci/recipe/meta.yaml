@@ -31,8 +31,6 @@ requirements:
     - q2templates {{ release }}.*
     - q2-feature-table {{ release }}.*
     - q2-longitudinal {{ release }}.*
-    # HACK: pinning due to bad build on conda-forge
-    - harfbuzz 1.7.6
 
 test:
   imports:
