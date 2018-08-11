@@ -24,7 +24,8 @@ from .utilities import (split_optimize_classify, _visualize, _load_data,
                         _disable_feature_selection, _select_estimator,
                         nested_cross_validation, _fit_estimator,
                         _map_params_to_pipeline, _extract_features,
-                        _plot_accuracy, _summarize_estimator)
+                        _plot_accuracy, _summarize_estimator,
+                        _predict_and_plot)
 
 
 defaults = {
@@ -53,7 +54,7 @@ def classify_samples_from_dist(output_dir: str,
     print(predictions)
     # writes a pdf file that's important for viz
     predictions2, confusion = _predict_and_plot(
-        output_dir, column, predictions, classifier, .8)
+        output_dir, column, predictions, classifier)
     print(predictions2)
     _visualize(output_dir, classifier, predictions2, None,
                False, title='classification predictions')
