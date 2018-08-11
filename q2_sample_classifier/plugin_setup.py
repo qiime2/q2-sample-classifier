@@ -6,19 +6,32 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
+import importlib
+
 from qiime2.plugin import (
     Int, Str, Float, Range, Bool, Plugin, Metadata, Choices, MetadataColumn,
-    Numeric, Categorical, SemanticType, Citations)
+    Numeric, Categorical, Citations, Visualization)
 from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.sample_data import SampleData
+from q2_types.feature_data import FeatureData
 from .classify import (
-    classify_samples, regress_samples, maturity_index)
+    classify_samples, regress_samples, maturity_index, regress_samples_ncv,
+    classify_samples_ncv, fit_classifier, fit_regressor, split_table,
+    predict_classification, predict_regression, confusion_matrix, scatterplot,
+    summarize)
 from .visuals import _custom_palettes
-import q2_sample_classifier
-import qiime2.plugin.model as model
-import pandas as pd
-import qiime2
+from ._format import (SampleEstimatorDirFmt,
+                      BooleanSeriesFormat,
+                      BooleanSeriesDirectoryFormat,
+                      ImportanceFormat,
+                      ImportanceDirectoryFormat,
+                      PredictionsFormat,
+                      PredictionsDirectoryFormat)
 
+from ._type import (ClassifierPredictions, RegressorPredictions,
+                    SampleEstimator, BooleanSeries, Importance,
+                    Classifier, Regressor)
+import q2_sample_classifier
 
 citations = Citations.load('citations.bib', package='q2_sample_classifier')
 
@@ -33,68 +46,8 @@ plugin = Plugin(
         'learning methods.'),
     short_description=(
         'Plugin for machine learning prediction of sample metadata.'),
-    citations=[citations['Bokulich306167']]
+    citations=[citations['Bokulich306167'], citations['pedregosa2011scikit']]
 )
-
-
-BooleanSeries = SemanticType(
-    'BooleanSeries', variant_of=SampleData.field['type'])
-
-
-class BooleanSeriesFormat(model.TextFileFormat):
-    def sniff(self):
-        with self.open() as fh:
-            line = fh.readline()
-            for line, _ in zip(fh, range(5)):
-                cells = line.strip().split('\t')
-                if len(cells) != 2 or str(cells[1]) not in ('True', 'False'):
-                    return False
-            return True
-
-
-BooleanSeriesDirectoryFormat = model.SingleFileDirectoryFormat(
-    'BooleanSeriesDirectoryFormat', 'outliers.tsv',
-    BooleanSeriesFormat)
-
-
-def _read_dataframe(fh):
-    # Using `dtype=object` and `set_index` to avoid type casting/inference
-    # of any columns or the index.
-    df = pd.read_csv(fh, sep='\t', header=0, dtype='str')
-    df.set_index(df.columns[0], drop=True, append=False, inplace=True)
-    df.index.name = 'id'
-    return df
-
-
-@plugin.register_transformer
-def _4(data: pd.Series) -> (BooleanSeriesFormat):
-    ff = BooleanSeriesFormat()
-    with ff.open() as fh:
-        data.to_csv(fh, sep='\t', header=True)
-    return ff
-
-
-@plugin.register_transformer
-def _5(ff: BooleanSeriesFormat) -> (pd.Series):
-    with ff.open() as fh:
-        df = _read_dataframe(fh)
-        return df.iloc[:, 0]
-
-
-@plugin.register_transformer
-def _6(ff: BooleanSeriesFormat) -> (qiime2.Metadata):
-    with ff.open() as fh:
-        return qiime2.Metadata(_read_dataframe(fh))
-
-
-plugin.register_formats(BooleanSeriesFormat, BooleanSeriesDirectoryFormat)
-
-plugin.register_semantic_types(BooleanSeries)
-
-plugin.register_semantic_type_to_format(
-    SampleData[BooleanSeries],
-    artifact_format=BooleanSeriesDirectoryFormat)
-
 
 description = ('Predicts a {0} sample metadata column using a {1}. Splits '
                'input data into training and test sets. The training set is '
@@ -103,8 +56,29 @@ description = ('Predicts a {0} sample metadata column using a {1}. Splits '
                'for automated feature extraction and hyperparameter '
                'optimization. The test set validates classification accuracy '
                'of the optimized estimator. Outputs classification results '
-               'for test set. For more details on the learning  algorithm, '
+               'for test set. For more details on the learning algorithm, '
                'see http://scikit-learn.org/stable/supervised_learning.html')
+
+ncv_description = ('Predicts a {0} sample metadata column using a {1}. Uses '
+                   'nested stratified k-fold cross validation for automated '
+                   'hyperparameter optimization and sample prediction. '
+                   'Outputs predicted values for each input sample, and '
+                   'relative importance of each feature for model accuracy.')
+
+cv_description = ('Fit a supervised learning {0}. Outputs the fit estimator '
+                  '(for prediction of test samples and/or unknown samples) '
+                  'and the relative importance of each feature for model '
+                  'accuracy. Optionally use k-fold cross-validation for '
+                  'automatic recursive feature elimination and hyperparameter '
+                  'tuning.')
+
+predict_description = (
+    'Use trained estimator to predict target values for new samples. '
+    'These will typically be unseen samples, e.g., test data (derived '
+    'manually or from split_table) or samples with unknown values, but '
+    'can theoretically be any samples present in a feature table that '
+    'contain overlapping features with the feature table used to train '
+    'the estimator.')
 
 inputs = {'table': FeatureTable[Frequency]}
 
@@ -115,15 +89,18 @@ parameters = {
     'base': {
         'random_state': Int,
         'n_jobs': Int,
-        'n_estimators': Int % Range(1, None)},
-    'standard': {
+        'n_estimators': Int % Range(1, None),
+        'missing_samples': Str % Choices(['error', 'ignore'])},
+    'splitter': {
         'test_size': Float % Range(0.0, 1.0, inclusive_end=False,
-                                   inclusive_start=False),
+                                   inclusive_start=False)},
+    'rfe': {
         'step': Float % Range(0.0, 1.0, inclusive_end=False,
                               inclusive_start=False),
-        'cv': Int % Range(1, None),
-        'parameter_tuning': Bool,
         'optimize_feature_selection': Bool},
+    'cv': {
+        'cv': Int % Range(1, None),
+        'parameter_tuning': Bool},
     'modified_metadata': {
         'metadata': Metadata,
         'column': Str},
@@ -138,18 +115,25 @@ parameter_descriptions = {
                 'improve predictive accuracy up to a threshold level, '
                 'but will also increase time and memory requirements. This '
                 'parameter only affects ensemble estimators, such as Random '
-                'Forest, AdaBoost, ExtraTrees, and GradientBoosting.')},
-    'standard': {
+                'Forest, AdaBoost, ExtraTrees, and GradientBoosting.'),
+             'missing_samples': (
+                'How to handle missing samples in metadata. "error" will fail '
+                'if missing samples are detected. "ignore" will cause the '
+                'feature table and metadata to be filtered, so that only '
+                'samples found in both files are retained.')},
+    'splitter': {
         'test_size': ('Fraction of input samples to exclude from training set '
-                      'and use for classifier testing.'),
+                      'and use for classifier testing.')},
+    'rfe': {
         'step': ('If optimize_feature_selection is True, step is the '
                  'percentage of features to remove at each iteration.'),
-        'cv': 'Number of k-fold cross-validations to perform.',
-        'parameter_tuning': ('Automatically tune hyperparameters using random '
-                             'grid search.'),
         'optimize_feature_selection': ('Automatically optimize input feature '
                                        'selection using recursive feature '
                                        'elimination.')},
+    'cv': {
+        'cv': 'Number of k-fold cross-validations to perform.',
+        'parameter_tuning': ('Automatically tune hyperparameters using random '
+                             'grid search.')},
     'regressor': {
         'stratify': ('Evenly stratify training and test data among metadata '
                      'categories. If True, all values in column must match '
@@ -158,54 +142,316 @@ parameter_descriptions = {
         'estimator': 'Estimator method to use for sample prediction.'}
 }
 
+classifiers = Str % Choices(
+    ['RandomForestClassifier', 'ExtraTreesClassifier',
+     'GradientBoostingClassifier', 'AdaBoostClassifier',
+     'KNeighborsClassifier', 'LinearSVC', 'SVC'])
 
-plugin.visualizers.register_function(
+regressors = Str % Choices(
+    ['RandomForestRegressor', 'ExtraTreesRegressor',
+     'GradientBoostingRegressor', 'AdaBoostRegressor', 'ElasticNet',
+     'Ridge', 'Lasso', 'KNeighborsRegressor', 'LinearSVR', 'SVR'])
+
+output_descriptions = {
+    'predictions': 'Predicted target values for each input sample.',
+    'feature_importance': 'Importance of each input feature to model accuracy.'
+}
+
+pipeline_parameters = {
+    **parameters['base'],
+    **parameters['rfe'],
+    **parameters['splitter'],
+    **parameters['cv']}
+
+classifier_pipeline_parameters = {
+    **pipeline_parameters,
+    'metadata': MetadataColumn[Categorical],
+    'estimator': classifiers,
+    'palette': Str % Choices(_custom_palettes().keys())}
+
+regressor_pipeline_parameters = {
+    **pipeline_parameters,
+    'metadata': MetadataColumn[Numeric],
+    **parameters['regressor'],
+    'estimator': regressors}
+
+pipeline_parameter_descriptions = {
+    **parameter_descriptions['base'],
+    **parameter_descriptions['rfe'],
+    **parameter_descriptions['splitter'],
+    **parameter_descriptions['estimator'],
+    **parameter_descriptions['cv']}
+
+classifier_pipeline_parameter_descriptions = {
+    **pipeline_parameter_descriptions,
+    'metadata': 'Categorical metadata column to use as prediction target.',
+    'palette': 'The color palette to use for plotting.'}
+
+regressor_pipeline_parameter_descriptions = {
+    **pipeline_parameter_descriptions,
+    **parameter_descriptions['regressor'],
+    'metadata': 'Numeric metadata column to use as prediction target.'}
+
+pipeline_outputs = [
+    ('model_summary', Visualization),
+    ('accuracy_results', Visualization)]
+
+pipeline_output_descriptions = {
+    'sample_estimator': 'Trained sample estimator.',
+    **output_descriptions,
+    'model_summary': 'Summarized parameter and (if enabled) feature '
+                     'selection information for the trained estimator.',
+    'accuracy_results': 'Accuracy results visualization.'}
+
+
+plugin.pipelines.register_function(
     function=classify_samples,
     inputs=inputs,
-    parameters={
-        **parameters['base'],
-        **parameters['standard'],
-        'metadata': MetadataColumn[Categorical],
-        'estimator': Str % Choices(
-            ['RandomForestClassifier', 'ExtraTreesClassifier',
-             'GradientBoostingClassifier', 'AdaBoostClassifier',
-             'KNeighborsClassifier', 'LinearSVC', 'SVC']),
-        'palette': Str % Choices(_custom_palettes().keys())},
+    parameters=classifier_pipeline_parameters,
+    outputs=[
+        ('sample_estimator', SampleEstimator[Classifier]),
+        ('feature_importance', FeatureData[Importance]),
+        ('predictions', SampleData[ClassifierPredictions])] + pipeline_outputs,
     input_descriptions=input_descriptions,
-    parameter_descriptions={
-        **parameter_descriptions['base'],
-        **parameter_descriptions['standard'],
-        'metadata': ('Categorical metadata column to use as prediction '
-                     'target.'),
-        **parameter_descriptions['estimator'],
-        'palette': 'The color palette to use for plotting.'},
-    name='Supervised learning classifier.',
+    parameter_descriptions=classifier_pipeline_parameter_descriptions,
+    output_descriptions=pipeline_output_descriptions,
+    name='Train and test a cross-validated supervised learning classifier.',
     description=description.format(
         'categorical', 'supervised learning classifier')
 )
 
-plugin.visualizers.register_function(
+
+plugin.pipelines.register_function(
     function=regress_samples,
+    inputs=inputs,
+    parameters=regressor_pipeline_parameters,
+    outputs=[
+        ('sample_estimator', SampleEstimator[Regressor]),
+        ('feature_importance', FeatureData[Importance]),
+        ('predictions', SampleData[RegressorPredictions])] + pipeline_outputs,
+    input_descriptions=input_descriptions,
+    parameter_descriptions=regressor_pipeline_parameter_descriptions,
+    output_descriptions=pipeline_output_descriptions,
+    name='Train and test a cross-validated supervised learning regressor.',
+    description=description.format(
+        'continuous', 'supervised learning regressor')
+)
+
+
+plugin.methods.register_function(
+    function=regress_samples_ncv,
     inputs=inputs,
     parameters={
         **parameters['base'],
-        **parameters['standard'],
+        **parameters['cv'],
         'metadata': MetadataColumn[Numeric],
         **parameters['regressor'],
-        'estimator': Str % Choices(
-            ['RandomForestRegressor', 'ExtraTreesRegressor',
-             'GradientBoostingRegressor', 'AdaBoostRegressor', 'ElasticNet',
-             'Ridge', 'Lasso', 'KNeighborsRegressor', 'LinearSVR', 'SVR'])},
+        'estimator': regressors},
+    outputs=[('predictions', SampleData[RegressorPredictions]),
+             ('feature_importance', FeatureData[Importance])],
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions['base'],
-        **parameter_descriptions['standard'],
+        **parameter_descriptions['cv'],
         **parameter_descriptions['regressor'],
         'metadata': 'Numeric metadata column to use as prediction target.',
         **parameter_descriptions['estimator']},
-    name='Supervised learning regressor.',
-    description=description.format(
+    output_descriptions=output_descriptions,
+    name='Nested cross-validated supervised learning regressor.',
+    description=ncv_description.format(
         'continuous', 'supervised learning regressor')
+)
+
+plugin.methods.register_function(
+    function=classify_samples_ncv,
+    inputs=inputs,
+    parameters={
+        **parameters['base'],
+        **parameters['cv'],
+        'metadata': MetadataColumn[Categorical],
+        'estimator': classifiers},
+    outputs=[('predictions', SampleData[ClassifierPredictions]),
+             ('feature_importance', FeatureData[Importance])],
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions['base'],
+        **parameter_descriptions['cv'],
+        'metadata': 'Categorical metadata column to use as prediction target.',
+        **parameter_descriptions['estimator']},
+    output_descriptions=output_descriptions,
+    name='Nested cross-validated supervised learning classifier.',
+    description=ncv_description.format(
+        'categorical', 'supervised learning classifier')
+)
+
+
+plugin.methods.register_function(
+    function=fit_classifier,
+    inputs=inputs,
+    parameters={
+        **parameters['base'],
+        **parameters['rfe'],
+        **parameters['cv'],
+        'metadata': MetadataColumn[Categorical],
+        'estimator': classifiers},
+    outputs=[('sample_estimator', SampleEstimator[Classifier]),
+             ('feature_importance', FeatureData[Importance])],
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions['base'],
+        **parameter_descriptions['rfe'],
+        **parameter_descriptions['cv'],
+        'metadata': 'Numeric metadata column to use as prediction target.',
+        **parameter_descriptions['estimator']},
+    output_descriptions={
+        'feature_importance': output_descriptions['feature_importance'],
+        'sample_estimator': 'Trained sample classifier.'},
+    name='Fit a supervised learning classifier.',
+    description=cv_description.format('classifier')
+)
+
+
+plugin.methods.register_function(
+    function=fit_regressor,
+    inputs=inputs,
+    parameters={
+        **parameters['base'],
+        **parameters['rfe'],
+        **parameters['cv'],
+        'metadata': MetadataColumn[Numeric],
+        'estimator': regressors},
+    outputs=[('sample_estimator', SampleEstimator[Regressor]),
+             ('feature_importance', FeatureData[Importance])],
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        **parameter_descriptions['base'],
+        **parameter_descriptions['rfe'],
+        **parameter_descriptions['cv'],
+        'metadata': 'Numeric metadata column to use as prediction target.',
+        **parameter_descriptions['estimator']},
+    output_descriptions={
+        'feature_importance': output_descriptions['feature_importance']},
+    name='Fit a supervised learning regressor.',
+    description=cv_description.format('regressor')
+)
+
+
+plugin.methods.register_function(
+    function=predict_classification,
+    inputs={**inputs, 'sample_estimator': SampleEstimator[Classifier]},
+    parameters={'n_jobs': parameters['base']['n_jobs']},
+    outputs=[('predictions', SampleData[ClassifierPredictions])],
+    input_descriptions={
+        **input_descriptions,
+        'sample_estimator': 'Sample classifier trained with fit_classifier.'},
+    parameter_descriptions={
+        'n_jobs': parameter_descriptions['base']['n_jobs']},
+    output_descriptions={
+        'predictions': 'Predicted target values for each input sample.'},
+    name='Use trained classifier to predict target values for new samples.',
+    description=predict_description
+)
+
+
+plugin.methods.register_function(
+    function=predict_regression,
+    inputs={**inputs, 'sample_estimator': SampleEstimator[Regressor]},
+    parameters={'n_jobs': parameters['base']['n_jobs']},
+    outputs=[('predictions', SampleData[RegressorPredictions])],
+    input_descriptions={
+        **input_descriptions,
+        'sample_estimator': 'Sample regressor trained with fit_regressor.'},
+    parameter_descriptions={
+        'n_jobs': parameter_descriptions['base']['n_jobs']},
+    output_descriptions={
+        'predictions': 'Predicted target values for each input sample.'},
+    name='Use trained regressor to predict target values for new samples.',
+    description=predict_description
+)
+
+
+plugin.visualizers.register_function(
+    function=scatterplot,
+    inputs={'predictions': SampleData[RegressorPredictions]},
+    parameters={
+        'truth': MetadataColumn[Numeric],
+        'missing_samples': parameters['base']['missing_samples']},
+    input_descriptions={'predictions': (
+        'Predicted values to plot on y axis. Must be predictions of '
+        'numeric data produced by a sample regressor.')},
+    parameter_descriptions={
+        'truth': 'Metadata column (true values) to plot on x axis.',
+        'missing_samples': parameter_descriptions['base']['missing_samples']},
+    name='Make 2D scatterplot and linear regression of regressor predictions.',
+    description='Make a 2D scatterplot and linear regression of predicted vs. '
+                'true values for a set of samples predicted using a sample '
+                'regressor.'
+)
+
+
+plugin.visualizers.register_function(
+    function=confusion_matrix,
+    inputs={'predictions': SampleData[ClassifierPredictions]},
+    parameters={
+        'truth': MetadataColumn[Categorical],
+        'missing_samples': parameters['base']['missing_samples'],
+        'palette': Str % Choices(_custom_palettes().keys())},
+    input_descriptions={'predictions': (
+        'Predicted values to plot on x axis. Should be predictions of '
+        'categorical data produced by a sample classifier.')},
+    parameter_descriptions={
+        'truth': 'Metadata column (true values) to plot on y axis.',
+        'missing_samples': parameter_descriptions['base']['missing_samples'],
+        'palette': 'The color palette to use for plotting.'},
+    name='Make a confusion matrix from sample classifier predictions.',
+    description='Make a confusion matrix and calculate accuracy of predicted '
+                'vs. true values for a set of samples classified using a '
+                'sample classifier.'
+)
+
+
+plugin.methods.register_function(
+    function=split_table,
+    inputs=inputs,
+    parameters={
+        'random_state': parameters['base']['random_state'],
+        'missing_samples': parameters['base']['missing_samples'],
+        **parameters['splitter'],
+        'metadata': MetadataColumn[Numeric | Categorical],
+        **parameters['regressor']},
+    outputs=[('training_table', FeatureTable[Frequency]),
+             ('test_table', FeatureTable[Frequency])],
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        'random_state': parameter_descriptions['base']['random_state'],
+        'missing_samples': parameter_descriptions['base']['missing_samples'],
+        **parameter_descriptions['splitter'],
+        **parameter_descriptions['regressor'],
+        'metadata': 'Numeric metadata column to use as prediction target.'},
+    output_descriptions={
+        'training_table': 'Feature table containing training samples',
+        'test_table': 'Feature table containing test samples'},
+    name='Split a feature table into training and testing sets.',
+    description=(
+        'Split a feature table into training and testing sets. By default '
+        'stratifies training and test sets on a metadata column, such that '
+        'values in that column are evenly represented across training and '
+        'test sets.')
+)
+
+
+plugin.visualizers.register_function(
+    function=summarize,
+    inputs={'sample_estimator': SampleEstimator[Classifier | Regressor]},
+    parameters={},
+    input_descriptions={
+        'sample_estimator': 'Sample estimator trained with fit_classifier or '
+                            'fit_regressor.'},
+    parameter_descriptions={},
+    name='Summarize parameter and feature extraction information for a '
+         'trained estimator.',
+    description='Summarize parameter and feature extraction information for a '
+                'trained estimator.'
 )
 
 
@@ -214,12 +460,11 @@ plugin.visualizers.register_function(
     inputs=inputs,
     parameters={'group_by': Str,
                 'control': Str,
-                'estimator': Str % Choices([
-                    'RandomForestRegressor', 'ExtraTreesRegressor',
-                    'GradientBoostingRegressor', 'SVR', 'Ridge', 'Lasso',
-                    'ElasticNet']),
+                'estimator': regressors,
                 **parameters['base'],
-                **parameters['standard'],
+                **parameters['rfe'],
+                **parameters['cv'],
+                **parameters['splitter'],
                 'metadata': Metadata,
                 'column': Str,
                 **parameters['regressor'],
@@ -228,7 +473,9 @@ plugin.visualizers.register_function(
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions['base'],
-        **parameter_descriptions['standard'],
+        **parameter_descriptions['rfe'],
+        **parameter_descriptions['cv'],
+        **parameter_descriptions['splitter'],
         'column': 'Numeric metadata column to use as prediction target.',
         'group_by': ('Categorical metadata column to use for plotting and '
                      'significance testing between main treatment groups.'),
@@ -258,3 +505,32 @@ plugin.visualizers.register_function(
                  'two or more different "treatment" groups.'),
     citations=[citations['subramanian2014persistent']]
 )
+
+
+# Registrations
+plugin.register_semantic_types(
+    SampleEstimator, BooleanSeries, Importance, ClassifierPredictions,
+    RegressorPredictions, Classifier, Regressor)
+plugin.register_semantic_type_to_format(
+    SampleEstimator[Classifier],
+    artifact_format=SampleEstimatorDirFmt)
+plugin.register_semantic_type_to_format(
+    SampleEstimator[Regressor],
+    artifact_format=SampleEstimatorDirFmt)
+plugin.register_semantic_type_to_format(
+    SampleData[BooleanSeries],
+    artifact_format=BooleanSeriesDirectoryFormat)
+plugin.register_semantic_type_to_format(
+    SampleData[RegressorPredictions],
+    artifact_format=PredictionsDirectoryFormat)
+plugin.register_semantic_type_to_format(
+    SampleData[ClassifierPredictions],
+    artifact_format=PredictionsDirectoryFormat)
+plugin.register_semantic_type_to_format(
+    FeatureData[Importance],
+    artifact_format=ImportanceDirectoryFormat)
+plugin.register_formats(
+    SampleEstimatorDirFmt, BooleanSeriesFormat, BooleanSeriesDirectoryFormat,
+    ImportanceFormat, ImportanceDirectoryFormat, PredictionsFormat,
+    PredictionsDirectoryFormat)
+importlib.import_module('q2_sample_classifier._transformer')

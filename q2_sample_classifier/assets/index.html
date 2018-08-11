@@ -5,14 +5,18 @@
 {% block content %}
 
 <div class="row">
+  {% if predictions %}
   <h1>Model Accuracy</h1>
+  {% endif %}
   <div class="text-center">
+    {% if predictions %}
     <a href="predictions.pdf">
       <img src="predictions.png">
       <br>
       <p>Download as PDF</p>
     </a>
-    {% if classification %}
+    {% endif %}
+    {% if classification and predictions %}
     <div class="col-lg-12">
       {{ predictions }}
       <a href="predictive_accuracy.tsv">
@@ -65,11 +69,13 @@
       </a>
     </div>
     {% endif %}
+    {% if result %}
     <h1>Model parameters</h1>
     <div class="col-lg-12">
       {{ result }}
     </div>
-    {% if not importances.empty %}
+    {% endif %}
+    {% if importances and not importances.empty %}
     <h1>Feature Importance</h1>
     <div class="col-lg-12">
       <a href="feature_importance.tsv">

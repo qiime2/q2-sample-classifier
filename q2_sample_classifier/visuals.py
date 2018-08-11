@@ -6,7 +6,8 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
-from sklearn.metrics import mean_squared_error, confusion_matrix
+from sklearn.metrics import (
+    mean_squared_error, confusion_matrix, accuracy_score)
 
 import pandas as pd
 import numpy as np
@@ -197,24 +198,36 @@ def _linear_regress(actual, pred):
 
 def _plot_heatmap_from_confusion_matrix(cm, palette):
     palette = _custom_palettes()[palette]
-    return sns.heatmap(cm, cmap=palette)
+    return sns.heatmap(cm, cmap=palette, cbar_kws={'label': 'Proportion'})
 
 
-def _plot_confusion_matrix(y_test, y_pred, classes, accuracy, normalize,
-                           palette):
+def _add_sample_size_to_xtick_labels(ser, classes):
+    '''ser is a pandas series.'''
+    labels = ['{0} (n={1})'.format(c, ser[ser == c].count()) for c in classes]
+    return labels
 
+
+def _plot_confusion_matrix(y_test, y_pred, classes, normalize, palette):
+
+    accuracy = accuracy_score(y_test, pd.DataFrame(y_pred))
     cm = confusion_matrix(y_test, y_pred)
     # normalize
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
+    # fill na values (e.g., true values that were not predicted) otherwise
+    # these will appear as whitespace in plots and results table.
+    cm = np.nan_to_num(cm)
+
     confusion = _plot_heatmap_from_confusion_matrix(cm, palette)
+
+    x_tick_labels = _add_sample_size_to_xtick_labels(y_pred, classes)
+    y_tick_labels = _add_sample_size_to_xtick_labels(y_test, classes)
 
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-    confusion.set_xticklabels(classes, rotation=90, ha='center')
-    confusion.set_yticklabels(
-        sorted(classes), rotation=0, ha='right')
+    confusion.set_xticklabels(x_tick_labels, rotation=90, ha='center')
+    confusion.set_yticklabels(y_tick_labels, rotation=0, ha='right')
 
     # generate confusion matrix as pd.DataFrame for viewing
     predictions = pd.DataFrame(cm, index=classes, columns=classes)
@@ -242,18 +255,9 @@ def _calculate_baseline_accuracy(y_test, accuracy):
     return n_samples, n_samples_largest_class, basline_accuracy, accuracy_ratio
 
 
-def _plot_RFE(rfecv):
-    # If using fractional step, step = integer of fraction * n_features
-    if rfecv.step < 1:
-        rfecv.step = int(rfecv.step * len(rfecv.ranking_))
-    # Need to manually calculate x-axis, as rfecv.grid_scores_ are a 1-d array
-    x = [len(rfecv.ranking_) - (n * rfecv.step)
-         for n in range(len(rfecv.grid_scores_)-1, -1, -1)]
-    if x[0] < 1:
-        x[0] = 1
-
+def _plot_RFE(x, y):
     rfe = plt.figure()
     plt.xlabel("Feature Count")
     plt.ylabel("Accuracy")
-    plt.plot(x, rfecv.grid_scores_, 'grey')
+    plt.plot(x, y, 'grey')
     return rfe
