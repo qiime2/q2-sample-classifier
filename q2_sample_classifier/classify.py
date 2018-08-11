@@ -10,7 +10,6 @@
 from sklearn.ensemble import IsolationForest
 from sklearn.metrics import mean_squared_error
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import confusion_matrix
 
 import qiime2
 import pandas as pd
@@ -19,7 +18,8 @@ import skbio
 from .utilities import (split_optimize_classify, _visualize, _load_data,
                         _maz_score, _visualize_maturity_index,
                         _set_parameters_and_estimator,
-                        _disable_feature_selection, _select_estimator, _predict_and_plot)
+                        _disable_feature_selection, _select_estimator,
+                        _predict_and_plot)
 
 defaults = {
     'test_size': 0.2,
@@ -31,9 +31,11 @@ defaults = {
     'palette': 'sirocco'
 }
 
-def classify_samples_from_dist(output_dir: str, dmtx: skbio.DistanceMatrix,
-                     metadata: qiime2.CategoricalMetadataColumn,
-                     palette: str=defaults['palette']) -> None:
+
+def classify_samples_from_dist(output_dir: str,
+                               dmtx: skbio.DistanceMatrix,
+                               metadata: qiime2.CategoricalMetadataColumn,
+                               palette: str=defaults['palette']) -> None:
 
     column = metadata.to_series()
     classifier = KNeighborsClassifier(n_neighbors=1, metric='precomputed')
@@ -42,7 +44,8 @@ def classify_samples_from_dist(output_dir: str, dmtx: skbio.DistanceMatrix,
     predictions = classifier.predict(dmtx.to_data_frame())
     print(predictions)
     # writes a pdf file that's important for viz
-    predictions2, confusion = _predict_and_plot(output_dir, column, predictions, classifier, .8)
+    predictions2, confusion = _predict_and_plot(
+        output_dir, column, predictions, classifier, .8)
     print(predictions2)
     _visualize(output_dir, classifier, predictions2, .7, None,
                False, title='classification predictions')
