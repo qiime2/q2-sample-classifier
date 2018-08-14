@@ -580,9 +580,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
 
         # -- test -- #
         res = sample_classifier.actions.classify_samples_from_dist(
-            dmtx=dm,
-            metadata=metadata,
-            )
+            dmtx=dm, metadata=metadata, k=1)
         pred = res[0].view(pd.Series)
         expected = pd.Series(('fat', 'fat', 'skinny', 'skinny'),
                              index=sample_ids)

@@ -612,6 +612,17 @@ def _visualize(output_dir, estimator, cm, importances=None,
         'optimize_feature_selection': optimize_feature_selection,
         'maturity_index': False})
 
+def _visualize_knn(output_dir, params: pd.Series):
+    result = q2templates.df_to_html(params.to_frame())
+    index = join(TEMPLATES, 'index.html')
+    q2templates.render(index, output_dir, context={
+        'title': 'Estimator Summary',
+        'result': result,
+        'predictions': None,
+        'importances': None,
+        'classification': True,
+        'optimize_feature_selection': False,
+        'maturity_index': False})
 
 def _visualize_maturity_index(table, metadata, group_by, column,
                               predicted_column, importances, estimator,

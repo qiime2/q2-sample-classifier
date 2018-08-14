@@ -24,6 +24,7 @@ from .utilities import (split_optimize_classify, _visualize, _load_data,
                         nested_cross_validation, _fit_estimator,
                         _map_params_to_pipeline, _extract_features,
                         _plot_accuracy, _summarize_estimator,
+                        _visualize_knn
                         )
 
 
@@ -40,11 +41,7 @@ defaults = {
 }
 
 
-def classify_samples_from_dist(ctx,
-                               dmtx,
-                               metadata):
-
-    column = metadata.to_series()
+def classify_samples_from_dist(ctx, dmtx, metadata, k):
     dm = dmtx.view(skbio.DistanceMatrix)
     for row in dm:
         nn = sorted(row)[1]  # nearest neighbor other than self
@@ -52,11 +49,20 @@ def classify_samples_from_dist(ctx,
             raise RuntimeError('duplicate?')
     predictions = pd.Series(
         ['fat', 'fat', 'skinny', 'skinny'],
-        index=column.index)
+        index=metadata.to_series().index)
     predictions.index.name = 'SampleID'
-    return qiime2.Artifact.import_data(
-        'SampleData[ClassifierPredictions]',
-        predictions)
+    pred = qiime2.Artifact.import_data(
+        'SampleData[ClassifierPredictions]', predictions)
+
+    summarize_classifier = ctx.get_action('sample_classifier', 'summarize_knn')
+    summary, = summarize_classifier(1)
+
+    confusion = ctx.get_action('sample_classifier', 'confusion_matrix')
+    accuracy_results, = confusion(
+        pred, metadata, missing_samples='ignore')
+
+
+    return pred, summary, accuracy_results
 
 
 def classify_samples(ctx,
@@ -353,6 +359,10 @@ def confusion_matrix(output_dir: str, predictions: pd.Series,
 
 def summarize(output_dir: str, sample_estimator: Pipeline):
     _summarize_estimator(output_dir, sample_estimator)
+
+def summarize_knn(output_dir: str, k: int=1):
+    params = pd.Series({'k': 1}, name='Parameter setting')
+    _visualize_knn(output_dir, params)
 
 
 def maturity_index(output_dir: str, table: biom.Table,

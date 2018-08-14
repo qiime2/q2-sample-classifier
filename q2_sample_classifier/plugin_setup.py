@@ -20,7 +20,7 @@ from .classify import (
     maturity_index, regress_samples_ncv,
     classify_samples_ncv, fit_classifier, fit_regressor, split_table,
     predict_classification, predict_regression, confusion_matrix, scatterplot,
-    summarize)
+    summarize, summarize_knn)
 from .visuals import _custom_palettes
 from ._format import (SampleEstimatorDirFmt,
                       BooleanSeriesFormat,
@@ -226,14 +226,22 @@ plugin.pipelines.register_function(
 plugin.pipelines.register_function(
     function=classify_samples_from_dist,
     inputs={'dmtx': DistanceMatrix},
-    parameters={'metadata': MetadataColumn[Categorical]},
-    outputs=[('predictions', SampleData[ClassifierPredictions])],
+    parameters={'metadata': MetadataColumn[Categorical], 'k': Int},
+    outputs=[
+        ('predictions', SampleData[ClassifierPredictions]),
+        ('model_summary', Visualization),
+        ('accuracy_results', Visualization),
+    ],
     input_descriptions={'dmtx': 'a distance matrix'},
     parameter_descriptions={
-        'metadata': 'Categorical metadata column to use as prediction target.'
+        'metadata': 'Categorical metadata column to use as prediction target.',
+        'k': 'Number of nearest neighbors',
         },
     output_descriptions={
-        'predictions': 'leave one out predictions for each sample'},
+        'predictions': 'leave one out predictions for each sample',
+        'model_summary': 'number of neighbors k',
+        'accuracy_results': 'Accuracy results visualization.',
+    },
     name=('Train and test a cross-validated (leave one out)'
           ' supervised learning classifier.'),
     description=description.format(
@@ -474,6 +482,15 @@ plugin.visualizers.register_function(
                 'trained estimator.'
 )
 
+plugin.visualizers.register_function(
+    function=summarize_knn,
+    inputs={},
+    parameters={'k': Int},
+    input_descriptions={},
+    parameter_descriptions={'k':'k'},
+    name='display k (num nearest neighbors',
+    description='display k (num nearest neighbors',
+)
 
 plugin.visualizers.register_function(
     function=maturity_index,
