@@ -14,8 +14,9 @@ from qiime2.plugin import (
 from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
+from q2_types.distance_matrix import DistanceMatrix
 from .classify import (
-    classify_samples, regress_samples, maturity_index, regress_samples_ncv,
+    classify_samples, classify_samples_from_dist, regress_samples, maturity_index, regress_samples_ncv,
     classify_samples_ncv, fit_classifier, fit_regressor, split_table,
     predict_classification, predict_regression, confusion_matrix, scatterplot,
     summarize)
@@ -219,6 +220,42 @@ plugin.pipelines.register_function(
     description=description.format(
         'categorical', 'supervised learning classifier')
 )
+
+
+
+
+
+
+
+
+
+
+
+plugin.pipelines.register_function(
+    function=classify_samples_from_dist,
+    inputs={'dmtx': DistanceMatrix},
+    parameters={'metadata': MetadataColumn[Categorical]},
+    outputs=[('predictions', SampleData[ClassifierPredictions])],
+    input_descriptions={'dmtx':'the dmtx'},
+    parameter_descriptions={
+    'metadata': 'Categorical metadata column to use as prediction target.',}
+    ,
+    output_descriptions={'predictions':'otherthing'},
+    name='Train and test a cross-validated supervised learning classifier.',
+    description=description.format(
+        'categorical', 'supervised learning classifier')
+)
+
+
+
+
+
+
+
+
+
+
+
 
 
 plugin.pipelines.register_function(

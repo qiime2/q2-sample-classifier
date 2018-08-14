@@ -43,6 +43,7 @@ from q2_sample_classifier import (
 from q2_sample_classifier._format import JSONFormat
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
+from q2_types.distance_matrix import DistanceMatrix
 import pkg_resources
 from qiime2.plugin.testing import TestPluginBase
 from qiime2.plugin import ValidationError
@@ -561,12 +562,38 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 else:
                     self.assertEqual(dict_row[feature], count)
 
-    # test that the plugin/visualizer work
+
+
+
     def test_classify_samples_from_dist(self):
-        # hardcode this path somewhere non-temp to see the visualiztion output
-        tmpd = join(self.temp_dir.name, 'KNeighborsClassifier')
-        mkdir(tmpd)
-        classify_samples_from_dist(tmpd, dmtx, d_metacol)
+        ## setup
+        # 1,2 are a group, 3,4 are a group
+        sample_ids = ('f1','f2','s1','s2')
+        distance_matrix = skbio.DistanceMatrix([
+            [0,1,4,4],
+            [1,0,4,4],
+            [4,4,0,1],
+            [4,4,1,0],
+            ], ids=sample_ids)
+
+        dm = qiime2.Artifact.import_data('DistanceMatrix', distance_matrix)
+        categories = pd.Series(('fat','fat','skinny','skinny'), index=sample_ids,
+            name='body_mass')
+        categories.index.name = 'SampleID'
+        metadata = qiime2.CategoricalMetadataColumn(categories)
+
+        ## test
+        res = sample_classifier.actions.classify_samples_from_dist(
+            dmtx=dm,
+            metadata=metadata,
+            )
+        pred = res[0].view(pd.Series)
+        expected = pd.Series(('fat','fat','skinny','skinny'), index=sample_ids)
+        not_expected = pd.Series(('fat','fat','fat','skinny'), index=sample_ids)
+        self.assertTrue(expected.equals(pred))
+        self.assertFalse(not_expected.equals(pred))
+
+
 
     # test that each classifier works and delivers an expected accuracy result
     # when a random seed is set.
@@ -1090,34 +1117,6 @@ class TestSummarize(SampleEstimatorTestBase):
         del self.pipeline.rfe_scores
         summarize(self.temp_dir.name, self.pipeline)
 
-
-# 1,2 are a group, 3,4 are a group
-dmtx = skbio.DistanceMatrix([
-    [0,1,4,4],
-    [1,0,4,4],
-    [4,4,0,1],
-    [4,4,1,0],
-    ])
-
-# def _load_cmc(md_fp, column):
-#     md_fp = self.get_data_path(md_fp)
-#     md = pd.DataFrame.from_csv(md_fp, sep='\t')
-#     md = qiime2.CategoricalMetadataColumn(md[column])
-#     return md
-
-# for distmatrix classifier
-import io
-d_metadata = io.StringIO('''
-#SampleID,mass
-f1,fat
-f2,fat
-s1,skinny
-s2,skinny
-''')
-d_metadf =  pd.DataFrame.from_csv(d_metadata)
-# print(d_metadf)
-d_metacol = qiime2.CategoricalMetadataColumn(d_metadf['mass'])
-# print(d_metacol)
 
 md = pd.DataFrame([(1, 'a', 0.11), (1, 'a', 0.12), (1, 'a', 0.13),
                    (2, 'a', 0.19), (2, 'a', 0.18), (2, 'a', 0.21),
