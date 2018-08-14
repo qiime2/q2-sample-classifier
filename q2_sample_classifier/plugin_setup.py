@@ -16,7 +16,8 @@ from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
 from q2_types.distance_matrix import DistanceMatrix
 from .classify import (
-    classify_samples, classify_samples_from_dist, regress_samples, maturity_index, regress_samples_ncv,
+    classify_samples, classify_samples_from_dist, regress_samples,
+    maturity_index, regress_samples_ncv,
     classify_samples_ncv, fit_classifier, fit_regressor, split_table,
     predict_classification, predict_regression, confusion_matrix, scatterplot,
     summarize)
@@ -222,40 +223,22 @@ plugin.pipelines.register_function(
 )
 
 
-
-
-
-
-
-
-
-
-
 plugin.pipelines.register_function(
     function=classify_samples_from_dist,
     inputs={'dmtx': DistanceMatrix},
     parameters={'metadata': MetadataColumn[Categorical]},
     outputs=[('predictions', SampleData[ClassifierPredictions])],
-    input_descriptions={'dmtx':'the dmtx'},
+    input_descriptions={'dmtx': 'a distance matrix'},
     parameter_descriptions={
-    'metadata': 'Categorical metadata column to use as prediction target.',}
-    ,
-    output_descriptions={'predictions':'otherthing'},
-    name='Train and test a cross-validated supervised learning classifier.',
+        'metadata': 'Categorical metadata column to use as prediction target.'
+        },
+    output_descriptions={
+        'predictions': 'leave one out predictions for each sample'},
+    name=('Train and test a cross-validated (leave one out)'
+          ' supervised learning classifier.'),
     description=description.format(
         'categorical', 'supervised learning classifier')
 )
-
-
-
-
-
-
-
-
-
-
-
 
 
 plugin.pipelines.register_function(

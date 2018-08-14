@@ -27,7 +27,7 @@ from q2_sample_classifier.classify import (
     regress_samples_ncv, classify_samples_ncv, fit_classifier, fit_regressor,
     maturity_index, detect_outliers, split_table, predict_classification,
     predict_regression, scatterplot, confusion_matrix, summarize,
-    classify_samples_from_dist)
+    )
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator, _load_data,
     _calculate_feature_importances, _extract_important_features,
@@ -43,7 +43,6 @@ from q2_sample_classifier import (
 from q2_sample_classifier._format import JSONFormat
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
-from q2_types.distance_matrix import DistanceMatrix
 import pkg_resources
 from qiime2.plugin.testing import TestPluginBase
 from qiime2.plugin import ValidationError
@@ -562,38 +561,35 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 else:
                     self.assertEqual(dict_row[feature], count)
 
-
-
-
     def test_classify_samples_from_dist(self):
-        ## setup
+        # -- setup -- #
         # 1,2 are a group, 3,4 are a group
-        sample_ids = ('f1','f2','s1','s2')
+        sample_ids = ('f1', 'f2', 's1', 's2')
         distance_matrix = skbio.DistanceMatrix([
-            [0,1,4,4],
-            [1,0,4,4],
-            [4,4,0,1],
-            [4,4,1,0],
+            [0, 1, 4, 4],
+            [1, 0, 4, 4],
+            [4, 4, 0, 1],
+            [4, 4, 1, 0],
             ], ids=sample_ids)
 
         dm = qiime2.Artifact.import_data('DistanceMatrix', distance_matrix)
-        categories = pd.Series(('fat','fat','skinny','skinny'), index=sample_ids,
-            name='body_mass')
+        categories = pd.Series(('fat', 'fat', 'skinny', 'skinny'),
+                               index=sample_ids, name='body_mass')
         categories.index.name = 'SampleID'
         metadata = qiime2.CategoricalMetadataColumn(categories)
 
-        ## test
+        # -- test -- #
         res = sample_classifier.actions.classify_samples_from_dist(
             dmtx=dm,
             metadata=metadata,
             )
         pred = res[0].view(pd.Series)
-        expected = pd.Series(('fat','fat','skinny','skinny'), index=sample_ids)
-        not_expected = pd.Series(('fat','fat','fat','skinny'), index=sample_ids)
+        expected = pd.Series(('fat', 'fat', 'skinny', 'skinny'),
+                             index=sample_ids)
+        not_expected = pd.Series(('fat', 'fat', 'fat', 'skinny'),
+                                 index=sample_ids)
         self.assertTrue(expected.equals(pred))
         self.assertFalse(not_expected.equals(pred))
-
-
 
     # test that each classifier works and delivers an expected accuracy result
     # when a random seed is set.

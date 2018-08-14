@@ -11,7 +11,6 @@ from sklearn.ensemble import IsolationForest
 from sklearn.metrics import mean_squared_error, accuracy_score
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.pipeline import Pipeline
-from sklearn.neighbors import KNeighborsClassifier
 
 import qiime2
 import pandas as pd
@@ -25,7 +24,7 @@ from .utilities import (split_optimize_classify, _visualize, _load_data,
                         nested_cross_validation, _fit_estimator,
                         _map_params_to_pipeline, _extract_features,
                         _plot_accuracy, _summarize_estimator,
-                        _predict_and_plot)
+                        )
 
 
 defaults = {
@@ -47,11 +46,17 @@ def classify_samples_from_dist(ctx,
 
     column = metadata.to_series()
     dm = dmtx.view(skbio.DistanceMatrix)
-    predictions = pd.Series(['fat','fat','skinny','skinny'],
-       index=column.index)
+    for row in dm:
+        nn = sorted(row)[1]  # nearest neighbor other than self
+        if nn == 0:
+            raise RuntimeError('duplicate?')
+    predictions = pd.Series(
+        ['fat', 'fat', 'skinny', 'skinny'],
+        index=column.index)
     predictions.index.name = 'SampleID'
-
-    return qiime2.Artifact.import_data('SampleData[ClassifierPredictions]', predictions)
+    return qiime2.Artifact.import_data(
+        'SampleData[ClassifierPredictions]',
+        predictions)
 
 
 def classify_samples(ctx,
