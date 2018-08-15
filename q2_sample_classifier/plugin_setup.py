@@ -11,7 +11,9 @@ import importlib
 from qiime2.plugin import (
     Int, Str, Float, Range, Bool, Plugin, Metadata, Choices, MetadataColumn,
     Numeric, Categorical, Citations, Visualization)
-from q2_types.feature_table import FeatureTable, Frequency
+from q2_types.feature_table import (
+    FeatureTable, Frequency, RelativeFrequency, PresenceAbsence, Balance,
+    Composition, PercentileNormalized)
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
 from .classify import (
@@ -80,7 +82,9 @@ predict_description = (
     'contain overlapping features with the feature table used to train '
     'the estimator.')
 
-inputs = {'table': FeatureTable[Frequency]}
+inputs = {'table': FeatureTable[Frequency | RelativeFrequency |
+                                PresenceAbsence | Balance |
+                                Composition | PercentileNormalized]}
 
 input_descriptions = {'table': ('Feature table containing all features that '
                                 'should be used for target prediction.')}
@@ -419,8 +423,14 @@ plugin.methods.register_function(
         **parameters['splitter'],
         'metadata': MetadataColumn[Numeric | Categorical],
         **parameters['regressor']},
-    outputs=[('training_table', FeatureTable[Frequency]),
-             ('test_table', FeatureTable[Frequency])],
+    outputs=[('training_table', FeatureTable[Frequency | RelativeFrequency |
+                                             PresenceAbsence | Balance |
+                                             Composition |
+                                             PercentileNormalized]),
+             ('test_table', FeatureTable[Frequency | RelativeFrequency |
+                                         PresenceAbsence | Balance |
+                                         Composition |
+                                         PercentileNormalized])],
     input_descriptions=input_descriptions,
     parameter_descriptions={
         'random_state': parameter_descriptions['base']['random_state'],
