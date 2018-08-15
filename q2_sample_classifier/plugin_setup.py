@@ -13,7 +13,7 @@ from qiime2.plugin import (
     Numeric, Categorical, Citations, Visualization)
 from q2_types.feature_table import (
     FeatureTable, Frequency, RelativeFrequency, PresenceAbsence, Balance,
-    Composition, PercentileNormalized)
+    PercentileNormalized)
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
 from .classify import (
@@ -84,7 +84,7 @@ predict_description = (
 
 inputs = {'table': FeatureTable[Frequency | RelativeFrequency |
                                 PresenceAbsence | Balance |
-                                Composition | PercentileNormalized]}
+                                PercentileNormalized]}
 
 input_descriptions = {'table': ('Feature table containing all features that '
                                 'should be used for target prediction.')}
@@ -425,11 +425,9 @@ plugin.methods.register_function(
         **parameters['regressor']},
     outputs=[('training_table', FeatureTable[Frequency | RelativeFrequency |
                                              PresenceAbsence | Balance |
-                                             Composition |
                                              PercentileNormalized]),
              ('test_table', FeatureTable[Frequency | RelativeFrequency |
                                          PresenceAbsence | Balance |
-                                         Composition |
                                          PercentileNormalized])],
     input_descriptions=input_descriptions,
     parameter_descriptions={
