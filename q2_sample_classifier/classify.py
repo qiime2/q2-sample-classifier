@@ -42,23 +42,21 @@ defaults = {
 
 
 def classify_samples_from_dist(ctx, dmtx, metadata, k):
-    """
-    Classify samples given a distance matrix.
-    """
     distance_matrix = dmtx.view(skbio.DistanceMatrix)
     predictions = []
     metadata_series = metadata.to_series()
 
     for row in distance_matrix:
-        nn = sorted(row)[1]  # nearest neighbor other than self
+        nn = sorted(row)[1] # nearest neighbor other than self
         if nn == 0:
             raise RuntimeError('duplicate?')
         nn_index = row.tolist().index(nn)
-        predictions.append(metadata_series[distance_matrix.ids[nn_index]])
+        neighbor_id = distance_matrix.ids[nn_index]
+        predictions.append(metadata_series[neighbor_id])
 
     predictions = pd.Series(
         predictions,
-        index=metadata.to_series().index)
+        index=distance_matrix.ids)
     predictions.index.name = 'SampleID'
     pred = qiime2.Artifact.import_data(
         'SampleData[ClassifierPredictions]', predictions)
