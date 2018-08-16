@@ -46,7 +46,7 @@ def classify_samples_from_dist(ctx, dmtx, metadata, k):
     Classify samples given a distance matrix.
     """
     distance_matrix = dmtx.view(skbio.DistanceMatrix)
-    predictions_list = []
+    predictions = []
     metadata_series = metadata.to_series()
 
     for row in distance_matrix:
@@ -54,10 +54,10 @@ def classify_samples_from_dist(ctx, dmtx, metadata, k):
         if nn == 0:
             raise RuntimeError('duplicate?')
         nn_index = row.tolist().index(nn)
-        predictions_list.append(metadata_series[distance_matrix.ids[nn_index]])
+        predictions.append(metadata_series[distance_matrix.ids[nn_index]])
 
     predictions = pd.Series(
-        predictions_list,
+        predictions,
         index=metadata.to_series().index)
     predictions.index.name = 'SampleID'
     pred = qiime2.Artifact.import_data(
