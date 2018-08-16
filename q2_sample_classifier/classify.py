@@ -42,13 +42,22 @@ defaults = {
 
 
 def classify_samples_from_dist(ctx, dmtx, metadata, k):
-    dm = dmtx.view(skbio.DistanceMatrix)
-    for row in dm:
+    """
+    Classify samples given a distance matrix.
+    """
+    distance_matrix = dmtx.view(skbio.DistanceMatrix)
+    predictions_list = []
+    metadata_series = metadata.to_series()
+
+    for row in distance_matrix:
         nn = sorted(row)[1]  # nearest neighbor other than self
         if nn == 0:
             raise RuntimeError('duplicate?')
+        nn_index = row.tolist().index(nn)
+        predictions_list.append(metadata_series[distance_matrix.ids[nn_index]])
+
     predictions = pd.Series(
-        ['fat', 'fat', 'skinny', 'skinny'],
+        predictions_list,
         index=metadata.to_series().index)
     predictions.index.name = 'SampleID'
     pred = qiime2.Artifact.import_data(
@@ -60,7 +69,6 @@ def classify_samples_from_dist(ctx, dmtx, metadata, k):
     confusion = ctx.get_action('sample_classifier', 'confusion_matrix')
     accuracy_results, = confusion(
         pred, metadata, missing_samples='ignore')
-
 
     return pred, summary, accuracy_results
 
@@ -359,6 +367,7 @@ def confusion_matrix(output_dir: str, predictions: pd.Series,
 
 def summarize(output_dir: str, sample_estimator: Pipeline):
     _summarize_estimator(output_dir, sample_estimator)
+
 
 def summarize_knn(output_dir: str, k: int=1):
     params = pd.Series({'k': 1}, name='Parameter setting')
