@@ -590,7 +590,6 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         self.assertTrue(expected.equals(pred))
         self.assertFalse(not_expected.equals(pred))
 
-
     def test_classify_samples_from_dist_with_group_of_single_item(self):
         # -- setup -- #
         # 1 is a group, 2,3,4 are a group
@@ -616,7 +615,6 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                              index=sample_ids)
 
         self.assertTrue(expected.equals(pred))
-
 
     # test that each classifier works and delivers an expected accuracy result
     # when a random seed is set.

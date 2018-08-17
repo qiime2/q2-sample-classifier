@@ -47,7 +47,7 @@ def classify_samples_from_dist(ctx, dmtx, metadata, k):
     metadata_series = metadata.to_series()
 
     for row in distance_matrix:
-        nn = sorted(row)[1] # nearest neighbor other than self
+        nn = sorted(row)[1]  # nearest neighbor other than self
         if nn == 0:
             raise RuntimeError('duplicate?')
         nn_index = row.tolist().index(nn)
