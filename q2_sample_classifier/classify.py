@@ -42,6 +42,7 @@ defaults = {
 
 
 def classify_samples_from_dist(ctx, dmtx, metadata, k):
+    ''' Returns knn classifier results from a distance matrix.'''
     distance_matrix = dmtx.view(skbio.DistanceMatrix)
     predictions = []
     metadata_series = metadata.to_series()

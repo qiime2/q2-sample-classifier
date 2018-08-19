@@ -583,12 +583,13 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             dmtx=dm, metadata=metadata, k=1)
         pred = res[0].view(pd.Series).sort_values()
         expected = pd.Series(('fat', 'skinny', 'fat', 'skinny'),
-                             index=['f1', 's1', 'f2', 's2']).sort_values()
+                             index=['f1', 's1', 'f2', 's2'])
         not_expected = pd.Series(('fat', 'fat', 'fat', 'skinny'),
-                                 index=sample_ids).sort_values()
+                                 index=sample_ids)
 
-        self.assertTrue(expected.equals(pred))
-        self.assertFalse(not_expected.equals(pred))
+        # order matters for pd.Series.equals()
+        self.assertTrue(expected.sort_index().equals(pred.sort_index()))
+        self.assertFalse(not_expected.sort_index().equals(pred.sort_index()))
 
     def test_classify_samples_from_dist_with_group_of_single_item(self):
         # -- setup -- #
@@ -614,7 +615,37 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         expected = pd.Series(('skinny', 'skinny', 'skinny', 'skinny'),
                              index=sample_ids)
 
-        self.assertTrue(expected.equals(pred))
+        self.assertTrue(expected.sort_index().equals(pred.sort_index()))
+
+    def test_2nn(self):
+        # -- setup -- #
+        # 1: 2,3 (skinny)
+        # 2: 1,3 (closer to 3 so skinny)
+        # 3: 1, (1 or 3) (closer to 1 so fat)
+        # 4: 2,3 (skinny)
+        sample_ids = ('f1', 's1', 's2', 's3')
+        distance_matrix = skbio.DistanceMatrix([
+            [0, 2, 3, 5],
+            [2, 0, 1, 4],
+            [3, 1, 0, 3],
+            [5, 4, 3, 0],
+            ], ids=sample_ids)
+
+        dm = qiime2.Artifact.import_data('DistanceMatrix', distance_matrix)
+        categories = pd.Series(('fat', 'skinny', 'skinny', 'skinny'),
+                               index=sample_ids, name='body_mass')
+        categories.index.name = 'SampleID'
+        metadata = qiime2.CategoricalMetadataColumn(categories)
+
+        # -- test -- #
+        res = sample_classifier.actions.classify_samples_from_dist(
+            dmtx=dm, metadata=metadata, k=2)
+        pred = res[0].view(pd.Series)
+        expected = pd.Series(('skinny', 'skinny', 'fat', 'skinny'),
+                             index=sample_ids)
+        print(pred)
+        self.assertTrue(expected.sort_index().equals(pred.sort_index()))
+
 
     # test that each classifier works and delivers an expected accuracy result
     # when a random seed is set.
