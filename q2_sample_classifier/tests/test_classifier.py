@@ -643,7 +643,6 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         pred = res[0].view(pd.Series)
         expected = pd.Series(('skinny', 'skinny', 'fat', 'skinny'),
                              index=sample_ids)
-        print(pred)
         self.assertTrue(expected.sort_index().equals(pred.sort_index()))
 
 

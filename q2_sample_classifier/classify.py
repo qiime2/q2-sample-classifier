@@ -46,14 +46,16 @@ def classify_samples_from_dist(ctx, dmtx, metadata, k):
     distance_matrix = dmtx.view(skbio.DistanceMatrix)
     predictions = []
     metadata_series = metadata.to_series()
+    for i, row in enumerate(distance_matrix):
+        dists = []
+        categories = []
+        for j, dist in enumerate(row):
+            if j == i: continue  # exclude self
+            dists.append(dist)
+            categories.append(metadata_series[distance_matrix.ids[j]])
 
-    for row in distance_matrix:
-        nn = sorted(row)[1]  # nearest neighbor other than self
-        if nn == 0:
-            raise RuntimeError('duplicate?')
-        nn_index = row.tolist().index(nn)
-        neighbor_id = distance_matrix.ids[nn_index]
-        predictions.append(metadata_series[neighbor_id])
+        nn_cats = pd.Series(dists, index=categories).nsmallest(k)
+        predictions.append(nn_cats.index[0])  # todo: pick most common, using smallest dist for ties
 
     predictions = pd.Series(
         predictions,
