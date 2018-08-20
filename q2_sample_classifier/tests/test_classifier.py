@@ -621,13 +621,13 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         # -- setup -- #
         # 1: 2,3 (skinny)
         # 2: 1,3 (closer to 3 so skinny)
-        # 3: 1, (1 or 3) (closer to 1 so fat)
+        # 3: 1, (2 or 3) (closer to 1 so fat)
         # 4: 2,3 (skinny)
         sample_ids = ('f1', 's1', 's2', 's3')
         distance_matrix = skbio.DistanceMatrix([
-            [0, 2, 3, 5],
-            [2, 0, 1, 4],
-            [3, 1, 0, 3],
+            [0, 2, 1, 5],
+            [2, 0, 3, 4],
+            [1, 3, 0, 3],
             [5, 4, 3, 0],
             ], ids=sample_ids)
 

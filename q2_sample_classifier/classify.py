@@ -6,6 +6,7 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
+import collections
 
 from sklearn.ensemble import IsolationForest
 from sklearn.metrics import mean_squared_error, accuracy_score
@@ -55,7 +56,11 @@ def classify_samples_from_dist(ctx, dmtx, metadata, k):
             categories.append(metadata_series[distance_matrix.ids[j]])
 
         nn_cats = pd.Series(dists, index=categories).nsmallest(k)
-        predictions.append(nn_cats.index[0])  # todo: pick most common, using smallest dist for ties
+
+        counter = collections.Counter([cat for cat, val in nn_cats.iteritems()])
+        most_common_cat = counter.most_common(1)[0][0]
+
+        predictions.append(most_common_cat)  # todo: pick most common, using smallest dist for ties
 
     predictions = pd.Series(
         predictions,
