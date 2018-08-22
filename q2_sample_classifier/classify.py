@@ -74,7 +74,7 @@ def classify_samples_from_dist(ctx, dmtx, metadata, k,
         'SampleData[ClassifierPredictions]', predictions)
 
     summarize_classifier = ctx.get_action('sample_classifier', 'summarize_knn')
-    summary, = summarize_classifier(1)
+    summary, = summarize_classifier(k=k)
 
     confusion = ctx.get_action('sample_classifier', 'confusion_matrix')
     accuracy_results, = confusion(

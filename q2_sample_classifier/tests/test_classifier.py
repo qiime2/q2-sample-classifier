@@ -1168,6 +1168,9 @@ class TestSummarize(SampleEstimatorTestBase):
         del self.pipeline.rfe_scores
         summarize(self.temp_dir.name, self.pipeline)
 
+    def test_summarize_knn(self):
+        summarize(self.temp_dir.name, k=3)
+
 
 md = pd.DataFrame([(1, 'a', 0.11), (1, 'a', 0.12), (1, 'a', 0.13),
                    (2, 'a', 0.19), (2, 'a', 0.18), (2, 'a', 0.21),
