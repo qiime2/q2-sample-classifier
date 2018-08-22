@@ -226,7 +226,9 @@ plugin.pipelines.register_function(
 plugin.pipelines.register_function(
     function=classify_samples_from_dist,
     inputs={'dmtx': DistanceMatrix},
-    parameters={'metadata': MetadataColumn[Categorical], 'k': Int},
+    parameters={'metadata': MetadataColumn[Categorical],
+        'k': Int,
+        'palette': Str % Choices(_custom_palettes().keys()),},
     outputs=[
         ('predictions', SampleData[ClassifierPredictions]),
         ('model_summary', Visualization),
@@ -236,6 +238,7 @@ plugin.pipelines.register_function(
     parameter_descriptions={
         'metadata': 'Categorical metadata column to use as prediction target.',
         'k': 'Number of nearest neighbors',
+        'palette': 'The color palette to use for plotting.',
         },
     output_descriptions={
         'predictions': 'leave one out predictions for each sample',

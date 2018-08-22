@@ -42,7 +42,8 @@ defaults = {
 }
 
 
-def classify_samples_from_dist(ctx, dmtx, metadata, k):
+def classify_samples_from_dist(ctx, dmtx, metadata, k,
+                               palette=defaults['palette']):
     ''' Returns knn classifier results from a distance matrix.'''
     distance_matrix = dmtx.view(skbio.DistanceMatrix)
     predictions = []
@@ -77,7 +78,7 @@ def classify_samples_from_dist(ctx, dmtx, metadata, k):
 
     confusion = ctx.get_action('sample_classifier', 'confusion_matrix')
     accuracy_results, = confusion(
-        pred, metadata, missing_samples='ignore')
+        pred, metadata, missing_samples='ignore', palette=palette)
 
     return pred, summary, accuracy_results
 
