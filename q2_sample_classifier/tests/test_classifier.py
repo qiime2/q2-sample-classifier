@@ -27,7 +27,7 @@ from q2_sample_classifier.classify import (
     regress_samples_ncv, classify_samples_ncv, fit_classifier, fit_regressor,
     maturity_index, detect_outliers, split_table, predict_classification,
     predict_regression, scatterplot, confusion_matrix, summarize,
-    )
+    summarize_knn)
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator, _load_data,
     _calculate_feature_importances, _extract_important_features,
@@ -1169,7 +1169,7 @@ class TestSummarize(SampleEstimatorTestBase):
         summarize(self.temp_dir.name, self.pipeline)
 
     def test_summarize_knn(self):
-        summarize(self.temp_dir.name, k=3)
+        summarize_knn(self.temp_dir.name, k=3)
 
 
 md = pd.DataFrame([(1, 'a', 0.11), (1, 'a', 0.12), (1, 'a', 0.13),

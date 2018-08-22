@@ -492,9 +492,9 @@ plugin.visualizers.register_function(
     inputs={},
     parameters={'k': Int},
     input_descriptions={},
-    parameter_descriptions={'k': 'k'},
-    name='display k (num nearest neighbors',
-    description='display k (num nearest neighbors',
+    parameter_descriptions={'k': 'k (num nearest neighbors)'},
+    name='display k (num nearest neighbors)',
+    description='display k (num nearest neighbors)',
 )
 
 plugin.visualizers.register_function(
