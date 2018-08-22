@@ -619,10 +619,11 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
 
     def test_2nn(self):
         # -- setup -- #
-        # 1: 2,3 (skinny)
-        # 2: 1,3 (closer to 3 so skinny)
-        # 3: 1, (2 or 3) (closer to 1 so fat)
-        # 4: 2,3 (skinny)
+        # 2 nearest neighbors of each sample are
+        # f1: s1, s2 (classified as skinny)
+        # s1: f1, s2 (closer to f1 so fat)
+        # s2: f1, (s1 or s3) (closer to f1 so fat)
+        # s3: s1, s2 (skinny)
         sample_ids = ('f1', 's1', 's2', 's3')
         distance_matrix = skbio.DistanceMatrix([
             [0, 2, 1, 5],
@@ -641,10 +642,9 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         res = sample_classifier.actions.classify_samples_from_dist(
             dmtx=dm, metadata=metadata, k=2)
         pred = res[0].view(pd.Series)
-        expected = pd.Series(('skinny', 'skinny', 'fat', 'skinny'),
+        expected = pd.Series(('skinny', 'fat', 'fat', 'skinny'),
                              index=sample_ids)
         self.assertTrue(expected.sort_index().equals(pred.sort_index()))
-
 
     # test that each classifier works and delivers an expected accuracy result
     # when a random seed is set.

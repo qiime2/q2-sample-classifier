@@ -51,20 +51,23 @@ def classify_samples_from_dist(ctx, dmtx, metadata, k):
         dists = []
         categories = []
         for j, dist in enumerate(row):
-            if j == i: continue  # exclude self
+            if j == i:
+                continue  # exclude self
             dists.append(dist)
             categories.append(metadata_series[distance_matrix.ids[j]])
 
+        # k-long series of (category: dist) ordered small -> large
         nn_cats = pd.Series(dists, index=categories).nsmallest(k)
+        counter = collections.Counter(nn_cats.index)
+        max_counts = max(counter.values())
+        # in order of closeness, pick a category that is or shares
+        # max_counts
+        for cat in nn_cats.index:
+            if counter[cat] == max_counts:
+                predictions.append(cat)
+                break
 
-        counter = collections.Counter([cat for cat, val in nn_cats.iteritems()])
-        most_common_cat = counter.most_common(1)[0][0]
-
-        predictions.append(most_common_cat)  # todo: pick most common, using smallest dist for ties
-
-    predictions = pd.Series(
-        predictions,
-        index=distance_matrix.ids)
+    predictions = pd.Series(predictions, index=distance_matrix.ids)
     predictions.index.name = 'SampleID'
     pred = qiime2.Artifact.import_data(
         'SampleData[ClassifierPredictions]', predictions)
