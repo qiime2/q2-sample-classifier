@@ -19,14 +19,13 @@ import biom
 import skbio
 
 from .utilities import (split_optimize_classify, _visualize, _load_data,
-                        _maz_score, _visualize_maturity_index,
-                        _set_parameters_and_estimator, _prepare_training_data,
-                        _disable_feature_selection, _select_estimator,
+                        _maz_score, _set_parameters_and_estimator,
+                        _prepare_training_data, _disable_feature_selection,
                         nested_cross_validation, _fit_estimator,
-                        _map_params_to_pipeline, _extract_features,
-                        _plot_accuracy, _summarize_estimator,
-                        _visualize_knn
-                        )
+                        _extract_features, _plot_accuracy,
+                        _summarize_estimator, _validate_metadata_is_superset,
+                        _map_params_to_pipeline, _visualize_knn)
+from q2_longitudinal._utilities import _validate_input_columns
 
 
 defaults = {
@@ -384,59 +383,116 @@ def summarize_knn(output_dir: str, k: int):
     _visualize_knn(output_dir, params)
 
 
-def maturity_index(output_dir: str, table: biom.Table,
-                   metadata: qiime2.Metadata, column: str, group_by: str,
-                   control: str, estimator: str=defaults['estimator_r'],
-                   n_estimators: int=defaults['n_estimators'],
-                   test_size: float=defaults['test_size'],
-                   step: float=defaults['step'], cv: int=defaults['cv'],
-                   random_state: int=None,
-                   n_jobs: int=defaults['n_jobs'], parameter_tuning: bool=True,
-                   optimize_feature_selection: bool=True, stratify: str=False,
-                   maz_stats: bool=True,
-                   missing_samples: str=defaults['missing_samples']) -> None:
+def maturity_index(ctx,
+                   table,
+                   metadata,
+                   state_column,
+                   group_by,
+                   control,
+                   individual_id_column=None,
+                   estimator=defaults['estimator_r'],
+                   n_estimators=defaults['n_estimators'],
+                   test_size=0.5,
+                   step=defaults['step'],
+                   cv=defaults['cv'],
+                   random_state=None,
+                   n_jobs=defaults['n_jobs'],
+                   parameter_tuning=False,
+                   optimize_feature_selection=False,
+                   stratify=False,
+                   missing_samples=defaults['missing_samples']):
 
-    # select estimator
-    param_dist, estimator = _select_estimator(estimator, n_jobs, n_estimators)
-    estimator = Pipeline([('dv', DictVectorizer()), ('est', estimator)])
-    param_dist = _map_params_to_pipeline(param_dist)
+    filter_samples = ctx.get_action('feature_table', 'filter_samples')
+    filter_features = ctx.get_action('feature_table', 'filter_features')
+    group_table = ctx.get_action('feature_table', 'group')
+    heatmap = ctx.get_action('feature_table', 'heatmap')
+    split = ctx.get_action('sample_classifier', 'split_table')
+    fit = ctx.get_action('sample_classifier', 'fit_regressor')
+    predict_test = ctx.get_action('sample_classifier', 'predict_regression')
+    summarize_estimator = ctx.get_action('sample_classifier', 'summarize')
+    scatter = ctx.get_action('sample_classifier', 'scatterplot')
+    volatility = ctx.get_action('longitudinal', 'volatility')
 
-    # split input data into control and treatment groups
-    table, metadata = _load_data(
-        table, metadata, missing_samples=missing_samples, extract=False)
-    fancy_index = metadata[group_by] == control
-    md_control = metadata[fancy_index]
-    table_control = table.filter(md_control.index, inplace=False)
+    # we must perform metadata superset validation here before we start
+    # slicing and dicing.
+    md_as_frame = metadata.to_dataframe()
+    if missing_samples == 'error':
+        _validate_metadata_is_superset(md_as_frame, table.view(biom.Table))
 
-    # train model on control data
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table_control, md_control, column, estimator, output_dir,
-        random_state=random_state, n_jobs=n_jobs, test_size=test_size,
-        step=step, cv=cv, parameter_tuning=parameter_tuning,
-        optimize_feature_selection=optimize_feature_selection,
-        param_dist=param_dist, calc_feature_importance=True, load_data=False,
-        scoring=mean_squared_error, stratify=stratify, classification=False,
+    # Let's also validate metadata columns before we get busy
+    _validate_input_columns(
+        md_as_frame, individual_id_column, group_by, state_column, None)
+
+    # train regressor on subset of control samples
+    control_table, = filter_samples(
+        table, metadata=metadata, where="{0}='{1}'".format(group_by, control))
+
+    md_column = metadata.get_column(state_column)
+    X_train, X_test = split(control_table, md_column, test_size, random_state,
+                            stratify, missing_samples='ignore')
+
+    sample_estimator, importance = fit(
+        X_train, md_column, step, cv, random_state, n_jobs, n_estimators,
+        estimator, optimize_feature_selection, parameter_tuning,
         missing_samples='ignore')
 
-    # predict treatment data
-    index = importances.index
-    table = _extract_features(table)
-    table = [{k: r[k] for k in r.keys() & index} for r in table]
-    y_pred = estimator.predict(table)
-    predicted_column = 'predicted {0}'.format(column)
-    metadata[predicted_column] = y_pred
+    # drop training samples from rest of dataset; we will predict all others
+    control_ids = pd.DataFrame(index=X_train.view(biom.Table).ids())
+    control_ids.index.name = 'id'
+    control_ids = qiime2.Metadata(control_ids)
+    test_table, = filter_samples(table, metadata=control_ids, exclude_ids=True)
+
+    # predict test samples
+    predictions, = predict_test(test_table, sample_estimator, n_jobs)
+
+    # summarize estimator params
+    summary, = summarize_estimator(sample_estimator)
+
+    # only report accuracy on control test samples
+    test_ids = X_test.view(biom.Table).ids()
+    accuracy_md = metadata.filter_ids(test_ids).get_column(state_column)
+    accuracy_results, = scatter(predictions, accuracy_md, 'ignore')
 
     # calculate MAZ score
-    metadata = _maz_score(
-        metadata, predicted_column, column, group_by, control)
+    # merge is inner join by default, so training samples are dropped (good!)
+    pred_md = metadata.merge(predictions.view(qiime2.Metadata)).to_dataframe()
+    pred_md['prediction'] = pd.to_numeric(pred_md['prediction'])
+    pred_md = _maz_score(
+        pred_md, 'prediction', state_column, group_by, control)
+    maz = '{0} MAZ score'.format(state_column)
+    maz_scores = qiime2.Artifact.import_data(
+        'SampleData[RegressorPredictions]', pred_md[maz])
 
-    # visualize
-    table = estimator.named_steps.dv.transform(table).todense()
-    table = pd.DataFrame(table, index=metadata.index,
-                         columns=estimator.named_steps.dv.get_feature_names())
-    _visualize_maturity_index(table, metadata, group_by, column,
-                              predicted_column, importances, estimator,
-                              accuracy, output_dir, maz_stats=maz_stats)
+    # make heatmap
+    # trim table to important features for viewing as heatmap
+    table, = filter_features(table, metadata=importance.view(qiime2.Metadata))
+    # make sure IDs match between table and metadata
+    cluster_table, = filter_samples(table, metadata=metadata)
+    # need to group table by two columns together, so do this ugly hack
+    cluster_by = group_by + '-' + state_column
+    md_as_frame[cluster_by] = (md_as_frame[group_by].astype(str) + '-' +
+                               md_as_frame[state_column].astype(str))
+    cluster_md = qiime2.CategoricalMetadataColumn(md_as_frame[cluster_by])
+    cluster_table, = group_table(cluster_table, axis='sample',
+                                 metadata=cluster_md, mode='median-ceiling')
+    # group metadata to match grouped sample IDs and sort by group/column
+    clust_md = md_as_frame.groupby(cluster_by).first()
+    clust_md = clust_md.sort_values([group_by, state_column])
+    # sort table using clustered/sorted metadata as guide
+    sorted_table = cluster_table.view(biom.Table).sort_order(clust_md.index)
+    sorted_table = qiime2.Artifact.import_data(
+        'FeatureTable[Frequency]', sorted_table)
+    clustermap, = heatmap(sorted_table, cluster='features')
+
+    # visualize MAZ vs. time (column)
+    lineplots, = volatility(
+        qiime2.Metadata(pred_md), state_column=state_column,
+        individual_id_column=individual_id_column,
+        default_group_column=group_by, default_metric=maz, yscale='linear')
+
+    return (
+        sample_estimator, importance, predictions, summary, accuracy_results,
+        maz_scores, clustermap, lineplots)
 
 
 # The following method is experimental and is not registered in the current

@@ -34,9 +34,7 @@ from scipy.stats import randint
 import biom
 
 from .visuals import (_linear_regress, _plot_confusion_matrix, _plot_RFE,
-                      _pairwise_stats, _two_way_anova, _regplot_from_dataframe,
-                      _boxplot_from_dataframe, _lmplot_from_dataframe,
-                      _clustermap_from_dataframe)
+                      _regplot_from_dataframe)
 
 
 parameters = {
@@ -609,8 +607,7 @@ def _visualize(output_dir, estimator, cm, importances=None,
         'predictions': cm,
         'importances': importances,
         'classification': True,
-        'optimize_feature_selection': optimize_feature_selection,
-        'maturity_index': False})
+        'optimize_feature_selection': optimize_feature_selection})
 
 
 def _visualize_knn(output_dir, params: pd.Series):
@@ -622,69 +619,7 @@ def _visualize_knn(output_dir, params: pd.Series):
         'predictions': None,
         'importances': None,
         'classification': True,
-        'optimize_feature_selection': False,
-        'maturity_index': False})
-
-
-def _visualize_maturity_index(table, metadata, group_by, column,
-                              predicted_column, importances, estimator,
-                              accuracy, output_dir, maz_stats=True):
-
-    pd.set_option('display.max_colwidth', -1)
-
-    maturity = '{0} maturity'.format(column)
-    maz = '{0} MAZ score'.format(column)
-
-    # save feature importance data and convert to html
-    importances = sort_importances(importances)
-    importances.to_csv(
-        join(output_dir, 'feature_importance.tsv'), index=True, sep='\t')
-    importance = q2templates.df_to_html(importances, index=True)
-
-    # save predicted values, maturity, and MAZ score data
-    maz_md = metadata[[group_by, column, predicted_column, maturity, maz]]
-    maz_md.to_csv(join(output_dir, 'maz_scores.tsv'), sep='\t')
-    if maz_stats:
-        maz_aov = _two_way_anova(table, metadata, maz, group_by, column)[0]
-        maz_aov.to_csv(join(output_dir, 'maz_aov.tsv'), sep='\t')
-        maz_pairwise = _pairwise_stats(
-            table, metadata, maz, group_by, column)
-        maz_pairwise.to_csv(join(output_dir, 'maz_pairwise.tsv'), sep='\t')
-
-    # plot control/treatment predicted vs. actual values
-    g = _lmplot_from_dataframe(
-        metadata, column, predicted_column, group_by)
-    g.savefig(join(output_dir, 'maz_predictions.png'), bbox_inches='tight')
-    g.savefig(join(output_dir, 'maz_predictions.pdf'), bbox_inches='tight')
-    plt.close('all')
-
-    # plot barplots of MAZ score vs. column (e.g., age)
-    g = _boxplot_from_dataframe(metadata, column, maz, group_by)
-    g.get_figure().savefig(
-        join(output_dir, 'maz_boxplots.png'), bbox_inches='tight')
-    g.get_figure().savefig(
-        join(output_dir, 'maz_boxplots.pdf'), bbox_inches='tight')
-    plt.close('all')
-
-    # plot heatmap of column (e.g., age) vs. abundance of top features
-    top = table[list(importances.index)]
-    g = _clustermap_from_dataframe(top, metadata, group_by, column)
-    g.savefig(join(output_dir, 'maz_heatmaps.png'), bbox_inches='tight')
-    g.savefig(join(output_dir, 'maz_heatmaps.pdf'), bbox_inches='tight')
-
-    result = _extract_estimator_parameters(estimator)
-    result.append(pd.Series([accuracy], index=['Accuracy score']))
-    result = q2templates.df_to_html(result.to_frame())
-
-    index = join(TEMPLATES, 'index.html')
-    q2templates.render(index, output_dir, context={
-        'title': 'maturity index predictions',
-        'result': result,
-        'predictions': None,
-        'importances': importance,
-        'classification': False,
-        'optimize_feature_selection': True,
-        'maturity_index': True})
+        'optimize_feature_selection': False})
 
 
 def _map_params_to_pipeline(param_dist):
