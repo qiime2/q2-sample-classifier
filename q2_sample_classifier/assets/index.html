@@ -24,41 +24,6 @@
       </a>
     </div>
     {% endif %}
-    {% if maturity_index %}
-    <h1>Predicted values</h1>
-    <div class="text-center">
-      <a href="maz_predictions.pdf">
-        <img src="maz_predictions.png">
-        <br>
-        <p>Download as PDF</p>
-      </a>
-    </div>
-    <h1>Maturity index Z-scores</h1>
-    <div class="text-center">
-      <a href="maz_boxplots.pdf">
-        <img src="maz_boxplots.png">
-        <br>
-        <p>Download as PDF</p>
-        <a href="maz_scores.tsv">
-          <p>Download scores as tsv</p>
-        </a>
-        <a href="maz_aov.tsv">
-          <p>Download ANOVA results as tsv</p>
-        </a>
-        <a href="maz_pairwise.tsv">
-          <p>Download paired t-test results as tsv</p>
-        </a>
-      </a>
-    </div>
-    <h1>Feature abundance cluster map</h1>
-    <div class="text-center">
-      <a href="maz_heatmaps.pdf">
-        <img src="maz_heatmaps.png">
-        <br>
-        <p>Download as PDF</p>
-      </a>
-    </div>
-    {% endif %}
     {% if optimize_feature_selection %}
     <h1>Recursive feature extraction</h1>
     <div class="text-center">
