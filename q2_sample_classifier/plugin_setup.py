@@ -238,7 +238,6 @@ plugin.pipelines.register_function(
     },
     outputs=[
         ('predictions', SampleData[ClassifierPredictions]),
-        ('model_summary', Visualization),
         ('accuracy_results', Visualization),
     ],
     input_descriptions={'distance_matrix': 'a distance matrix'},
@@ -249,11 +248,11 @@ plugin.pipelines.register_function(
         },
     output_descriptions={
         'predictions': 'leave one out predictions for each sample',
-        'model_summary': 'number of neighbors k',
         'accuracy_results': 'Accuracy results visualization.',
     },
-    name=('Train and test a cross-validated (leave one out)'
-          ' supervised learning classifier.'),
+    name=('Run k-nearest-neighbors on a labeled distance matrix.'
+          ' Return cross-validated (leave one out) predictions and '
+          ' accuracy.'),
     description=description.format(
         'categorical', 'supervised learning classifier')
 )
