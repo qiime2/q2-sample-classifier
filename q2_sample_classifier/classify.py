@@ -24,7 +24,7 @@ from .utilities import (split_optimize_classify, _visualize, _load_data,
                         nested_cross_validation, _fit_estimator,
                         _extract_features, _plot_accuracy,
                         _summarize_estimator, _validate_metadata_is_superset,
-                        _map_params_to_pipeline, _visualize_knn)
+                        _visualize_knn)
 from q2_longitudinal._utilities import _validate_input_columns
 
 
@@ -41,10 +41,10 @@ defaults = {
 }
 
 
-def classify_samples_from_dist(ctx, dmtx, metadata, k,
+def classify_samples_from_dist(ctx, distance_matrix, metadata, k=5,
                                palette=defaults['palette']):
     ''' Returns knn classifier results from a distance matrix.'''
-    distance_matrix = dmtx.view(skbio.DistanceMatrix)
+    distance_matrix = distance_matrix.view(skbio.DistanceMatrix)
     predictions = []
     metadata_series = metadata.to_series()
     for i, row in enumerate(distance_matrix):
@@ -57,14 +57,14 @@ def classify_samples_from_dist(ctx, dmtx, metadata, k,
             categories.append(metadata_series[distance_matrix.ids[j]])
 
         # k-long series of (category: dist) ordered small -> large
-        nn_cats = pd.Series(dists, index=categories).nsmallest(k)
-        counter = collections.Counter(nn_cats.index)
+        nn_categories = pd.Series(dists, index=categories).nsmallest(k)
+        counter = collections.Counter(nn_categories.index)
         max_counts = max(counter.values())
         # in order of closeness, pick a category that is or shares
         # max_counts
-        for cat in nn_cats.index:
-            if counter[cat] == max_counts:
-                predictions.append(cat)
+        for category in nn_categories.index:
+            if counter[category] == max_counts:
+                predictions.append(category)
                 break
 
     predictions = pd.Series(predictions, index=distance_matrix.ids)
@@ -72,14 +72,11 @@ def classify_samples_from_dist(ctx, dmtx, metadata, k,
     pred = qiime2.Artifact.import_data(
         'SampleData[ClassifierPredictions]', predictions)
 
-    summarize_classifier = ctx.get_action('sample_classifier', 'summarize_knn')
-    summary, = summarize_classifier(k=k)
-
     confusion = ctx.get_action('sample_classifier', 'confusion_matrix')
     accuracy_results, = confusion(
         pred, metadata, missing_samples='ignore', palette=palette)
 
-    return pred, summary, accuracy_results
+    return pred, accuracy_results
 
 
 def classify_samples(ctx,
@@ -379,8 +376,8 @@ def summarize(output_dir: str, sample_estimator: Pipeline):
 
 
 def summarize_knn(output_dir: str, k: int):
-    params = pd.Series({'k': 1}, name='Parameter setting')
-    _visualize_knn(output_dir, params)
+    params = pd.Series({'k': k}, name='Parameter setting')
+    _visualize_knn('output_dir', params)
 
 
 def maturity_index(ctx,

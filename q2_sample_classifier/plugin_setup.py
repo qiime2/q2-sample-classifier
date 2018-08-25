@@ -230,7 +230,7 @@ plugin.pipelines.register_function(
 
 plugin.pipelines.register_function(
     function=classify_samples_from_dist,
-    inputs={'dmtx': DistanceMatrix},
+    inputs={'distance_matrix': DistanceMatrix},
     parameters={
         'metadata': MetadataColumn[Categorical],
         'k': Int,
@@ -241,7 +241,7 @@ plugin.pipelines.register_function(
         ('model_summary', Visualization),
         ('accuracy_results', Visualization),
     ],
-    input_descriptions={'dmtx': 'a distance matrix'},
+    input_descriptions={'distance_matrix': 'a distance matrix'},
     parameter_descriptions={
         'metadata': 'Categorical metadata column to use as prediction target.',
         'k': 'Number of nearest neighbors',

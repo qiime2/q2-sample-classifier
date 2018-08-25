@@ -574,7 +574,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
 
         # -- test -- #
         res = sample_classifier.actions.classify_samples_from_dist(
-            dmtx=dm, metadata=metadata, k=1)
+            distance_matrix=dm, metadata=metadata, k=1)
         pred = res[0].view(pd.Series).sort_values()
         expected = pd.Series(('fat', 'skinny', 'fat', 'skinny'),
                              index=['f1', 's1', 'f2', 's2'])
@@ -604,7 +604,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
 
         # -- test -- #
         res = sample_classifier.actions.classify_samples_from_dist(
-            dmtx=dm, metadata=metadata, k=1)
+            dist=dm, metadata=metadata, k=1)
         pred = res[0].view(pd.Series)
         expected = pd.Series(('skinny', 'skinny', 'skinny', 'skinny'),
                              index=sample_ids)
@@ -634,7 +634,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
 
         # -- test -- #
         res = sample_classifier.actions.classify_samples_from_dist(
-            dmtx=dm, metadata=metadata, k=2)
+            distance_matrix=dm, metadata=metadata, k=2)
         pred = res[0].view(pd.Series)
         expected = pd.Series(('skinny', 'fat', 'fat', 'skinny'),
                              index=sample_ids)
