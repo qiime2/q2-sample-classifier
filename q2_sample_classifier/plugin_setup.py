@@ -250,11 +250,12 @@ plugin.pipelines.register_function(
         'predictions': 'leave one out predictions for each sample',
         'accuracy_results': 'Accuracy results visualization.',
     },
-    name=('Run k-nearest-neighbors on a labeled distance matrix.'
-          ' Return cross-validated (leave one out) predictions and '
-          ' accuracy.'),
-    description=description.format(
-        'categorical', 'supervised learning classifier')
+    name=('Run k-nearest-neighbors on a labeled distance matrix.'),
+    description=(
+        'Run k-nearest-neighbors on a labeled distance matrix.'
+        ' Return cross-validated (leave one out) predictions and '
+        ' accuracy. k = 1 by default'
+    )
 )
 
 

@@ -41,7 +41,7 @@ defaults = {
 }
 
 
-def classify_samples_from_dist(ctx, distance_matrix, metadata, k=5,
+def classify_samples_from_dist(ctx, distance_matrix, metadata, k=1,
                                palette=defaults['palette']):
     ''' Returns knn classifier results from a distance matrix.'''
     distance_matrix = distance_matrix.view(skbio.DistanceMatrix)
