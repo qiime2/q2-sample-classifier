@@ -24,7 +24,7 @@ from .utilities import (split_optimize_classify, _visualize, _load_data,
                         nested_cross_validation, _fit_estimator,
                         _extract_features, _plot_accuracy,
                         _summarize_estimator, _validate_metadata_is_superset,
-                        _visualize_knn)
+                        )
 from q2_longitudinal._utilities import _validate_input_columns
 
 
