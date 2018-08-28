@@ -375,11 +375,6 @@ def summarize(output_dir: str, sample_estimator: Pipeline):
     _summarize_estimator(output_dir, sample_estimator)
 
 
-def summarize_knn(output_dir: str, k: int):
-    params = pd.Series({'k': k}, name='Parameter setting')
-    _visualize_knn('output_dir', params)
-
-
 def maturity_index(ctx,
                    table,
                    metadata,

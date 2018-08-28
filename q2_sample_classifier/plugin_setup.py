@@ -20,7 +20,7 @@ from .classify import (
     maturity_index, regress_samples_ncv,
     classify_samples_ncv, fit_classifier, fit_regressor, split_table,
     predict_classification, predict_regression, confusion_matrix, scatterplot,
-    summarize, summarize_knn)
+    summarize)
 from .visuals import _custom_palettes
 from ._format import (SampleEstimatorDirFmt,
                       BooleanSeriesFormat,
@@ -487,16 +487,6 @@ plugin.visualizers.register_function(
          'trained estimator.',
     description='Summarize parameter and feature extraction information for a '
                 'trained estimator.'
-)
-
-plugin.visualizers.register_function(
-    function=summarize_knn,
-    inputs={},
-    parameters={'k': Int},
-    input_descriptions={},
-    parameter_descriptions={'k': 'k (num nearest neighbors)'},
-    name='display k (num nearest neighbors)',
-    description='display k (num nearest neighbors)',
 )
 
 plugin.pipelines.register_function(

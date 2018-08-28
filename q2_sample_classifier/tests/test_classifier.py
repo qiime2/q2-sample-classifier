@@ -25,8 +25,7 @@ from q2_sample_classifier.visuals import (
 from q2_sample_classifier.classify import (
     regress_samples_ncv, classify_samples_ncv, fit_classifier, fit_regressor,
     detect_outliers, split_table, predict_classification,
-    predict_regression, scatterplot, confusion_matrix, summarize,
-    summarize_knn)
+    predict_regression, scatterplot, confusion_matrix, summarize)
 from q2_sample_classifier.utilities import (
     split_optimize_classify, _set_parameters_and_estimator, _load_data,
     _calculate_feature_importances, _extract_important_features,
@@ -604,7 +603,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
 
         # -- test -- #
         res = sample_classifier.actions.classify_samples_from_dist(
-            dist=dm, metadata=metadata, k=1)
+            distance_matrix=dm, metadata=metadata, k=1)
         pred = res[0].view(pd.Series)
         expected = pd.Series(('skinny', 'skinny', 'skinny', 'skinny'),
                              index=sample_ids)
@@ -1173,9 +1172,6 @@ class TestSummarize(SampleEstimatorTestBase):
     def test_summary_without_rfecv(self):
         del self.pipeline.rfe_scores
         summarize(self.temp_dir.name, self.pipeline)
-
-    def test_summarize_knn(self):
-        summarize_knn(self.temp_dir.name, k=3)
 
 
 md = pd.DataFrame([(1, 'a', 0.11), (1, 'a', 0.12), (1, 'a', 0.13),
