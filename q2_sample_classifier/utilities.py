@@ -732,40 +732,6 @@ def _null_feature_importance(table):
     return imp
 
 
-def _maz_score(metadata, predicted, column, group_by, control):
-    '''pd.DataFrame -> pd.DataFrame'''
-    # extract control data
-    md_control = metadata[metadata[group_by] == control]
-
-    # for each bin, calculate median and SD in control samples
-    medians = {}
-    for n in md_control[column].unique():
-        _bin = md_control[md_control[column] == n]
-        _median = _bin[predicted].median()
-        _std = _bin[predicted].std()
-        medians[n] = (_median, _std)
-
-    # calculate maturity and MAZ scores in all samples
-    maturity_scores = []
-    maz_scores = []
-    for i, v in metadata[predicted].iteritems():
-        _median, _std = medians[metadata.loc[i][column]]
-        maturity = v - _median
-        maturity_scores.append(maturity)
-        if maturity == 0.0 or _std == 0.0:
-            maz_score = 0.0
-        else:
-            maz_score = maturity / _std
-        maz_scores.append(maz_score)
-
-    maturity = '{0} maturity'.format(column)
-    metadata[maturity] = maturity_scores
-    maz = '{0} MAZ score'.format(column)
-    metadata[maz] = maz_scores
-
-    return metadata
-
-
 def _select_estimator(estimator, n_jobs, n_estimators, random_state=None):
     '''Select estimator and parameters from argument name.'''
     # Regressors

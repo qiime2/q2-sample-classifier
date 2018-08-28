@@ -645,24 +645,6 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 msg='Accuracy of %s regressor was %f, but expected %f' % (
                     regressor, accuracy, seeded_results[regressor]))
 
-    # test that this method works, produces expected results
-    # internal pipeline actions are tested independently so this method
-    # tests that predictions and MAZ scores are calculated correctly.
-    def test_maturity_index(self):
-        table_fp = self.get_data_path('ecam-table-maturity.qza')
-        table = qiime2.Artifact.load(table_fp)
-        res = sample_classifier.actions.maturity_index(
-            table, self.md_ecam_fp, state_column='month', n_estimators=2,
-            group_by='delivery', random_state=123, n_jobs=1, control='Vaginal',
-            test_size=0.4, missing_samples='ignore')
-        maz = pd.to_numeric(res[5].view(pd.Series))
-        exp_maz = pd.read_csv(
-            self.get_data_path('maz.tsv'), sep='\t', squeeze=True, index_col=0,
-            header=0)
-        pdt.assert_series_equal(
-            maz, exp_maz, check_dtype=False, check_index_type=False,
-            check_series_type=False, check_names=False)
-
     # test adaboost base estimator trainer
     def test_train_adaboost_base_estimator(self):
         abe = _train_adaboost_base_estimator(
