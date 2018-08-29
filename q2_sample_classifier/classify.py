@@ -16,9 +16,7 @@ import qiime2
 import pandas as pd
 import biom
 
-from .utilities import (split_optimize_classify, _visualize, _load_data,
-                        _maz_score, _set_parameters_and_estimator,
-                        _prepare_training_data, _disable_feature_selection,
+from .utilities import (_load_data, _maz_score, _prepare_training_data,
                         nested_cross_validation, _fit_estimator,
                         _extract_features, _plot_accuracy,
                         _summarize_estimator, _validate_metadata_is_superset)
@@ -116,47 +114,6 @@ def regress_samples(ctx,
     return sample_estimator, importance, predictions, summary, accuracy_results
 
 
-# this action has been replaced by the classify_samples pipeline and is no
-# longer registered. Will be removed in a separate PR.
-def classify_samples_basic(output_dir: str, table: biom.Table,
-                           metadata: qiime2.CategoricalMetadataColumn,
-                           test_size: float=defaults['test_size'],
-                           step: float=defaults['step'],
-                           cv: int=defaults['cv'], random_state: int=None,
-                           n_jobs: int=defaults['n_jobs'],
-                           n_estimators: int=defaults['n_estimators'],
-                           estimator: str=defaults['estimator_c'],
-                           optimize_feature_selection: bool=False,
-                           parameter_tuning: bool=False,
-                           palette: str=defaults['palette'],
-                           missing_samples: str=defaults['missing_samples']
-                           ) -> None:
-
-    # extract column name from CategoricalMetadataColumn
-    column = metadata.name
-
-    # disable feature selection for unsupported estimators
-    optimize_feature_selection, calc_feature_importance = \
-        _disable_feature_selection(estimator, optimize_feature_selection)
-
-    # specify parameters and distributions to sample from for parameter tuning
-    estimator, param_dist, parameter_tuning = _set_parameters_and_estimator(
-        estimator, table, metadata, column, n_estimators, n_jobs, cv,
-        random_state, parameter_tuning, classification=True,
-        missing_samples=missing_samples)
-
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, column, estimator, output_dir,
-        test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
-        parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=calc_feature_importance, palette=palette,
-        missing_samples=missing_samples)
-
-    _visualize(output_dir, estimator, cm, importances,
-               optimize_feature_selection, title='classification predictions')
-
-
 def fit_classifier(table: biom.Table,
                    metadata: qiime2.CategoricalMetadataColumn,
                    step: float=defaults['step'], cv: int=defaults['cv'],
@@ -191,47 +148,6 @@ def fit_regressor(table: biom.Table,
         missing_samples=missing_samples, classification=False)
 
     return estimator, importance
-
-
-# this action has been replaced by the regress_samples pipeline and is no
-# longer registered. Will be removed in a separate PR.
-def regress_samples_basic(output_dir: str, table: biom.Table,
-                          metadata: qiime2.NumericMetadataColumn,
-                          test_size: float=defaults['test_size'],
-                          step: float=defaults['step'],
-                          cv: int=defaults['cv'], random_state: int=None,
-                          n_jobs: int=defaults['n_jobs'],
-                          n_estimators: int=defaults['n_estimators'],
-                          estimator: str=defaults['estimator_r'],
-                          optimize_feature_selection: bool=False,
-                          stratify: str=False, parameter_tuning: bool=False,
-                          missing_samples: str=defaults['missing_samples']
-                          ) -> None:
-
-    # extract column name from NumericMetadataColumn
-    column = metadata.name
-
-    # disable feature selection for unsupported estimators
-    optimize_feature_selection, calc_feature_importance = \
-        _disable_feature_selection(estimator, optimize_feature_selection)
-
-    # specify parameters and distributions to sample from for parameter tuning
-    estimator, param_dist, parameter_tuning = _set_parameters_and_estimator(
-        estimator, table, metadata, column, n_estimators, n_jobs, cv,
-        random_state, parameter_tuning, classification=True,
-        missing_samples=missing_samples)
-
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, column, estimator, output_dir,
-        test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
-        parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=calc_feature_importance,
-        scoring=mean_squared_error, stratify=stratify, classification=False,
-        missing_samples=missing_samples)
-
-    _visualize(output_dir, estimator, cm, importances,
-               optimize_feature_selection, title='regression predictions')
 
 
 def predict_base(table, sample_estimator, n_jobs):
