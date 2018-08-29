@@ -27,7 +27,7 @@ from q2_sample_classifier.classify import (
     detect_outliers, split_table, predict_classification,
     predict_regression, scatterplot, confusion_matrix, summarize)
 from q2_sample_classifier.utilities import (
-    split_optimize_classify, _set_parameters_and_estimator, _load_data,
+    _set_parameters_and_estimator, _load_data,
     _calculate_feature_importances, _extract_important_features,
     _train_adaboost_base_estimator, _disable_feature_selection,
     _mean_feature_importance, _null_feature_importance, _extract_features,
@@ -752,37 +752,6 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             'Region', n_estimators=10, n_jobs=1, cv=1,
             random_state=123, parameter_tuning=False, classification=True,
             missing_samples='ignore')
-        # zero samples (if mapping file and table have no common samples)
-        with self.assertRaisesRegex(ValueError, "metadata"):
-            estimator, cm, accuracy, importances = split_optimize_classify(
-                self.table_ecam_fp, self.md_chard_fp, 'Region', estimator,
-                self.temp_dir.name, test_size=0.5, cv=1, random_state=123,
-                n_jobs=1, optimize_feature_selection=False,
-                parameter_tuning=False, param_dist=None,
-                calc_feature_importance=False, missing_samples='ignore')
-        # too few samples to stratify
-        with self.assertRaisesRegex(ValueError, "metadata"):
-            estimator, cm, accuracy, importances = split_optimize_classify(
-                self.table_chard_fp, self.md_chard_fp, 'Region', estimator,
-                self.temp_dir.name, test_size=0.9, cv=1, random_state=123,
-                n_jobs=1, optimize_feature_selection=False,
-                parameter_tuning=False, param_dist=None,
-                calc_feature_importance=False, missing_samples='ignore')
-        # regressor chosen for classification problem
-        with self.assertRaisesRegex(ValueError, "convert"):
-            estimator, cm, accuracy, importances = split_optimize_classify(
-                self.table_chard_fp, self.md_chard_fp, 'Region', regressor,
-                self.temp_dir.name, test_size=0.5, cv=1, random_state=123,
-                n_jobs=1, optimize_feature_selection=False,
-                parameter_tuning=False, param_dist=None,
-                calc_feature_importance=False, missing_samples='ignore')
-        # metadata is a subset of feature table ids... raise error or else
-        # an inner merge is taken, causing samples to be silently dropped!
-        with self.assertRaisesRegex(ValueError, 'Missing samples'):
-            md = self.md_chard_fp.filter_ids(self.md_chard_fp.ids[:5])
-            estimator, cm, accuracy, importances = split_optimize_classify(
-                self.table_chard_fp, md, 'Region', regressor,
-                self.temp_dir.name, missing_samples='error')
 
     def test_split_table_no_rounding_error(self):
         X_train, X_test = split_table(
