@@ -14,8 +14,10 @@ from qiime2.plugin import (
 from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
+from q2_types.distance_matrix import DistanceMatrix
 from .classify import (
-    classify_samples, regress_samples, regress_samples_ncv,
+    classify_samples, classify_samples_from_dist, regress_samples,
+    regress_samples_ncv,
     classify_samples_ncv, fit_classifier, fit_regressor, split_table,
     predict_classification, predict_regression, confusion_matrix, scatterplot,
     summarize)
@@ -223,6 +225,37 @@ plugin.pipelines.register_function(
     name='Train and test a cross-validated supervised learning classifier.',
     description=description.format(
         'categorical', 'supervised learning classifier')
+)
+
+
+plugin.pipelines.register_function(
+    function=classify_samples_from_dist,
+    inputs={'distance_matrix': DistanceMatrix},
+    parameters={
+        'metadata': MetadataColumn[Categorical],
+        'k': Int,
+        'palette': Str % Choices(_custom_palettes().keys()),
+    },
+    outputs=[
+        ('predictions', SampleData[ClassifierPredictions]),
+        ('accuracy_results', Visualization),
+    ],
+    input_descriptions={'distance_matrix': 'a distance matrix'},
+    parameter_descriptions={
+        'metadata': 'Categorical metadata column to use as prediction target.',
+        'k': 'Number of nearest neighbors',
+        'palette': 'The color palette to use for plotting.',
+        },
+    output_descriptions={
+        'predictions': 'leave one out predictions for each sample',
+        'accuracy_results': 'Accuracy results visualization.',
+    },
+    name=('Run k-nearest-neighbors on a labeled distance matrix.'),
+    description=(
+        'Run k-nearest-neighbors on a labeled distance matrix.'
+        ' Return cross-validated (leave one out) predictions and '
+        ' accuracy. k = 1 by default'
+    )
 )
 
 
