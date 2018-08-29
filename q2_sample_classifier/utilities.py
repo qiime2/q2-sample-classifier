@@ -610,6 +610,18 @@ def _visualize(output_dir, estimator, cm, importances=None,
         'optimize_feature_selection': optimize_feature_selection})
 
 
+def _visualize_knn(output_dir, params: pd.Series):
+    result = q2templates.df_to_html(params.to_frame())
+    index = join(TEMPLATES, 'index.html')
+    q2templates.render(index, output_dir, context={
+        'title': 'Estimator Summary',
+        'result': result,
+        'predictions': None,
+        'importances': None,
+        'classification': True,
+        'optimize_feature_selection': False})
+
+
 def _map_params_to_pipeline(param_dist):
     return {'est__' + param: dist for param, dist in param_dist.items()}
 

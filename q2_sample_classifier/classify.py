@@ -6,6 +6,7 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
+import collections
 
 from sklearn.ensemble import IsolationForest
 from sklearn.metrics import mean_squared_error, accuracy_score
@@ -15,13 +16,15 @@ from sklearn.pipeline import Pipeline
 import qiime2
 import pandas as pd
 import biom
+import skbio
 
 from .utilities import (split_optimize_classify, _visualize, _load_data,
                         _maz_score, _set_parameters_and_estimator,
                         _prepare_training_data, _disable_feature_selection,
                         nested_cross_validation, _fit_estimator,
                         _extract_features, _plot_accuracy,
-                        _summarize_estimator, _validate_metadata_is_superset)
+                        _summarize_estimator, _validate_metadata_is_superset,
+                        )
 from q2_longitudinal._utilities import _validate_input_columns
 
 
@@ -36,6 +39,44 @@ defaults = {
     'palette': 'sirocco',
     'missing_samples': 'error'
 }
+
+
+def classify_samples_from_dist(ctx, distance_matrix, metadata, k=1,
+                               palette=defaults['palette']):
+    ''' Returns knn classifier results from a distance matrix.'''
+    distance_matrix = distance_matrix.view(skbio.DistanceMatrix)
+    predictions = []
+    metadata_series = metadata.to_series()
+    for i, row in enumerate(distance_matrix):
+        dists = []
+        categories = []
+        for j, dist in enumerate(row):
+            if j == i:
+                continue  # exclude self
+            dists.append(dist)
+            categories.append(metadata_series[distance_matrix.ids[j]])
+
+        # k-long series of (category: dist) ordered small -> large
+        nn_categories = pd.Series(dists, index=categories).nsmallest(k)
+        counter = collections.Counter(nn_categories.index)
+        max_counts = max(counter.values())
+        # in order of closeness, pick a category that is or shares
+        # max_counts
+        for category in nn_categories.index:
+            if counter[category] == max_counts:
+                predictions.append(category)
+                break
+
+    predictions = pd.Series(predictions, index=distance_matrix.ids)
+    predictions.index.name = 'SampleID'
+    pred = qiime2.Artifact.import_data(
+        'SampleData[ClassifierPredictions]', predictions)
+
+    confusion = ctx.get_action('sample_classifier', 'confusion_matrix')
+    accuracy_results, = confusion(
+        pred, metadata, missing_samples='ignore', palette=palette)
+
+    return pred, accuracy_results
 
 
 def classify_samples(ctx,
