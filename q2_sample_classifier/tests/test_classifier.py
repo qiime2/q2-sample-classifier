@@ -55,6 +55,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.externals import joblib
 import pandas.util.testing as pdt
 import biom
+import skbio
 
 
 filterwarnings("ignore", category=UserWarning)
@@ -553,6 +554,91 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 else:
                     self.assertEqual(dict_row[feature], count)
 
+    def test_classify_samples_from_dist(self):
+        # -- setup -- #
+        # 1,2 are a group, 3,4 are a group
+        sample_ids = ('f1', 'f2', 's1', 's2')
+        distance_matrix = skbio.DistanceMatrix([
+            [0, 1, 4, 4],
+            [1, 0, 4, 4],
+            [4, 4, 0, 1],
+            [4, 4, 1, 0],
+            ], ids=sample_ids)
+
+        dm = qiime2.Artifact.import_data('DistanceMatrix', distance_matrix)
+        categories = pd.Series(('skinny', 'skinny', 'fat', 'fat'),
+                               index=sample_ids[::-1], name='body_mass')
+        categories.index.name = 'SampleID'
+        metadata = qiime2.CategoricalMetadataColumn(categories)
+
+        # -- test -- #
+        res = sample_classifier.actions.classify_samples_from_dist(
+            distance_matrix=dm, metadata=metadata, k=1)
+        pred = res[0].view(pd.Series).sort_values()
+        expected = pd.Series(('fat', 'skinny', 'fat', 'skinny'),
+                             index=['f1', 's1', 'f2', 's2'])
+        not_expected = pd.Series(('fat', 'fat', 'fat', 'skinny'),
+                                 index=sample_ids)
+
+        # order matters for pd.Series.equals()
+        self.assertTrue(expected.sort_index().equals(pred.sort_index()))
+        self.assertFalse(not_expected.sort_index().equals(pred.sort_index()))
+
+    def test_classify_samples_from_dist_with_group_of_single_item(self):
+        # -- setup -- #
+        # 1 is a group, 2,3,4 are a group
+        sample_ids = ('f1', 's1', 's2', 's3')
+        distance_matrix = skbio.DistanceMatrix([
+            [0, 2, 3, 3],
+            [2, 0, 1, 1],
+            [3, 1, 0, 1],
+            [3, 1, 1, 0],
+            ], ids=sample_ids)
+
+        dm = qiime2.Artifact.import_data('DistanceMatrix', distance_matrix)
+        categories = pd.Series(('fat', 'skinny', 'skinny', 'skinny'),
+                               index=sample_ids, name='body_mass')
+        categories.index.name = 'SampleID'
+        metadata = qiime2.CategoricalMetadataColumn(categories)
+
+        # -- test -- #
+        res = sample_classifier.actions.classify_samples_from_dist(
+            distance_matrix=dm, metadata=metadata, k=1)
+        pred = res[0].view(pd.Series)
+        expected = pd.Series(('skinny', 'skinny', 'skinny', 'skinny'),
+                             index=sample_ids)
+
+        self.assertTrue(expected.sort_index().equals(pred.sort_index()))
+
+    def test_2nn(self):
+        # -- setup -- #
+        # 2 nearest neighbors of each sample are
+        # f1: s1, s2 (classified as skinny)
+        # s1: f1, s2 (closer to f1 so fat)
+        # s2: f1, (s1 or s3) (closer to f1 so fat)
+        # s3: s1, s2 (skinny)
+        sample_ids = ('f1', 's1', 's2', 's3')
+        distance_matrix = skbio.DistanceMatrix([
+            [0, 2, 1, 5],
+            [2, 0, 3, 4],
+            [1, 3, 0, 3],
+            [5, 4, 3, 0],
+            ], ids=sample_ids)
+
+        dm = qiime2.Artifact.import_data('DistanceMatrix', distance_matrix)
+        categories = pd.Series(('fat', 'skinny', 'skinny', 'skinny'),
+                               index=sample_ids, name='body_mass')
+        categories.index.name = 'SampleID'
+        metadata = qiime2.CategoricalMetadataColumn(categories)
+
+        # -- test -- #
+        res = sample_classifier.actions.classify_samples_from_dist(
+            distance_matrix=dm, metadata=metadata, k=2)
+        pred = res[0].view(pd.Series)
+        expected = pd.Series(('skinny', 'fat', 'fat', 'skinny'),
+                             index=sample_ids)
+        self.assertTrue(expected.sort_index().equals(pred.sort_index()))
+
     # test that each classifier works and delivers an expected accuracy result
     # when a random seed is set.
     def test_classifiers(self):
@@ -644,24 +730,6 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 accuracy, seeded_results[regressor], places=4,
                 msg='Accuracy of %s regressor was %f, but expected %f' % (
                     regressor, accuracy, seeded_results[regressor]))
-
-    # test that this method works, produces expected results
-    # internal pipeline actions are tested independently so this method
-    # tests that predictions and MAZ scores are calculated correctly.
-    def test_maturity_index(self):
-        table_fp = self.get_data_path('ecam-table-maturity.qza')
-        table = qiime2.Artifact.load(table_fp)
-        res = sample_classifier.actions.maturity_index(
-            table, self.md_ecam_fp, state_column='month', n_estimators=2,
-            group_by='delivery', random_state=123, n_jobs=1, control='Vaginal',
-            test_size=0.4, missing_samples='ignore')
-        maz = pd.to_numeric(res[5].view(pd.Series))
-        exp_maz = pd.read_csv(
-            self.get_data_path('maz.tsv'), sep='\t', squeeze=True, index_col=0,
-            header=0)
-        pdt.assert_series_equal(
-            maz, exp_maz, check_dtype=False, check_index_type=False,
-            check_series_type=False, check_names=False)
 
     # test adaboost base estimator trainer
     def test_train_adaboost_base_estimator(self):

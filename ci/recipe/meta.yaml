@@ -30,7 +30,6 @@ requirements:
     - q2-types {{ release }}.*
     - q2templates {{ release }}.*
     - q2-feature-table {{ release }}.*
-    - q2-longitudinal {{ release }}.*
 
 test:
   imports:

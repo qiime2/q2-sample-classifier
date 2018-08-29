@@ -14,8 +14,10 @@ from qiime2.plugin import (
 from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
+from q2_types.distance_matrix import DistanceMatrix
 from .classify import (
-    classify_samples, regress_samples, maturity_index, regress_samples_ncv,
+    classify_samples, classify_samples_from_dist, regress_samples,
+    regress_samples_ncv,
     classify_samples_ncv, fit_classifier, fit_regressor, split_table,
     predict_classification, predict_regression, confusion_matrix, scatterplot,
     summarize)
@@ -223,6 +225,37 @@ plugin.pipelines.register_function(
     name='Train and test a cross-validated supervised learning classifier.',
     description=description.format(
         'categorical', 'supervised learning classifier')
+)
+
+
+plugin.pipelines.register_function(
+    function=classify_samples_from_dist,
+    inputs={'distance_matrix': DistanceMatrix},
+    parameters={
+        'metadata': MetadataColumn[Categorical],
+        'k': Int,
+        'palette': Str % Choices(_custom_palettes().keys()),
+    },
+    outputs=[
+        ('predictions', SampleData[ClassifierPredictions]),
+        ('accuracy_results', Visualization),
+    ],
+    input_descriptions={'distance_matrix': 'a distance matrix'},
+    parameter_descriptions={
+        'metadata': 'Categorical metadata column to use as prediction target.',
+        'k': 'Number of nearest neighbors',
+        'palette': 'The color palette to use for plotting.',
+        },
+    output_descriptions={
+        'predictions': 'leave one out predictions for each sample',
+        'accuracy_results': 'Accuracy results visualization.',
+    },
+    name=('Run k-nearest-neighbors on a labeled distance matrix.'),
+    description=(
+        'Run k-nearest-neighbors on a labeled distance matrix.'
+        ' Return cross-validated (leave one out) predictions and '
+        ' accuracy. k = 1 by default'
+    )
 )
 
 
@@ -454,67 +487,6 @@ plugin.visualizers.register_function(
          'trained estimator.',
     description='Summarize parameter and feature extraction information for a '
                 'trained estimator.'
-)
-
-
-plugin.pipelines.register_function(
-    function=maturity_index,
-    inputs=inputs,
-    parameters={'group_by': Str,
-                'control': Str,
-                'individual_id_column': Str,
-                'estimator': regressors,
-                **pipeline_parameters,
-                'metadata': Metadata,
-                'state_column': Str,
-                **parameters['regressor'],
-                },
-    outputs=regressor_pipeline_outputs + [
-        ('maz_scores', SampleData[RegressorPredictions]),
-        ('clustermap', Visualization),
-        ('lineplots', Visualization)],
-    input_descriptions=input_descriptions,
-    parameter_descriptions={
-        **pipeline_parameter_descriptions,
-        'state_column': ('Numeric metadata column containing sampling time '
-                         '(state) data to use as prediction target.'),
-        'group_by': ('Categorical metadata column to use for plotting and '
-                     'significance testing between main treatment groups.'),
-        'control': (
-            'Value of group_by to use as control group. The regression model '
-            'will be trained using only control group data, and the maturity '
-            'scores of other groups consequently will be assessed relative to '
-            'this group.'),
-        'individual_id_column': (
-            'Optional metadata column containing IDs for individual subjects. '
-            'Adds individual subject (spaghetti) vectors to volatility charts '
-            'if a column name is provided.'),
-        'estimator': 'Regression model to use for prediction.',
-        **parameter_descriptions['regressor'],
-    },
-    output_descriptions={
-        **pipeline_output_descriptions,
-        'maz_scores': 'Microbiota-for-age z-score predictions.',
-        'clustermap': 'Heatmap of important feature abundance at each time '
-                      'point in each group.',
-        'lineplots': 'Interactive line plots of MAZ scores, target (column) '
-                     'predictions, and other metadata.'},
-    name='Microbial maturity index prediction.',
-    description=('Calculates a "microbial maturity" index from a regression '
-                 'model trained on feature data to predict a given continuous '
-                 'metadata column, e.g., to predict age as a function of '
-                 'microbiota composition. The model is trained on a subset of '
-                 'control group samples, then predicts the column value for '
-                 'all samples. This visualization computes maturity index '
-                 'z-scores to compare relative "maturity" between each group, '
-                 'as described in doi:10.1038/nature13421. This method can '
-                 'be used to predict between-group differences in relative '
-                 'trajectory across any type of continuous metadata gradient, '
-                 'e.g., intestinal microbiome development by age, microbial '
-                 'succession during wine fermentation, or microbial community '
-                 'differences along environmental gradients, as a function of '
-                 'two or more different "treatment" groups.'),
-    citations=[citations['subramanian2014persistent']]
 )
 
 
