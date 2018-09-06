@@ -12,13 +12,13 @@ Follow the QIIME 2 core distribution installation instructions at https://qiime2
 
 ## Example usage
 
-This is a QIIME 2 plugin. For details on QIIME 2 and tutorials demonstrating how to use this plugin, see the [QIIME 2 documentation](https://qiime2.org/). Tutorials for this plugin can be found [here](https://docs.qiime2.org/2018.6/tutorials/sample-classifier/).
+This is a QIIME 2 plugin. For details on QIIME 2 and tutorials demonstrating how to use this plugin, see the [QIIME 2 documentation](https://qiime2.org/). Tutorials for this plugin can be found [here](https://docs.qiime2.org/2018.8/tutorials/sample-classifier/).
 
 Not sure which learning model to use? A good starting point is [this flowchart](http://scikit-learn.org/dev/tutorial/machine_learning_map/index.html). Most of the classification and regression models shown in that chart (and a few extras) are implemented in q2-sample-classifier.
 
 ## API documentation
 
-API documentation can be found [here](https://docs.qiime2.org/2018.6/plugins/available/sample-classifier/).
+API documentation can be found [here](https://docs.qiime2.org/2018.8/plugins/available/sample-classifier/).
 
 ## Help
 
