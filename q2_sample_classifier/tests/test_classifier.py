@@ -721,7 +721,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 test_size=0.5, cv=1, n_estimators=10, n_jobs=1,
                 estimator=regressor, random_state=123,
                 parameter_tuning=False, optimize_feature_selection=False,
-                missing_samples='ignore')
+                missing_samples='ignore', stratify=True)
             pred = res[2].view(pd.Series)
             pred, truth = _match_series_or_die(
                 pred, self.mdc_ecam_fp.to_series(), 'ignore')
