@@ -225,7 +225,7 @@ def split_table(table: biom.Table, metadata: qiime2.MetadataColumn,
     column = metadata.name
     X_train, X_test, y_train, y_test = _prepare_training_data(
         table, metadata, column, test_size, random_state, load_data=True,
-        stratify=True, missing_samples=missing_samples)
+        stratify=stratify, missing_samples=missing_samples)
     # TODO: we can consider returning the metadata (y_train, y_test) if a
     # SampleData[Metadata] type comes into existence. For now we will just
     # throw this out.
