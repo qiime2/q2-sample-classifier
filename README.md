@@ -10,6 +10,11 @@ Microbiome studies often aim to predict outcomes or differentiate samples based 
 
 Follow the QIIME 2 core distribution installation instructions at https://qiime2.org/ to install q2-sample-classifier as part of the QIIME 2 analysis platform.
 
+To test deployment, run:
+```
+pytest --disable-pytest-warnings --pyargs q2_sample_classifier
+```
+
 ## Example usage
 
 This is a QIIME 2 plugin. For details on QIIME 2 and tutorials demonstrating how to use this plugin, see the [QIIME 2 documentation](https://qiime2.org/). Tutorials for this plugin can be found [here](https://docs.qiime2.org/2018.8/tutorials/sample-classifier/).
