@@ -1,6 +1,7 @@
 # q2-sample-classifier
 
-[![Build Status](https://travis-ci.org/qiime2/q2-sample-classifier.svg?branch=master)](https://travis-ci.org/qiime2/q2-sample-classifier) [![Coverage Status](https://coveralls.io/repos/github/qiime2/q2-sample-classifier/badge.svg?branch=master)](https://coveralls.io/github/qiime2/q2-sample-classifier?branch=master)
+[![Build Status](https://travis-ci.org/qiime2/q2-sample-classifier.svg?branch=master)](https://travis-ci.org/qiime2/q2-sample-classifier) [![Coverage Status](https://coveralls.io/repos/github/qiime2/q2-sample-classifier/badge.svg?branch=master)](https://coveralls.io/github/qiime2/q2-sample-classifier?branch=master) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1468879.svg)](https://doi.org/10.5281/zenodo.1468879) [![status](http://joss.theoj.org/papers/d828a4ecf73eb6a147f8634e9054eeee/status.svg)](http://joss.theoj.org/papers/d828a4ecf73eb6a147f8634e9054eeee)
+
 
 QIIME 2 plugin for machine learning prediction of sample data.
 
