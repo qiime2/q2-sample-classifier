@@ -908,7 +908,6 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
             sample_ids=['a', 'b', 'c', 'd', 'e', 'peanut'])
         res, = sample_classifier.actions.metatable(self.md2)
         report = res.view(biom.Table).descriptive_equality(exp)
-        print(res.view(pd.DataFrame))
         self.assertIn('Tables appear equal', report, report)
 
     def test_metatable_with_merge(self):
@@ -921,7 +920,6 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
             sample_ids=['a', 'b', 'c', 'd', 'e'])
         res, = sample_classifier.actions.metatable(self.md2, self.tab)
         report = res.view(biom.Table).descriptive_equality(exp)
-        print(res.view(pd.DataFrame))
         self.assertIn('Tables appear equal', report, report)
 
     def test_metatable_with_merge_successful_inner_join(self):
@@ -934,7 +932,6 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
         res, = sample_classifier.actions.metatable(
             self.md2.filter_ids(['a', 'b', 'c', 'd']), self.tab)
         report = res.view(biom.Table).descriptive_equality(exp)
-        print(res.view(pd.DataFrame))
         self.assertIn('Tables appear equal', report, report)
 
     def test_metatable_with_merge_error_inner_join(self):
