@@ -878,6 +878,7 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
                        index=['a', 'b', 'c', 'd', 'e'], name='bugs')
         md.index.name = 'SampleID'
         self.md = qiime2.CategoricalMetadataColumn(md)
+
         tab = biom.Table(
             np.array([[3, 6, 7, 3, 6], [3, 4, 5, 6, 2], [8, 6, 4, 1, 0],
                       [8, 6, 4, 1, 0], [8, 6, 4, 1, 0]]),
@@ -885,11 +886,68 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
             sample_ids=['a', 'b', 'c', 'd', 'e'])
         self.tab = qiime2.Artifact.import_data('FeatureTable[Frequency]', tab)
 
+        md2 = pd.DataFrame({'trash': ['a', 'a', 'b', 'b', 'b', 'junk'],
+                            'floats': [0.1, 0.1, 1.3, 1.8, 1000.1, 0.1],
+                            'ints': [0, 1, 2, 2, 2, 0],
+                            'negatives': [-7, -3, -1.2, -4, -9, -1]},
+                           index=['a', 'b', 'c', 'd', 'e', 'peanut'])
+        md2.index.name = 'SampleID'
+        self.md2 = qiime2.Metadata(md2)
+
     # let's make sure the correct transformers are in place! See issue 114
     # if this runs without error, that's good enough for me. We already
     # validate the function above.
     def test_action_split_table(self):
         sample_classifier.actions.split_table(self.tab, self.md, test_size=0.5)
+
+    def test_metatable(self):
+        exp = biom.Table(
+            np.array([[0.1, 0.1, 1.3, 1.8, 1000.1, 0.1],
+                      [0, 1, 2, 2, 2, 0]]),
+            observation_ids=['floats', 'ints'],
+            sample_ids=['a', 'b', 'c', 'd', 'e', 'peanut'])
+        res, = sample_classifier.actions.metatable(self.md2)
+        report = res.view(biom.Table).descriptive_equality(exp)
+        print(res.view(pd.DataFrame))
+        self.assertIn('Tables appear equal', report, report)
+
+    def test_metatable_with_merge(self):
+        exp = biom.Table(
+            np.array([[3, 6, 7, 3, 6], [3, 4, 5, 6, 2], [8, 6, 4, 1, 0],
+                      [8, 6, 4, 1, 0], [8, 6, 4, 1, 0],
+                      [0.1, 0.1, 1.3, 1.8, 1000.1],
+                      [0, 1, 2, 2, 2]]),
+            observation_ids=['v', 'w', 'x', 'y', 'z', 'floats', 'ints'],
+            sample_ids=['a', 'b', 'c', 'd', 'e'])
+        res, = sample_classifier.actions.metatable(self.md2, self.tab)
+        report = res.view(biom.Table).descriptive_equality(exp)
+        print(res.view(pd.DataFrame))
+        self.assertIn('Tables appear equal', report, report)
+
+    def test_metatable_with_merge_successful_inner_join(self):
+        exp = biom.Table(
+            np.array([[3, 6, 7, 3], [3, 4, 5, 6], [8, 6, 4, 1],
+                      [8, 6, 4, 1], [8, 6, 4, 1], [0.1, 0.1, 1.3, 1.8],
+                      [0, 1, 2, 2]]),
+            observation_ids=['v', 'w', 'x', 'y', 'z', 'floats', 'ints'],
+            sample_ids=['a', 'b', 'c', 'd'])
+        res, = sample_classifier.actions.metatable(
+            self.md2.filter_ids(['a', 'b', 'c', 'd']), self.tab)
+        report = res.view(biom.Table).descriptive_equality(exp)
+        print(res.view(pd.DataFrame))
+        self.assertIn('Tables appear equal', report, report)
+
+    def test_metatable_with_merge_error_inner_join(self):
+        with self.assertRaisesRegex(ValueError, "Missing samples"):
+            sample_classifier.actions.metatable(
+                self.md2.filter_ids(['a', 'b', 'c', 'd']),
+                self.tab, missing_samples='error')
+
+    def test_metatable_empty_metadata_after_filtering(self):
+        with self.assertRaisesRegex(
+                ValueError, "All metadata"):  # are belong to us
+            sample_classifier.actions.metatable(
+                self.md2.filter_ids(['b', 'c']), self.tab)
 
 
 class SampleEstimatorTestBase(SampleClassifierTestPluginBase):

@@ -20,7 +20,7 @@ from .classify import (
     regress_samples_ncv,
     classify_samples_ncv, fit_classifier, fit_regressor, split_table,
     predict_classification, predict_regression, confusion_matrix, scatterplot,
-    summarize)
+    summarize, metatable)
 from .visuals import _custom_palettes
 from ._format import (SampleEstimatorDirFmt,
                       BooleanSeriesFormat,
@@ -487,6 +487,36 @@ plugin.visualizers.register_function(
          'trained estimator.',
     description='Summarize parameter and feature extraction information for a '
                 'trained estimator.'
+)
+
+
+plugin.pipelines.register_function(
+    function=metatable,
+    inputs=inputs,
+    parameters={'metadata': Metadata,
+                'missing_samples': parameters['base']['missing_samples']},
+    outputs=[('table', FeatureTable[Frequency])],
+    input_descriptions=input_descriptions,
+    parameter_descriptions={
+        'metadata': 'Metadata file to convert to feature table.',
+        'missing_samples': parameter_descriptions['base']['missing_samples'],
+    },
+    output_descriptions={'table': 'Converted feature table'},
+    name='Convert (and merge) positive numeric metadata (in)to feature table.',
+    description='Convert numeric sample metadata from TSV file into a feature '
+                'table. Optionally merge with an existing feature table. Only '
+                'numeric metadata will be converted; categorical columns will '
+                'be silently dropped. By default, if a table is used as input '
+                'only samples found in both the table and metadata '
+                '(intersection) are merged, and others are silently dropped. '
+                'Set missing_samples="error" to raise an error if samples '
+                'found in the table are missing from the metadata file. The '
+                'metadata file can always contain a superset of samples. Note '
+                'that columns will be dropped if they are non-numeric, '
+                'contain only unique values, contain no unique values (zero '
+                'variance), contain only empty cells, or contain negative '
+                'values. This method currently only converts '
+                'postive numeric metadata into feature data.'
 )
 
 

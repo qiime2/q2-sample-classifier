@@ -37,6 +37,48 @@ defaults = {
 }
 
 
+def metatable(ctx,
+              metadata,
+              table=None,
+              missing_samples='ignore'):
+    # gather numeric metadata
+    metadata = metadata.filter_columns(
+        column_type='numeric', drop_all_unique=True, drop_zero_variance=True,
+        drop_all_missing=True)
+    if metadata.column_count == 0:
+        raise ValueError('All metadata columns have been filtered.')
+
+    # only retain IDs that intersect with table
+    if table is not None:
+        tab = table.view(biom.Table)
+        table_ids = set(tab.ids())
+        metadata_ids = set(metadata.ids)
+        sample_ids = table_ids.intersection(metadata_ids)
+        if missing_samples == 'error' and len(sample_ids) != len(table_ids):
+            raise ValueError('Missing samples in metadata: %r' %
+                             table_ids.difference(metadata_ids))
+        else:
+            metadata = metadata.filter_ids(sample_ids)
+        if len(sample_ids) < len(table_ids):
+            tab = tab.filter(
+                ids_to_keep=sample_ids, axis='sample', inplace=False)
+            table = ctx.make_artifact('FeatureTable[Frequency]', tab)
+
+    # convert to FeatureTable[Frequency]
+    metadata = metadata.to_dataframe().T
+    metadata = biom.table.Table(
+        metadata.values, metadata.index, metadata.columns)
+    metatab = ctx.make_artifact('FeatureTable[Frequency]', metadata)
+
+    # optionally merge with existing feature table
+    if table is not None:
+        merge = ctx.get_action('feature_table', 'merge')
+        metatab, = merge(
+            [table, metatab], overlap_method='error_on_overlapping_feature')
+
+    return metatab
+
+
 def classify_samples_from_dist(ctx, distance_matrix, metadata, k=1,
                                palette=defaults['palette']):
     ''' Returns knn classifier results from a distance matrix.'''
