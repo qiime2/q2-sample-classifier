@@ -516,7 +516,9 @@ plugin.pipelines.register_function(
                 'contain only unique values, contain no unique values (zero '
                 'variance), contain only empty cells, or contain negative '
                 'values. This method currently only converts '
-                'postive numeric metadata into feature data.'
+                'postive numeric metadata into feature data. Tip: convert '
+                'categorical columns to dummy variables to include them in '
+                'the output feature table.'
 )
 
 
