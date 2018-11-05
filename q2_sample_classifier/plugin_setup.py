@@ -495,13 +495,13 @@ plugin.pipelines.register_function(
     inputs=inputs,
     parameters={'metadata': Metadata,
                 'missing_samples': parameters['base']['missing_samples']},
-    outputs=[('table', FeatureTable[Frequency])],
+    outputs=[('converted_table', FeatureTable[Frequency])],
     input_descriptions=input_descriptions,
     parameter_descriptions={
         'metadata': 'Metadata file to convert to feature table.',
         'missing_samples': parameter_descriptions['base']['missing_samples'],
     },
-    output_descriptions={'table': 'Converted feature table'},
+    output_descriptions={'converted_table': 'Converted feature table'},
     name='Convert (and merge) positive numeric metadata (in)to feature table.',
     description='Convert numeric sample metadata from TSV file into a feature '
                 'table. Optionally merge with an existing feature table. Only '
