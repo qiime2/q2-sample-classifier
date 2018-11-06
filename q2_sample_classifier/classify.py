@@ -46,6 +46,8 @@ def metatable(ctx,
     metadata = metadata.filter_columns(
         column_type='numeric', drop_all_unique=True, drop_zero_variance=True,
         drop_all_missing=True).to_dataframe()
+    # drop columns with negative values
+    metadata = metadata[-(metadata < 0).any(axis=1)]
 
     if missing_values == 'drop_samples':
         metadata = metadata.dropna(axis=0)
@@ -64,6 +66,9 @@ def metatable(ctx,
         raise ValueError('All metadata columns have been filtered.')
     if len(metadata.index) == 0:
         raise ValueError('All metadata samples have been filtered.')
+    print(metadata)
+    print(len(metadata.columns))
+    print(len(metadata.index))
 
     # only retain IDs that intersect with table
     if table is not None:

@@ -986,6 +986,20 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
                 self.md2.filter_ids(['b', 'c']), self.tab,
                 missing_values='drop_samples')
 
+    def test_metatable_no_samples_after_filtering(self):
+        junk_md = pd.DataFrame(
+            {'trash': ['a', 'a', 'b', 'b', 'b', 'junk'],
+             'floats': [np.nan, np.nan, np.nan, 1.8, 1000.1, 0.1],
+             'ints': [0, 1, 2, np.nan, 2, 0],
+             'nans': [1, 1, 2, 2, np.nan, np.nan],
+             'negatives': [-7, -4, -1.2, -4, -9, -1]},
+            index=['a', 'b', 'c', 'd', 'e', 'peanut'])
+        junk_md.index.name = 'SampleID'
+        junk_md = qiime2.Metadata(junk_md)
+        with self.assertRaisesRegex(ValueError, "All metadata samples"):
+            sample_classifier.actions.metatable(
+                junk_md, missing_values='drop_samples')
+
 
 class SampleEstimatorTestBase(SampleClassifierTestPluginBase):
     package = 'q2_sample_classifier.tests'
