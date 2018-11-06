@@ -494,12 +494,19 @@ plugin.pipelines.register_function(
     function=metatable,
     inputs=inputs,
     parameters={'metadata': Metadata,
-                'missing_samples': parameters['base']['missing_samples']},
+                'missing_samples': parameters['base']['missing_samples'],
+                'missing_values': Str % Choices(
+                    ['drop_samples', 'drop_features', 'error', 'fill'])},
     outputs=[('converted_table', FeatureTable[Frequency])],
     input_descriptions=input_descriptions,
     parameter_descriptions={
         'metadata': 'Metadata file to convert to feature table.',
         'missing_samples': parameter_descriptions['base']['missing_samples'],
+        'missing_values': (
+            'How to handle missing values (nans) in metadata. Either '
+            '"drop_samples" with missing values, "drop_features" with missing '
+            'values, "fill" missing values with zeros, or "error" if '
+            'any missing values are found.')
     },
     output_descriptions={'converted_table': 'Converted feature table'},
     name='Convert (and merge) positive numeric metadata (in)to feature table.',

@@ -40,32 +40,49 @@ defaults = {
 def metatable(ctx,
               metadata,
               table=None,
-              missing_samples='ignore'):
+              missing_samples='ignore',
+              missing_values='error'):
     # gather numeric metadata
     metadata = metadata.filter_columns(
         column_type='numeric', drop_all_unique=True, drop_zero_variance=True,
-        drop_all_missing=True)
-    if metadata.column_count == 0:
+        drop_all_missing=True).to_dataframe()
+
+    if missing_values == 'drop_samples':
+        metadata = metadata.dropna(axis=0)
+    elif missing_values == 'drop_features':
+        metadata = metadata.dropna(axis=1)
+    elif missing_values == 'error' and metadata.isnull().values.any():
+        raise ValueError('You are attempting to coerce metadata containing '
+                         'missing values into a feature table! These may '
+                         'cause fatal errors downstream and must be removed '
+                         'or converted to 0. See the missing_values parameter '
+                         'to review your options.')
+    elif missing_values == 'fill':
+        metadata = metadata.fillna(0.)
+
+    if len(metadata.columns) == 0:
         raise ValueError('All metadata columns have been filtered.')
+    if len(metadata.index) == 0:
+        raise ValueError('All metadata samples have been filtered.')
 
     # only retain IDs that intersect with table
     if table is not None:
         tab = table.view(biom.Table)
         table_ids = set(tab.ids())
-        metadata_ids = set(metadata.ids)
+        metadata_ids = set(metadata.index)
         sample_ids = table_ids.intersection(metadata_ids)
         if missing_samples == 'error' and len(sample_ids) != len(table_ids):
             raise ValueError('Missing samples in metadata: %r' %
                              table_ids.difference(metadata_ids))
         else:
-            metadata = metadata.filter_ids(sample_ids)
+            metadata = metadata.loc[sample_ids]
         if len(sample_ids) < len(table_ids):
             tab = tab.filter(
                 ids_to_keep=sample_ids, axis='sample', inplace=False)
             table = ctx.make_artifact('FeatureTable[Frequency]', tab)
 
     # convert to FeatureTable[Frequency]
-    metadata = metadata.to_dataframe().T
+    metadata = metadata.T
     metadata = biom.table.Table(
         metadata.values, metadata.index, metadata.columns)
     metatab = ctx.make_artifact('FeatureTable[Frequency]', metadata)

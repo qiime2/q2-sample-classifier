@@ -889,6 +889,7 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
         md2 = pd.DataFrame({'trash': ['a', 'a', 'b', 'b', 'b', 'junk'],
                             'floats': [0.1, 0.1, 1.3, 1.8, 1000.1, 0.1],
                             'ints': [0, 1, 2, 2, 2, 0],
+                            'nans': [1, 1, 2, 2, np.nan, np.nan],
                             'negatives': [-7, -3, -1.2, -4, -9, -1]},
                            index=['a', 'b', 'c', 'd', 'e', 'peanut'])
         md2.index.name = 'SampleID'
@@ -906,7 +907,41 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
                       [0, 1, 2, 2, 2, 0]]),
             observation_ids=['floats', 'ints'],
             sample_ids=['a', 'b', 'c', 'd', 'e', 'peanut'])
-        res, = sample_classifier.actions.metatable(self.md2)
+        res, = sample_classifier.actions.metatable(
+            self.md2, missing_values='drop_features')
+        report = res.view(biom.Table).descriptive_equality(exp)
+        self.assertIn('Tables appear equal', report, report)
+
+    def test_metatable_missing_error(self):
+        with self.assertRaisesRegex(ValueError, "missing values"):
+            sample_classifier.actions.metatable(
+                self.md2, missing_values='error')
+
+    def test_metatable_drop_samples(self):
+        exp = biom.Table(
+            np.array([[3, 6, 7, 3], [3, 4, 5, 6], [8, 6, 4, 1],
+                      [8, 6, 4, 1], [8, 6, 4, 1],
+                      [0.1, 0.1, 1.3, 1.8],
+                      [0, 1, 2, 2], [1, 1, 2, 2]]),
+            observation_ids=['v', 'w', 'x', 'y', 'z', 'floats', 'ints',
+                             'nans'],
+            sample_ids=['a', 'b', 'c', 'd'])
+        res, = sample_classifier.actions.metatable(
+            self.md2, self.tab, missing_values='drop_samples')
+        report = res.view(biom.Table).descriptive_equality(exp)
+        self.assertIn('Tables appear equal', report, report)
+
+    def test_metatable_fill_na(self):
+        exp = biom.Table(
+            np.array([[3, 6, 7, 3, 6], [3, 4, 5, 6, 2], [8, 6, 4, 1, 0],
+                      [8, 6, 4, 1, 0], [8, 6, 4, 1, 0],
+                      [0.1, 0.1, 1.3, 1.8, 1000.1],
+                      [0, 1, 2, 2, 2], [1., 1., 2., 2., 0.]]),
+            observation_ids=['v', 'w', 'x', 'y', 'z', 'floats', 'ints',
+                             'nans'],
+            sample_ids=['a', 'b', 'c', 'd', 'e'])
+        res, = sample_classifier.actions.metatable(
+            self.md2, self.tab, missing_values='fill')
         report = res.view(biom.Table).descriptive_equality(exp)
         self.assertIn('Tables appear equal', report, report)
 
@@ -918,7 +953,8 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
                       [0, 1, 2, 2, 2]]),
             observation_ids=['v', 'w', 'x', 'y', 'z', 'floats', 'ints'],
             sample_ids=['a', 'b', 'c', 'd', 'e'])
-        res, = sample_classifier.actions.metatable(self.md2, self.tab)
+        res, = sample_classifier.actions.metatable(
+            self.md2, self.tab, missing_values='drop_features')
         report = res.view(biom.Table).descriptive_equality(exp)
         self.assertIn('Tables appear equal', report, report)
 
@@ -926,11 +962,13 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
         exp = biom.Table(
             np.array([[3, 6, 7, 3], [3, 4, 5, 6], [8, 6, 4, 1],
                       [8, 6, 4, 1], [8, 6, 4, 1], [0.1, 0.1, 1.3, 1.8],
-                      [0, 1, 2, 2]]),
-            observation_ids=['v', 'w', 'x', 'y', 'z', 'floats', 'ints'],
+                      [0, 1, 2, 2], [1., 1., 2., 2.]]),
+            observation_ids=['v', 'w', 'x', 'y', 'z', 'floats', 'ints',
+                             'nans'],
             sample_ids=['a', 'b', 'c', 'd'])
         res, = sample_classifier.actions.metatable(
-            self.md2.filter_ids(['a', 'b', 'c', 'd']), self.tab)
+            self.md2.filter_ids(['a', 'b', 'c', 'd']), self.tab,
+            missing_values='error')
         report = res.view(biom.Table).descriptive_equality(exp)
         self.assertIn('Tables appear equal', report, report)
 
@@ -938,13 +976,15 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
         with self.assertRaisesRegex(ValueError, "Missing samples"):
             sample_classifier.actions.metatable(
                 self.md2.filter_ids(['a', 'b', 'c', 'd']),
-                self.tab, missing_samples='error')
+                self.tab, missing_samples='error',
+                missing_values='drop_samples')
 
     def test_metatable_empty_metadata_after_filtering(self):
         with self.assertRaisesRegex(
                 ValueError, "All metadata"):  # are belong to us
             sample_classifier.actions.metatable(
-                self.md2.filter_ids(['b', 'c']), self.tab)
+                self.md2.filter_ids(['b', 'c']), self.tab,
+                missing_values='drop_samples')
 
 
 class SampleEstimatorTestBase(SampleClassifierTestPluginBase):
