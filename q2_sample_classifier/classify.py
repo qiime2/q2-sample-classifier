@@ -66,9 +66,6 @@ def metatable(ctx,
         raise ValueError('All metadata columns have been filtered.')
     if len(metadata.index) == 0:
         raise ValueError('All metadata samples have been filtered.')
-    print(metadata)
-    print(len(metadata.columns))
-    print(len(metadata.index))
 
     # only retain IDs that intersect with table
     if table is not None:
