@@ -13,15 +13,14 @@ build:
   script: make install
 
 requirements:
-  build:
-    - python 3.5*
+  host:
+    - python {{ python }}
     - setuptools
 
   run:
-    - python 3.5*
-    - setuptools
+    - python {{ python }}
     - pandas
-    - scipy 0.19.1
+    - scipy
     - scikit-learn
     - scikit-bio
     - seaborn >=0.8
