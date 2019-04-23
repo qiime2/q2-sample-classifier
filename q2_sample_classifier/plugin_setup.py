@@ -15,12 +15,13 @@ from q2_types.feature_table import FeatureTable, Frequency
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
 from q2_types.distance_matrix import DistanceMatrix
+from q2_feature_table import heatmap_choices
 from .classify import (
     classify_samples, classify_samples_from_dist, regress_samples,
     regress_samples_ncv,
     classify_samples_ncv, fit_classifier, fit_regressor, split_table,
     predict_classification, predict_regression, confusion_matrix, scatterplot,
-    summarize, metatable)
+    summarize, metatable, heatmap)
 from .visuals import _custom_palettes
 from ._format import (SampleEstimatorDirFmt,
                       BooleanSeriesFormat,
@@ -526,6 +527,55 @@ plugin.pipelines.register_function(
                 'postive numeric metadata into feature data. Tip: convert '
                 'categorical columns to dummy variables to include them in '
                 'the output feature table.'
+)
+
+
+plugin.pipelines.register_function(
+    function=heatmap,
+    inputs={**inputs, 'importance': FeatureData[Importance]},
+    parameters={'metadata': MetadataColumn[Categorical],
+                'feature_count': Int % Range(0, None),
+                'importance_threshold': Float % Range(0, None),
+                'group_samples': Bool,
+                'normalize': Bool,
+                'metric': Str % Choices(heatmap_choices['metric']),
+                'method': Str % Choices(heatmap_choices['method']),
+                'cluster': Str % Choices(heatmap_choices['cluster']),
+                'color_scheme': Str % Choices(heatmap_choices['color_scheme']),
+                },
+    outputs=[('heatmap', Visualization),
+             ('filtered_table', FeatureTable[Frequency])],
+    input_descriptions={**input_descriptions,
+                        'importance': 'Feature importances.'},
+    parameter_descriptions={
+        'metadata': 'Metadata file to convert to feature table.',
+        'feature_count': 'Filter feature table to include top N most '
+                         'important features. Set to zero to include all '
+                         'features.',
+        'importance_threshold': 'Filter feature table to exclude any features '
+                                'with an importance score less than this '
+                                'threshold. Set to zero to include all '
+                                'features.',
+        'group_samples': 'Group samples by metadata.',
+        'normalize': 'Normalize the feature table by adding a psuedocount '
+                     'of 1 and then taking the log10 of the table.',
+        'metric': 'Metrics exposed by seaborn (see http://seaborn.pydata.org/'
+                  'generated/seaborn.clustermap.html#seaborn.clustermap for '
+                  'more detail).',
+        'method': 'Clustering methods exposed by seaborn (see http://seaborn.'
+                  'pydata.org/generated/seaborn.clustermap.html#seaborn.clust'
+                  'ermap for more detail).',
+        'cluster': 'Specify which axes to cluster.',
+        'color_scheme': 'Color scheme for heatmap.',
+    },
+    output_descriptions={
+        'heatmap': 'Heatmap of important features.',
+        'filtered_table': 'Filtered feature table containing data displayed '
+                          'in your lovely new heatmap.'},
+    name='Generate heatmap of important features.',
+    description='Generate a heatmap of important features. Features are '
+                'filtered based on importance scores; samples are optionally '
+                'grouped by metadata; and a lovely new heatmap is born.'
 )
 
 

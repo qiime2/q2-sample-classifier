@@ -350,6 +350,52 @@ def summarize(output_dir: str, sample_estimator: Pipeline):
     _summarize_estimator(output_dir, sample_estimator)
 
 
+def heatmap(ctx, table, importance, metadata=None, feature_count=0,
+            importance_threshold=0, group_samples=False, normalize=True,
+            metric='braycurtis', method='average', cluster='features',
+            color_scheme='rocket'):
+    filter_features = ctx.get_action('feature_table', 'filter_features')
+    group = ctx.get_action('feature_table', 'group')
+    make_heatmap = ctx.get_action('feature_table', 'heatmap')
+
+    if group_samples and metadata is None:
+        raise ValueError(
+            'If group_samples is True, you must provide metadata.')
+
+    clustermap_params = {
+        'cluster': cluster, 'normalize': normalize, 'metric': metric,
+        'method': method, 'color_scheme': color_scheme}
+
+    # load importance data and sum rows (to average importances if there are
+    # multiple scores).
+    importance = importance.view(pd.DataFrame)
+    importance = importance.sum(1)
+
+    # filter importances by user criteria
+    importance = importance.sort_values(ascending=False)
+    if importance_threshold > 0:
+        importance = importance[importance > importance_threshold]
+    if feature_count > 0:
+        importance = importance[:feature_count]
+    importance.name = 'importance'
+    importance = qiime2.Metadata(importance.to_frame())
+
+    # filter features by importance
+    table, = filter_features(table, metadata=importance)
+
+    # optionally group feature table by sample metadata
+    # otherwise annotate heatmap with sample metadata
+    if group_samples:
+        table, = group(table, metadata=metadata, axis='sample', mode='sum')
+    elif metadata is not None:
+        clustermap_params['metadata'] = metadata
+
+    # make yer heatmap
+    clustermap, = make_heatmap(table, **clustermap_params)
+
+    return clustermap, table
+
+
 # The following method is experimental and is not registered in the current
 # release. Any use of the API is at user's own risk.
 def detect_outliers(table: biom.Table,
