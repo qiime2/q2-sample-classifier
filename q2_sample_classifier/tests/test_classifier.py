@@ -896,13 +896,13 @@ class TestHeatmap(SampleClassifierTestPluginBase):
             importance_threshold=0.017)
         self.assertEqual(table.view(biom.Table).shape, (10, 121))
 
-    # def test_heatmap_feature_count(self):
+    def test_heatmap_feature_count(self):
         heatmap, table, = sample_classifier.actions.heatmap(
             self.table_ecam, self.imp, self.md_ecam, group_samples=True,
             feature_count=20)
         self.assertEqual(table.view(biom.Table).shape, (20, 2))
 
-    # def test_heatmap_must_group_or_die(self):
+    def test_heatmap_must_group_or_die(self):
         with self.assertRaisesRegex(ValueError, "must provide metadata"):
             heatmap, table, = sample_classifier.actions.heatmap(
                 self.table_ecam, self.imp, metadata=None, group_samples=True)
