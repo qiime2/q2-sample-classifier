@@ -44,7 +44,7 @@ from q2_types.feature_data import FeatureData
 import pkg_resources
 from qiime2.plugin.testing import TestPluginBase
 from qiime2.plugin import ValidationError
-from qiime2.plugins import sample_classifier
+from qiime2.plugins import sample_classifier, feature_table
 import sklearn
 from sklearn.metrics import mean_squared_error, accuracy_score
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
@@ -868,6 +868,45 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         mse = mean_squared_error(exp, pred)
         self.assertAlmostEqual(
             mse, seeded_predict_results['RandomForestRegressor'])
+
+
+class TestHeatmap(SampleClassifierTestPluginBase):
+
+    def setUp(self):
+        super().setUp()
+        md_ecam = self.get_data_path('ecam_map_maturity.txt')
+        md_ecam = qiime2.Metadata.load(md_ecam)
+        self.md_ecam = md_ecam.get_column('delivery')
+        table_ecam = self.get_data_path('ecam-table-maturity.qza')
+        table_ecam = qiime2.Artifact.load(table_ecam)
+        self.table_ecam, = feature_table.actions.filter_samples(
+            table_ecam, metadata=md_ecam)
+        imp = pd.DataFrame.from_csv(
+            self.get_data_path('importance.tsv'), sep='\t')
+        self.imp = qiime2.Artifact.import_data('FeatureData[Importance]', imp)
+
+    def test_heatmap_default_feature_count_zero(self):
+        heatmap, table, = sample_classifier.actions.heatmap(
+            self.table_ecam, self.imp, self.md_ecam, group_samples=True,
+            feature_count=0)
+        self.assertEqual(table.view(biom.Table).shape, (1056, 2))
+
+    def test_heatmap_importance_threshold(self):
+        heatmap, table, = sample_classifier.actions.heatmap(
+            self.table_ecam, self.imp, self.md_ecam,
+            importance_threshold=0.017, group_samples=False, feature_count=0)
+        self.assertEqual(table.view(biom.Table).shape, (10, 121))
+
+    def test_heatmap_feature_count(self):
+        heatmap, table, = sample_classifier.actions.heatmap(
+            self.table_ecam, self.imp, self.md_ecam, group_samples=True,
+            feature_count=20)
+        self.assertEqual(table.view(biom.Table).shape, (20, 2))
+
+    def test_heatmap_must_group_or_die(self):
+        with self.assertRaisesRegex(ValueError, "metadata are not optional"):
+            heatmap, table, = sample_classifier.actions.heatmap(
+                self.table_ecam, self.imp, metadata=None, group_samples=True)
 
 
 class NowLetsTestTheActions(SampleClassifierTestPluginBase):
