@@ -885,15 +885,16 @@ class TestHeatmap(SampleClassifierTestPluginBase):
             self.get_data_path('importance.tsv'), sep='\t')
         self.imp = qiime2.Artifact.import_data('FeatureData[Importance]', imp)
 
-    def test_heatmap_default(self):
+    def test_heatmap_default_feature_count_zero(self):
         heatmap, table, = sample_classifier.actions.heatmap(
-            self.table_ecam, self.imp, self.md_ecam, group_samples=True)
+            self.table_ecam, self.imp, self.md_ecam, group_samples=True,
+            feature_count=0)
         self.assertEqual(table.view(biom.Table).shape, (1056, 2))
 
     def test_heatmap_importance_threshold(self):
         heatmap, table, = sample_classifier.actions.heatmap(
             self.table_ecam, self.imp, self.md_ecam,
-            importance_threshold=0.017, group_samples=False)
+            importance_threshold=0.017, group_samples=False, feature_count=0)
         self.assertEqual(table.view(biom.Table).shape, (10, 121))
 
     def test_heatmap_feature_count(self):
@@ -903,7 +904,7 @@ class TestHeatmap(SampleClassifierTestPluginBase):
         self.assertEqual(table.view(biom.Table).shape, (20, 2))
 
     def test_heatmap_must_group_or_die(self):
-        with self.assertRaisesRegex(ValueError, "must provide metadata"):
+        with self.assertRaisesRegex(ValueError, "metadata are not optional"):
             heatmap, table, = sample_classifier.actions.heatmap(
                 self.table_ecam, self.imp, metadata=None, group_samples=True)
 

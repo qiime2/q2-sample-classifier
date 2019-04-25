@@ -351,7 +351,7 @@ def summarize(output_dir: str, sample_estimator: Pipeline):
 
 
 def heatmap(ctx, table, importance, metadata=None, feature_count=50,
-            importance_threshold=0, group_samples=True, normalize=True,
+            importance_threshold=0, group_samples=False, normalize=True,
             metric='braycurtis', method='average', cluster='features',
             color_scheme='rocket'):
     filter_features = ctx.get_action('feature_table', 'filter_features')
@@ -360,7 +360,7 @@ def heatmap(ctx, table, importance, metadata=None, feature_count=50,
 
     if group_samples and metadata is None:
         raise ValueError(
-            'If group_samples is True, you must provide metadata.')
+            'If group_samples is enabled, metadata are not optional.')
 
     clustermap_params = {
         'cluster': cluster, 'normalize': normalize, 'metric': metric,

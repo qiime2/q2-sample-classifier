@@ -571,11 +571,12 @@ plugin.pipelines.register_function(
     output_descriptions={
         'heatmap': 'Heatmap of important features.',
         'filtered_table': 'Filtered feature table containing data displayed '
-                          'in your lovely new heatmap.'},
+                          'in heatmap.'},
     name='Generate heatmap of important features.',
     description='Generate a heatmap of important features. Features are '
                 'filtered based on importance scores; samples are optionally '
-                'grouped by metadata; and a lovely new heatmap is born.'
+                'grouped by metadata; and a heatmap is generated that '
+                'displays (normalized) feature abundances per sample.'
 )
 
 
