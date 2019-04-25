@@ -893,7 +893,7 @@ class TestHeatmap(SampleClassifierTestPluginBase):
     def test_heatmap_importance_threshold(self):
         heatmap, table, = sample_classifier.actions.heatmap(
             self.table_ecam, self.imp, self.md_ecam,
-            importance_threshold=0.017)
+            importance_threshold=0.017, group_samples=False)
         self.assertEqual(table.view(biom.Table).shape, (10, 121))
 
     def test_heatmap_feature_count(self):

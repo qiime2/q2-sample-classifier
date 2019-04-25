@@ -350,8 +350,8 @@ def summarize(output_dir: str, sample_estimator: Pipeline):
     _summarize_estimator(output_dir, sample_estimator)
 
 
-def heatmap(ctx, table, importance, metadata=None, feature_count=0,
-            importance_threshold=0, group_samples=False, normalize=True,
+def heatmap(ctx, table, importance, metadata=None, feature_count=50,
+            importance_threshold=0, group_samples=True, normalize=True,
             metric='braycurtis', method='average', cluster='features',
             color_scheme='rocket'):
     filter_features = ctx.get_action('feature_table', 'filter_features')
