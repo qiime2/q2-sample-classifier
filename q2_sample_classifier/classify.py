@@ -1,11 +1,12 @@
 # ----------------------------------------------------------------------------
-# Copyright (c) 2017-2018, QIIME 2 development team.
+# Copyright (c) 2017-2019, QIIME 2 development team.
 #
 # Distributed under the terms of the Modified BSD License.
 #
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
+import collections
 
 from sklearn.ensemble import IsolationForest
 from sklearn.metrics import mean_squared_error, accuracy_score
@@ -15,14 +16,12 @@ from sklearn.pipeline import Pipeline
 import qiime2
 import pandas as pd
 import biom
+import skbio
 
-from .utilities import (split_optimize_classify, _visualize, _load_data,
-                        _maz_score, _visualize_maturity_index,
-                        _set_parameters_and_estimator, _prepare_training_data,
-                        _disable_feature_selection, _select_estimator,
+from .utilities import (_load_data, _prepare_training_data,
                         nested_cross_validation, _fit_estimator,
-                        _map_params_to_pipeline, _extract_features,
-                        _plot_accuracy, _summarize_estimator)
+                        _extract_features, _plot_accuracy,
+                        _summarize_estimator)
 
 
 defaults = {
@@ -36,6 +35,105 @@ defaults = {
     'palette': 'sirocco',
     'missing_samples': 'error'
 }
+
+
+def metatable(ctx,
+              metadata,
+              table=None,
+              missing_samples='ignore',
+              missing_values='error'):
+    # gather numeric metadata
+    metadata = metadata.filter_columns(
+        column_type='numeric', drop_all_unique=True, drop_zero_variance=True,
+        drop_all_missing=True).to_dataframe()
+    # drop columns with negative values
+    metadata = metadata[-(metadata < 0).any(axis=1)]
+
+    if missing_values == 'drop_samples':
+        metadata = metadata.dropna(axis=0)
+    elif missing_values == 'drop_features':
+        metadata = metadata.dropna(axis=1)
+    elif missing_values == 'error' and metadata.isnull().values.any():
+        raise ValueError('You are attempting to coerce metadata containing '
+                         'missing values into a feature table! These may '
+                         'cause fatal errors downstream and must be removed '
+                         'or converted to 0. See the missing_values parameter '
+                         'to review your options.')
+    elif missing_values == 'fill':
+        metadata = metadata.fillna(0.)
+
+    if len(metadata.columns) == 0:
+        raise ValueError('All metadata columns have been filtered.')
+    if len(metadata.index) == 0:
+        raise ValueError('All metadata samples have been filtered.')
+
+    # only retain IDs that intersect with table
+    if table is not None:
+        tab = table.view(biom.Table)
+        table_ids = set(tab.ids())
+        metadata_ids = set(metadata.index)
+        sample_ids = table_ids.intersection(metadata_ids)
+        if missing_samples == 'error' and len(sample_ids) != len(table_ids):
+            raise ValueError('Missing samples in metadata: %r' %
+                             table_ids.difference(metadata_ids))
+        else:
+            metadata = metadata.loc[sample_ids]
+        if len(sample_ids) < len(table_ids):
+            tab = tab.filter(
+                ids_to_keep=sample_ids, axis='sample', inplace=False)
+            table = ctx.make_artifact('FeatureTable[Frequency]', tab)
+
+    # convert to FeatureTable[Frequency]
+    metadata = metadata.T
+    metadata = biom.table.Table(
+        metadata.values, metadata.index, metadata.columns)
+    metatab = ctx.make_artifact('FeatureTable[Frequency]', metadata)
+
+    # optionally merge with existing feature table
+    if table is not None:
+        merge = ctx.get_action('feature_table', 'merge')
+        metatab, = merge(
+            [table, metatab], overlap_method='error_on_overlapping_feature')
+
+    return metatab
+
+
+def classify_samples_from_dist(ctx, distance_matrix, metadata, k=1,
+                               palette=defaults['palette']):
+    ''' Returns knn classifier results from a distance matrix.'''
+    distance_matrix = distance_matrix.view(skbio.DistanceMatrix)
+    predictions = []
+    metadata_series = metadata.to_series()
+    for i, row in enumerate(distance_matrix):
+        dists = []
+        categories = []
+        for j, dist in enumerate(row):
+            if j == i:
+                continue  # exclude self
+            dists.append(dist)
+            categories.append(metadata_series[distance_matrix.ids[j]])
+
+        # k-long series of (category: dist) ordered small -> large
+        nn_categories = pd.Series(dists, index=categories).nsmallest(k)
+        counter = collections.Counter(nn_categories.index)
+        max_counts = max(counter.values())
+        # in order of closeness, pick a category that is or shares
+        # max_counts
+        for category in nn_categories.index:
+            if counter[category] == max_counts:
+                predictions.append(category)
+                break
+
+    predictions = pd.Series(predictions, index=distance_matrix.ids)
+    predictions.index.name = 'SampleID'
+    pred = qiime2.Artifact.import_data(
+        'SampleData[ClassifierPredictions]', predictions)
+
+    confusion = ctx.get_action('sample_classifier', 'confusion_matrix')
+    accuracy_results, = confusion(
+        pred, metadata, missing_samples='ignore', palette=palette)
+
+    return pred, accuracy_results
 
 
 def classify_samples(ctx,
@@ -116,56 +214,15 @@ def regress_samples(ctx,
     return sample_estimator, importance, predictions, summary, accuracy_results
 
 
-# this action has been replaced by the classify_samples pipeline and is no
-# longer registered. Will be removed in a separate PR.
-def classify_samples_basic(output_dir: str, table: biom.Table,
-                           metadata: qiime2.CategoricalMetadataColumn,
-                           test_size: float=defaults['test_size'],
-                           step: float=defaults['step'],
-                           cv: int=defaults['cv'], random_state: int=None,
-                           n_jobs: int=defaults['n_jobs'],
-                           n_estimators: int=defaults['n_estimators'],
-                           estimator: str=defaults['estimator_c'],
-                           optimize_feature_selection: bool=False,
-                           parameter_tuning: bool=False,
-                           palette: str=defaults['palette'],
-                           missing_samples: str=defaults['missing_samples']
-                           ) -> None:
-
-    # extract column name from CategoricalMetadataColumn
-    column = metadata.name
-
-    # disable feature selection for unsupported estimators
-    optimize_feature_selection, calc_feature_importance = \
-        _disable_feature_selection(estimator, optimize_feature_selection)
-
-    # specify parameters and distributions to sample from for parameter tuning
-    estimator, param_dist, parameter_tuning = _set_parameters_and_estimator(
-        estimator, table, metadata, column, n_estimators, n_jobs, cv,
-        random_state, parameter_tuning, classification=True,
-        missing_samples=missing_samples)
-
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, column, estimator, output_dir,
-        test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
-        parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=calc_feature_importance, palette=palette,
-        missing_samples=missing_samples)
-
-    _visualize(output_dir, estimator, cm, importances,
-               optimize_feature_selection, title='classification predictions')
-
-
 def fit_classifier(table: biom.Table,
                    metadata: qiime2.CategoricalMetadataColumn,
-                   step: float=defaults['step'], cv: int=defaults['cv'],
-                   random_state: int=None, n_jobs: int=defaults['n_jobs'],
-                   n_estimators: int=defaults['n_estimators'],
-                   estimator: str=defaults['estimator_c'],
-                   optimize_feature_selection: bool=False,
-                   parameter_tuning: bool=False,
-                   missing_samples: str=defaults['missing_samples']
+                   step: float = defaults['step'], cv: int = defaults['cv'],
+                   random_state: int = None, n_jobs: int = defaults['n_jobs'],
+                   n_estimators: int = defaults['n_estimators'],
+                   estimator: str = defaults['estimator_c'],
+                   optimize_feature_selection: bool = False,
+                   parameter_tuning: bool = False,
+                   missing_samples: str = defaults['missing_samples']
                    ) -> (Pipeline, pd.DataFrame):
     estimator, importance = _fit_estimator(
         table, metadata, estimator, n_estimators, step, cv, random_state,
@@ -177,13 +234,13 @@ def fit_classifier(table: biom.Table,
 
 def fit_regressor(table: biom.Table,
                   metadata: qiime2.CategoricalMetadataColumn,
-                  step: float=defaults['step'], cv: int=defaults['cv'],
-                  random_state: int=None, n_jobs: int=defaults['n_jobs'],
-                  n_estimators: int=defaults['n_estimators'],
-                  estimator: str=defaults['estimator_r'],
-                  optimize_feature_selection: bool=False,
-                  parameter_tuning: bool=False,
-                  missing_samples: str=defaults['missing_samples']
+                  step: float = defaults['step'], cv: int = defaults['cv'],
+                  random_state: int = None, n_jobs: int = defaults['n_jobs'],
+                  n_estimators: int = defaults['n_estimators'],
+                  estimator: str = defaults['estimator_r'],
+                  optimize_feature_selection: bool = False,
+                  parameter_tuning: bool = False,
+                  missing_samples: str = defaults['missing_samples']
                   ) -> (Pipeline, pd.DataFrame):
     estimator, importance = _fit_estimator(
         table, metadata, estimator, n_estimators, step, cv, random_state,
@@ -191,47 +248,6 @@ def fit_regressor(table: biom.Table,
         missing_samples=missing_samples, classification=False)
 
     return estimator, importance
-
-
-# this action has been replaced by the regress_samples pipeline and is no
-# longer registered. Will be removed in a separate PR.
-def regress_samples_basic(output_dir: str, table: biom.Table,
-                          metadata: qiime2.NumericMetadataColumn,
-                          test_size: float=defaults['test_size'],
-                          step: float=defaults['step'],
-                          cv: int=defaults['cv'], random_state: int=None,
-                          n_jobs: int=defaults['n_jobs'],
-                          n_estimators: int=defaults['n_estimators'],
-                          estimator: str=defaults['estimator_r'],
-                          optimize_feature_selection: bool=False,
-                          stratify: str=False, parameter_tuning: bool=False,
-                          missing_samples: str=defaults['missing_samples']
-                          ) -> None:
-
-    # extract column name from NumericMetadataColumn
-    column = metadata.name
-
-    # disable feature selection for unsupported estimators
-    optimize_feature_selection, calc_feature_importance = \
-        _disable_feature_selection(estimator, optimize_feature_selection)
-
-    # specify parameters and distributions to sample from for parameter tuning
-    estimator, param_dist, parameter_tuning = _set_parameters_and_estimator(
-        estimator, table, metadata, column, n_estimators, n_jobs, cv,
-        random_state, parameter_tuning, classification=True,
-        missing_samples=missing_samples)
-
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table, metadata, column, estimator, output_dir,
-        test_size=test_size, step=step, cv=cv, random_state=random_state,
-        n_jobs=n_jobs, optimize_feature_selection=optimize_feature_selection,
-        parameter_tuning=parameter_tuning, param_dist=param_dist,
-        calc_feature_importance=calc_feature_importance,
-        scoring=mean_squared_error, stratify=stratify, classification=False,
-        missing_samples=missing_samples)
-
-    _visualize(output_dir, estimator, cm, importances,
-               optimize_feature_selection, title='regression predictions')
 
 
 def predict_base(table, sample_estimator, n_jobs):
@@ -253,24 +269,24 @@ def predict_base(table, sample_estimator, n_jobs):
 
 
 def predict_classification(table: biom.Table, sample_estimator: Pipeline,
-                           n_jobs: int=defaults['n_jobs']) -> pd.Series:
+                           n_jobs: int = defaults['n_jobs']) -> pd.Series:
     return predict_base(table, sample_estimator, n_jobs)
 
 
 def predict_regression(table: biom.Table, sample_estimator: Pipeline,
-                       n_jobs: int=defaults['n_jobs']) -> pd.Series:
+                       n_jobs: int = defaults['n_jobs']) -> pd.Series:
     return predict_base(table, sample_estimator, n_jobs)
 
 
 def split_table(table: biom.Table, metadata: qiime2.MetadataColumn,
-                test_size: float=defaults['test_size'], random_state: int=None,
-                stratify: str=True,
-                missing_samples: str=defaults['missing_samples']
+                test_size: float = defaults['test_size'],
+                random_state: int = None, stratify: str = True,
+                missing_samples: str = defaults['missing_samples']
                 ) -> (biom.Table, biom.Table):
     column = metadata.name
     X_train, X_test, y_train, y_test = _prepare_training_data(
         table, metadata, column, test_size, random_state, load_data=True,
-        stratify=True, missing_samples=missing_samples)
+        stratify=stratify, missing_samples=missing_samples)
     # TODO: we can consider returning the metadata (y_train, y_test) if a
     # SampleData[Metadata] type comes into existence. For now we will just
     # throw this out.
@@ -279,12 +295,12 @@ def split_table(table: biom.Table, metadata: qiime2.MetadataColumn,
 
 def regress_samples_ncv(
         table: biom.Table, metadata: qiime2.NumericMetadataColumn,
-        cv: int=defaults['cv'], random_state: int=None,
-        n_jobs: int=defaults['n_jobs'],
-        n_estimators: int=defaults['n_estimators'],
-        estimator: str=defaults['estimator_r'], stratify: str=False,
-        parameter_tuning: bool=False,
-        missing_samples: str=defaults['missing_samples']
+        cv: int = defaults['cv'], random_state: int = None,
+        n_jobs: int = defaults['n_jobs'],
+        n_estimators: int = defaults['n_estimators'],
+        estimator: str = defaults['estimator_r'], stratify: str = False,
+        parameter_tuning: bool = False,
+        missing_samples: str = defaults['missing_samples']
         ) -> (pd.Series, pd.DataFrame):
 
     y_pred, importances = nested_cross_validation(
@@ -296,12 +312,12 @@ def regress_samples_ncv(
 
 def classify_samples_ncv(
         table: biom.Table, metadata: qiime2.CategoricalMetadataColumn,
-        cv: int=defaults['cv'], random_state: int=None,
-        n_jobs: int=defaults['n_jobs'],
-        n_estimators: int=defaults['n_estimators'],
-        estimator: str=defaults['estimator_c'],
-        parameter_tuning: bool=False,
-        missing_samples: str=defaults['missing_samples']
+        cv: int = defaults['cv'], random_state: int = None,
+        n_jobs: int = defaults['n_jobs'],
+        n_estimators: int = defaults['n_estimators'],
+        estimator: str = defaults['estimator_c'],
+        parameter_tuning: bool = False,
+        missing_samples: str = defaults['missing_samples']
         ) -> (pd.Series, pd.DataFrame):
 
     y_pred, importances = nested_cross_validation(
@@ -313,7 +329,7 @@ def classify_samples_ncv(
 
 def scatterplot(output_dir: str, predictions: pd.Series,
                 truth: qiime2.NumericMetadataColumn,
-                missing_samples: str=defaults['missing_samples']) -> None:
+                missing_samples: str = defaults['missing_samples']) -> None:
     predictions = pd.to_numeric(predictions)
 
     _plot_accuracy(output_dir, predictions, truth, missing_samples,
@@ -323,8 +339,8 @@ def scatterplot(output_dir: str, predictions: pd.Series,
 
 def confusion_matrix(output_dir: str, predictions: pd.Series,
                      truth: qiime2.CategoricalMetadataColumn,
-                     missing_samples: str=defaults['missing_samples'],
-                     palette: str=defaults['palette']) -> None:
+                     missing_samples: str = defaults['missing_samples'],
+                     palette: str = defaults['palette']) -> None:
     _plot_accuracy(output_dir, predictions, truth, missing_samples,
                    classification=True, palette=palette,
                    plot_title='confusion matrix')
@@ -334,70 +350,61 @@ def summarize(output_dir: str, sample_estimator: Pipeline):
     _summarize_estimator(output_dir, sample_estimator)
 
 
-def maturity_index(output_dir: str, table: biom.Table,
-                   metadata: qiime2.Metadata, column: str, group_by: str,
-                   control: str, estimator: str=defaults['estimator_r'],
-                   n_estimators: int=defaults['n_estimators'],
-                   test_size: float=defaults['test_size'],
-                   step: float=defaults['step'], cv: int=defaults['cv'],
-                   random_state: int=None,
-                   n_jobs: int=defaults['n_jobs'], parameter_tuning: bool=True,
-                   optimize_feature_selection: bool=True, stratify: str=False,
-                   maz_stats: bool=True,
-                   missing_samples: str=defaults['missing_samples']) -> None:
+def heatmap(ctx, table, importance, metadata=None, feature_count=50,
+            importance_threshold=0, group_samples=False, normalize=True,
+            metric='braycurtis', method='average', cluster='features',
+            color_scheme='rocket'):
+    filter_features = ctx.get_action('feature_table', 'filter_features')
+    group = ctx.get_action('feature_table', 'group')
+    make_heatmap = ctx.get_action('feature_table', 'heatmap')
 
-    # select estimator
-    param_dist, estimator = _select_estimator(estimator, n_jobs, n_estimators)
-    estimator = Pipeline([('dv', DictVectorizer()), ('est', estimator)])
-    param_dist = _map_params_to_pipeline(param_dist)
+    if group_samples and metadata is None:
+        raise ValueError(
+            'If group_samples is enabled, metadata are not optional.')
 
-    # split input data into control and treatment groups
-    table, metadata = _load_data(
-        table, metadata, missing_samples=missing_samples, extract=False)
-    fancy_index = metadata[group_by] == control
-    md_control = metadata[fancy_index]
-    table_control = table.filter(md_control.index, inplace=False)
+    clustermap_params = {
+        'cluster': cluster, 'normalize': normalize, 'metric': metric,
+        'method': method, 'color_scheme': color_scheme}
 
-    # train model on control data
-    estimator, cm, accuracy, importances = split_optimize_classify(
-        table_control, md_control, column, estimator, output_dir,
-        random_state=random_state, n_jobs=n_jobs, test_size=test_size,
-        step=step, cv=cv, parameter_tuning=parameter_tuning,
-        optimize_feature_selection=optimize_feature_selection,
-        param_dist=param_dist, calc_feature_importance=True, load_data=False,
-        scoring=mean_squared_error, stratify=stratify, classification=False,
-        missing_samples='ignore')
+    # load importance data and sum rows (to average importances if there are
+    # multiple scores).
+    importance = importance.view(pd.DataFrame)
+    importance = importance.sum(1)
 
-    # predict treatment data
-    index = importances.index
-    table = _extract_features(table)
-    table = [{k: r[k] for k in r.keys() & index} for r in table]
-    y_pred = estimator.predict(table)
-    predicted_column = 'predicted {0}'.format(column)
-    metadata[predicted_column] = y_pred
+    # filter importances by user criteria
+    importance = importance.sort_values(ascending=False)
+    if importance_threshold > 0:
+        importance = importance[importance > importance_threshold]
+    if feature_count > 0:
+        importance = importance[:feature_count]
+    importance.name = 'importance'
+    importance = qiime2.Metadata(importance.to_frame())
 
-    # calculate MAZ score
-    metadata = _maz_score(
-        metadata, predicted_column, column, group_by, control)
+    # filter features by importance
+    table, = filter_features(table, metadata=importance)
 
-    # visualize
-    table = estimator.named_steps.dv.transform(table).todense()
-    table = pd.DataFrame(table, index=metadata.index,
-                         columns=estimator.named_steps.dv.get_feature_names())
-    _visualize_maturity_index(table, metadata, group_by, column,
-                              predicted_column, importances, estimator,
-                              accuracy, output_dir, maz_stats=maz_stats)
+    # optionally group feature table by sample metadata
+    # otherwise annotate heatmap with sample metadata
+    if group_samples:
+        table, = group(table, metadata=metadata, axis='sample', mode='sum')
+    elif metadata is not None:
+        clustermap_params['metadata'] = metadata
+
+    # make yer heatmap
+    clustermap, = make_heatmap(table, **clustermap_params)
+
+    return clustermap, table
 
 
 # The following method is experimental and is not registered in the current
 # release. Any use of the API is at user's own risk.
 def detect_outliers(table: biom.Table,
-                    metadata: qiime2.Metadata, subset_column: str=None,
-                    subset_value: str=None,
-                    n_estimators: int=defaults['n_estimators'],
-                    contamination: float=0.05, random_state: int=None,
-                    n_jobs: int=defaults['n_jobs'],
-                    missing_samples: str='ignore') -> (pd.Series):
+                    metadata: qiime2.Metadata, subset_column: str = None,
+                    subset_value: str = None,
+                    n_estimators: int = defaults['n_estimators'],
+                    contamination: float = 0.05, random_state: int = None,
+                    n_jobs: int = defaults['n_jobs'],
+                    missing_samples: str = 'ignore') -> (pd.Series):
 
     features, sample_md = _load_data(
         table, metadata, missing_samples=missing_samples)

@@ -1,6 +1,7 @@
 # q2-sample-classifier
 
-[![Build Status](https://travis-ci.org/qiime2/q2-sample-classifier.svg?branch=master)](https://travis-ci.org/qiime2/q2-sample-classifier) [![Coverage Status](https://coveralls.io/repos/github/qiime2/q2-sample-classifier/badge.svg?branch=master)](https://coveralls.io/github/qiime2/q2-sample-classifier?branch=master)
+[![Build Status](https://travis-ci.org/qiime2/q2-sample-classifier.svg?branch=master)](https://travis-ci.org/qiime2/q2-sample-classifier) [![Coverage Status](https://coveralls.io/repos/github/qiime2/q2-sample-classifier/badge.svg?branch=master)](https://coveralls.io/github/qiime2/q2-sample-classifier?branch=master) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1468879.svg)](https://doi.org/10.5281/zenodo.1468879) [![status](http://joss.theoj.org/papers/d828a4ecf73eb6a147f8634e9054eeee/status.svg)](http://joss.theoj.org/papers/d828a4ecf73eb6a147f8634e9054eeee)
+
 
 QIIME 2 plugin for machine learning prediction of sample data.
 
@@ -10,15 +11,20 @@ Microbiome studies often aim to predict outcomes or differentiate samples based 
 
 Follow the QIIME 2 core distribution installation instructions at https://qiime2.org/ to install q2-sample-classifier as part of the QIIME 2 analysis platform.
 
+To test deployment, run:
+```
+pytest --disable-pytest-warnings --pyargs q2_sample_classifier
+```
+
 ## Example usage
 
-This is a QIIME 2 plugin. For details on QIIME 2 and tutorials demonstrating how to use this plugin, see the [QIIME 2 documentation](https://qiime2.org/). Tutorials for this plugin can be found [here](https://docs.qiime2.org/2018.6/tutorials/sample-classifier/).
+This is a QIIME 2 plugin. For details on QIIME 2 and tutorials demonstrating how to use this plugin, see the [QIIME 2 documentation](https://qiime2.org/). Tutorials for this plugin can be found [here](https://docs.qiime2.org/2018.8/tutorials/sample-classifier/).
 
 Not sure which learning model to use? A good starting point is [this flowchart](http://scikit-learn.org/dev/tutorial/machine_learning_map/index.html). Most of the classification and regression models shown in that chart (and a few extras) are implemented in q2-sample-classifier.
 
 ## API documentation
 
-API documentation can be found [here](https://docs.qiime2.org/2018.6/plugins/available/sample-classifier/).
+API documentation can be found [here](https://docs.qiime2.org/2018.8/plugins/available/sample-classifier/).
 
 ## Help
 

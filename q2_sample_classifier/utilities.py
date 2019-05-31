@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Copyright (c) 2017-2018, QIIME 2 development team.
+# Copyright (c) 2017-2019, QIIME 2 development team.
 #
 # Distributed under the terms of the Modified BSD License.
 #
@@ -34,9 +34,7 @@ from scipy.stats import randint
 import biom
 
 from .visuals import (_linear_regress, _plot_confusion_matrix, _plot_RFE,
-                      _pairwise_stats, _two_way_anova, _regplot_from_dataframe,
-                      _boxplot_from_dataframe, _lmplot_from_dataframe,
-                      _clustermap_from_dataframe)
+                      _regplot_from_dataframe)
 
 
 parameters = {
@@ -323,8 +321,8 @@ def _fit_estimator(features, targets, estimator, n_estimators=100, step=0.05,
 
     # optimize training feature count
     if optimize_feature_selection:
-        X_train, X_test, importances, rfe_scores = _optimize_feature_selection(
-            output_dir=None, X_train=X_train, X_test=None, y_train=y_train,
+        X_train, importances, rfe_scores = _optimize_feature_selection(
+            X_train=X_train, y_train=y_train,
             estimator=estimator, cv=cv, step=step, n_jobs=n_jobs)
     else:
         importances = None
@@ -357,55 +355,6 @@ def _fit_estimator(features, targets, estimator, n_estimators=100, step=0.05,
         importances.index.name = 'feature'
 
     return estimator, importances
-
-
-def split_optimize_classify(features, targets, column, estimator,
-                            output_dir, test_size=0.2,
-                            step=0.05, cv=5, random_state=None, n_jobs=1,
-                            optimize_feature_selection=False,
-                            parameter_tuning=False, param_dist=None,
-                            calc_feature_importance=False, load_data=True,
-                            scoring=accuracy_score, classification=True,
-                            stratify=True, palette='sirocco',
-                            missing_samples='error'):
-    # Load, stratify, and split training/test data
-    X_train, X_test, y_train, y_test = _prepare_training_data(
-        features, targets, column, test_size, random_state,
-        load_data=load_data, stratify=stratify,
-        missing_samples=missing_samples)
-    X_train = _extract_features(X_train)
-    X_test = _extract_features(X_test)
-
-    # optimize training feature count
-    if optimize_feature_selection:
-        X_train, X_test, importances, rfe_scores = _optimize_feature_selection(
-            output_dir, X_train, X_test, y_train, estimator, cv, step, n_jobs)
-    else:
-        importances = None
-
-    # optimize tuning parameters on your training set
-    if parameter_tuning:
-        # tune parameters
-        estimator = _tune_parameters(
-            X_train, y_train, estimator, param_dist, n_iter_search=20,
-            n_jobs=n_jobs, cv=cv, random_state=random_state).best_estimator_
-
-    # train classifier and predict test set classes
-    estimator, accuracy, y_pred = _fit_and_predict(
-            X_train, X_test, y_train, y_test, estimator, scoring=scoring)
-
-    # Predict test set values and plot data, as appropriate for estimator type
-    y_test = pd.Series(y_test)
-    y_pred = pd.Series(y_pred, index=y_test.index)
-    predictions, predict_plot = _predict_and_plot(
-        output_dir, y_test, y_pred, classification=classification,
-        palette=palette)
-
-    importances = _attempt_to_calculate_feature_importances(
-            estimator, calc_feature_importance,
-            optimize_feature_selection, importances)
-
-    return estimator, predictions, accuracy, importances
 
 
 def _attempt_to_calculate_feature_importances(
@@ -443,22 +392,13 @@ def _prepare_training_data(features, targets, column, test_size,
     return X_train, X_test, y_train, y_test
 
 
-def _optimize_feature_selection(output_dir, X_train, X_test, y_train,
-                                estimator, cv, step, n_jobs):
+def _optimize_feature_selection(X_train, y_train, estimator, cv, step, n_jobs):
     importance, rfe_scores = _rfecv_feature_selection(
         X_train, y_train, estimator=estimator, cv=cv, step=step, n_jobs=n_jobs)
-    if output_dir:
-        # Plot RFE accuracy
-        rfep = _plot_RFE(rfe_scores.index, rfe_scores)
-        rfep.savefig(join(output_dir, 'rfe_plot.png'))
-        rfep.savefig(join(output_dir, 'rfe_plot.pdf'))
-        plt.close('all')
 
     index = set(importance.index)
     X_train = [{k: r[k] for k in r.keys() & index} for r in X_train]
-    if X_test is not None:
-        X_test = [{k: r[k] for k in r.keys() & index} for r in X_test]
-    return X_train, X_test, importance, rfe_scores
+    return X_train, importance, rfe_scores
 
 
 def _calculate_feature_importances(estimator):
@@ -543,7 +483,7 @@ def _plot_accuracy(output_dir, predictions, truth, missing_samples,
         palette=palette)
 
     # output to viz
-    _visualize(output_dir, None, predictions, importances=None,
+    _visualize(output_dir=output_dir, estimator=None, cm=predictions,
                optimize_feature_selection=False, title=plot_title)
 
 
@@ -572,11 +512,12 @@ def _summarize_estimator(output_dir, sample_estimator):
     except AttributeError:
         optimize_feature_selection = False
 
-    _visualize(output_dir, sample_estimator, None, None,
-               optimize_feature_selection, title='Estimator Summary')
+    _visualize(output_dir=output_dir, estimator=sample_estimator,
+               cm=None, optimize_feature_selection=optimize_feature_selection,
+               title='Estimator Summary')
 
 
-def _visualize(output_dir, estimator, cm, importances=None,
+def _visualize(output_dir, estimator, cm,
                optimize_feature_selection=True, title='results'):
 
     pd.set_option('display.max_colwidth', -1)
@@ -593,85 +534,24 @@ def _visualize(output_dir, estimator, cm, importances=None,
             output_dir, 'predictive_accuracy.tsv'), sep='\t', index=True)
         cm = q2templates.df_to_html(cm)
 
-    if importances is not None:
-        importances = sort_importances(importances)
-        pd.set_option('display.float_format', '{:.3e}'.format)
-        importances.to_csv(join(
-            output_dir, 'feature_importance.tsv'), sep='\t', index=True)
-        importances = q2templates.df_to_html(importances, index=True)
-    else:
-        importances = False
-
     index = join(TEMPLATES, 'index.html')
     q2templates.render(index, output_dir, context={
         'title': title,
         'result': result,
         'predictions': cm,
-        'importances': importances,
-        'classification': True,
-        'optimize_feature_selection': optimize_feature_selection,
-        'maturity_index': False})
+        'optimize_feature_selection': optimize_feature_selection})
 
 
-def _visualize_maturity_index(table, metadata, group_by, column,
-                              predicted_column, importances, estimator,
-                              accuracy, output_dir, maz_stats=True):
-
-    pd.set_option('display.max_colwidth', -1)
-
-    maturity = '{0} maturity'.format(column)
-    maz = '{0} MAZ score'.format(column)
-
-    # save feature importance data and convert to html
-    importances = sort_importances(importances)
-    importances.to_csv(
-        join(output_dir, 'feature_importance.tsv'), index=True, sep='\t')
-    importance = q2templates.df_to_html(importances, index=True)
-
-    # save predicted values, maturity, and MAZ score data
-    maz_md = metadata[[group_by, column, predicted_column, maturity, maz]]
-    maz_md.to_csv(join(output_dir, 'maz_scores.tsv'), sep='\t')
-    if maz_stats:
-        maz_aov = _two_way_anova(table, metadata, maz, group_by, column)[0]
-        maz_aov.to_csv(join(output_dir, 'maz_aov.tsv'), sep='\t')
-        maz_pairwise = _pairwise_stats(
-            table, metadata, maz, group_by, column)
-        maz_pairwise.to_csv(join(output_dir, 'maz_pairwise.tsv'), sep='\t')
-
-    # plot control/treatment predicted vs. actual values
-    g = _lmplot_from_dataframe(
-        metadata, column, predicted_column, group_by)
-    g.savefig(join(output_dir, 'maz_predictions.png'), bbox_inches='tight')
-    g.savefig(join(output_dir, 'maz_predictions.pdf'), bbox_inches='tight')
-    plt.close('all')
-
-    # plot barplots of MAZ score vs. column (e.g., age)
-    g = _boxplot_from_dataframe(metadata, column, maz, group_by)
-    g.get_figure().savefig(
-        join(output_dir, 'maz_boxplots.png'), bbox_inches='tight')
-    g.get_figure().savefig(
-        join(output_dir, 'maz_boxplots.pdf'), bbox_inches='tight')
-    plt.close('all')
-
-    # plot heatmap of column (e.g., age) vs. abundance of top features
-    top = table[list(importances.index)]
-    g = _clustermap_from_dataframe(top, metadata, group_by, column)
-    g.savefig(join(output_dir, 'maz_heatmaps.png'), bbox_inches='tight')
-    g.savefig(join(output_dir, 'maz_heatmaps.pdf'), bbox_inches='tight')
-
-    result = _extract_estimator_parameters(estimator)
-    result.append(pd.Series([accuracy], index=['Accuracy score']))
-    result = q2templates.df_to_html(result.to_frame())
-
+def _visualize_knn(output_dir, params: pd.Series):
+    result = q2templates.df_to_html(params.to_frame())
     index = join(TEMPLATES, 'index.html')
     q2templates.render(index, output_dir, context={
-        'title': 'maturity index predictions',
+        'title': 'Estimator Summary',
         'result': result,
         'predictions': None,
-        'importances': importance,
-        'classification': False,
-        'optimize_feature_selection': True,
-        'maturity_index': True})
+        'importances': None,
+        'classification': True,
+        'optimize_feature_selection': False})
 
 
 def _map_params_to_pipeline(param_dist):
@@ -686,20 +566,6 @@ def _tune_parameters(X_train, y_train, estimator, param_dist, n_iter_search=20,
         n_jobs=n_jobs, cv=cv, random_state=random_state)
     random_search.fit(X_train, y_train)
     return random_search
-
-
-def _fit_and_predict(X_train, X_test, y_train, y_test, estimator,
-                     scoring=accuracy_score):
-    '''train and test estimators.
-    scoring: str
-        use accuracy_score for classification, mean_squared_error for
-        regression.
-    '''
-    estimator.fit(X_train, y_train)
-    y_pred = estimator.predict(X_test)
-    accuracy = scoring(y_test, pd.DataFrame(y_pred))
-
-    return estimator, accuracy, y_pred
 
 
 def _fit_and_predict_cv(table, metadata, estimator, param_dist, n_jobs,
@@ -794,40 +660,6 @@ def _null_feature_importance(table):
     imp.index.name = "feature"
     imp["importance"] = 1
     return imp
-
-
-def _maz_score(metadata, predicted, column, group_by, control):
-    '''pd.DataFrame -> pd.DataFrame'''
-    # extract control data
-    md_control = metadata[metadata[group_by] == control]
-
-    # for each bin, calculate median and SD in control samples
-    medians = {}
-    for n in md_control[column].unique():
-        _bin = md_control[md_control[column] == n]
-        _median = _bin[predicted].median()
-        _std = _bin[predicted].std()
-        medians[n] = (_median, _std)
-
-    # calculate maturity and MAZ scores in all samples
-    maturity_scores = []
-    maz_scores = []
-    for i, v in metadata[predicted].iteritems():
-        _median, _std = medians[metadata.loc[i][column]]
-        maturity = v - _median
-        maturity_scores.append(maturity)
-        if maturity == 0.0 or _std == 0.0:
-            maz_score = 0.0
-        else:
-            maz_score = maturity / _std
-        maz_scores.append(maz_score)
-
-    maturity = '{0} maturity'.format(column)
-    metadata[maturity] = maturity_scores
-    maz = '{0} MAZ score'.format(column)
-    metadata[maz] = maz_scores
-
-    return metadata
 
 
 def _select_estimator(estimator, n_jobs, n_estimators, random_state=None):

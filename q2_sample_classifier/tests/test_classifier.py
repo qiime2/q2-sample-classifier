@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Copyright (c) 2017-2018, QIIME 2 development team.
+# Copyright (c) 2017-2019, QIIME 2 development team.
 #
 # Distributed under the terms of the Modified BSD License.
 #
@@ -20,15 +20,14 @@ import pandas as pd
 import numpy as np
 from sklearn.exceptions import ConvergenceWarning
 from q2_sample_classifier.visuals import (
-    _two_way_anova, _pairwise_stats, _linear_regress,
-    _calculate_baseline_accuracy, _custom_palettes,
+    _linear_regress, _calculate_baseline_accuracy, _custom_palettes,
     _plot_heatmap_from_confusion_matrix, _add_sample_size_to_xtick_labels)
 from q2_sample_classifier.classify import (
     regress_samples_ncv, classify_samples_ncv, fit_classifier, fit_regressor,
-    maturity_index, detect_outliers, split_table, predict_classification,
+    detect_outliers, split_table, predict_classification,
     predict_regression, scatterplot, confusion_matrix, summarize)
 from q2_sample_classifier.utilities import (
-    split_optimize_classify, _set_parameters_and_estimator, _load_data,
+    _set_parameters_and_estimator, _load_data,
     _calculate_feature_importances, _extract_important_features,
     _train_adaboost_base_estimator, _disable_feature_selection,
     _mean_feature_importance, _null_feature_importance, _extract_features,
@@ -45,7 +44,7 @@ from q2_types.feature_data import FeatureData
 import pkg_resources
 from qiime2.plugin.testing import TestPluginBase
 from qiime2.plugin import ValidationError
-from qiime2.plugins import sample_classifier
+from qiime2.plugins import sample_classifier, feature_table
 import sklearn
 from sklearn.metrics import mean_squared_error, accuracy_score
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
@@ -56,6 +55,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.externals import joblib
 import pandas.util.testing as pdt
 import biom
+import skbio
 
 
 filterwarnings("ignore", category=UserWarning)
@@ -251,19 +251,6 @@ class TestRFEExtractor(SampleClassifierTestPluginBase):
 
 class VisualsTests(SampleClassifierTestPluginBase):
 
-    def test_two_way_anova(self):
-        aov, mod_sum = _two_way_anova(tab1, md, 'Value', 'Time', 'Group')
-        self.assertAlmostEqual(aov['PR(>F)']['Group'], 0.00013294988301061492)
-        self.assertAlmostEqual(aov['PR(>F)']['Time'], 4.1672315658105502e-07)
-        self.assertAlmostEqual(aov['PR(>F)']['Time:Group'], 0.0020603144625217)
-
-    def test_pairwise_tests(self):
-        res = _pairwise_stats(tab1, md, 'Value', 'Time', 'Group')
-        self.assertAlmostEqual(
-            res['q-value'][(1, 'a')][(1, 'b')], 0.066766544811987918)
-        self.assertAlmostEqual(
-            res['q-value'][(1, 'a')][(2, 'b')], 0.00039505928148818022)
-
     def test_linear_regress(self):
         res = _linear_regress(md['Value'], md['Time'])
         self.assertAlmostEqual(res.iloc[0]['Mean squared error'], 1.9413916666)
@@ -387,7 +374,15 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
                         name='prediction', index=['a', 'b', 'c', 'd'])
         obs = transformer(exp)
         obs = pd.Series.from_csv(str(obs), sep='\t', header=0)
-        pdt.assert_series_equal(obs[:4], exp)
+        pdt.assert_series_equal(obs, exp)
+
+    def test_pd_series_to_Predictions_format_allow_nans(self):
+        transformer = self.get_transformer(pd.Series, PredictionsFormat)
+        exp = pd.Series([1, np.nan, 3, np.nan],
+                        name='prediction', index=['a', 'b', 'c', 'd'])
+        obs = transformer(exp)
+        obs = pd.Series.from_csv(str(obs), sep='\t', header=0)
+        pdt.assert_series_equal(obs, exp)
 
     def test_Predictions_format_to_pd_series(self):
         _, obs = self.transform_format(
@@ -559,6 +554,91 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 else:
                     self.assertEqual(dict_row[feature], count)
 
+    def test_classify_samples_from_dist(self):
+        # -- setup -- #
+        # 1,2 are a group, 3,4 are a group
+        sample_ids = ('f1', 'f2', 's1', 's2')
+        distance_matrix = skbio.DistanceMatrix([
+            [0, 1, 4, 4],
+            [1, 0, 4, 4],
+            [4, 4, 0, 1],
+            [4, 4, 1, 0],
+            ], ids=sample_ids)
+
+        dm = qiime2.Artifact.import_data('DistanceMatrix', distance_matrix)
+        categories = pd.Series(('skinny', 'skinny', 'fat', 'fat'),
+                               index=sample_ids[::-1], name='body_mass')
+        categories.index.name = 'SampleID'
+        metadata = qiime2.CategoricalMetadataColumn(categories)
+
+        # -- test -- #
+        res = sample_classifier.actions.classify_samples_from_dist(
+            distance_matrix=dm, metadata=metadata, k=1)
+        pred = res[0].view(pd.Series).sort_values()
+        expected = pd.Series(('fat', 'skinny', 'fat', 'skinny'),
+                             index=['f1', 's1', 'f2', 's2'])
+        not_expected = pd.Series(('fat', 'fat', 'fat', 'skinny'),
+                                 index=sample_ids)
+
+        # order matters for pd.Series.equals()
+        self.assertTrue(expected.sort_index().equals(pred.sort_index()))
+        self.assertFalse(not_expected.sort_index().equals(pred.sort_index()))
+
+    def test_classify_samples_from_dist_with_group_of_single_item(self):
+        # -- setup -- #
+        # 1 is a group, 2,3,4 are a group
+        sample_ids = ('f1', 's1', 's2', 's3')
+        distance_matrix = skbio.DistanceMatrix([
+            [0, 2, 3, 3],
+            [2, 0, 1, 1],
+            [3, 1, 0, 1],
+            [3, 1, 1, 0],
+            ], ids=sample_ids)
+
+        dm = qiime2.Artifact.import_data('DistanceMatrix', distance_matrix)
+        categories = pd.Series(('fat', 'skinny', 'skinny', 'skinny'),
+                               index=sample_ids, name='body_mass')
+        categories.index.name = 'SampleID'
+        metadata = qiime2.CategoricalMetadataColumn(categories)
+
+        # -- test -- #
+        res = sample_classifier.actions.classify_samples_from_dist(
+            distance_matrix=dm, metadata=metadata, k=1)
+        pred = res[0].view(pd.Series)
+        expected = pd.Series(('skinny', 'skinny', 'skinny', 'skinny'),
+                             index=sample_ids)
+
+        self.assertTrue(expected.sort_index().equals(pred.sort_index()))
+
+    def test_2nn(self):
+        # -- setup -- #
+        # 2 nearest neighbors of each sample are
+        # f1: s1, s2 (classified as skinny)
+        # s1: f1, s2 (closer to f1 so fat)
+        # s2: f1, (s1 or s3) (closer to f1 so fat)
+        # s3: s1, s2 (skinny)
+        sample_ids = ('f1', 's1', 's2', 's3')
+        distance_matrix = skbio.DistanceMatrix([
+            [0, 2, 1, 5],
+            [2, 0, 3, 4],
+            [1, 3, 0, 3],
+            [5, 4, 3, 0],
+            ], ids=sample_ids)
+
+        dm = qiime2.Artifact.import_data('DistanceMatrix', distance_matrix)
+        categories = pd.Series(('fat', 'skinny', 'skinny', 'skinny'),
+                               index=sample_ids, name='body_mass')
+        categories.index.name = 'SampleID'
+        metadata = qiime2.CategoricalMetadataColumn(categories)
+
+        # -- test -- #
+        res = sample_classifier.actions.classify_samples_from_dist(
+            distance_matrix=dm, metadata=metadata, k=2)
+        pred = res[0].view(pd.Series)
+        expected = pd.Series(('skinny', 'fat', 'fat', 'skinny'),
+                             index=sample_ids)
+        self.assertTrue(expected.sort_index().equals(pred.sort_index()))
+
     # test that each classifier works and delivers an expected accuracy result
     # when a random seed is set.
     def test_classifiers(self):
@@ -641,7 +721,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 test_size=0.5, cv=1, n_estimators=10, n_jobs=1,
                 estimator=regressor, random_state=123,
                 parameter_tuning=False, optimize_feature_selection=False,
-                missing_samples='ignore')
+                missing_samples='ignore', stratify=True)
             pred = res[2].view(pd.Series)
             pred, truth = _match_series_or_die(
                 pred, self.mdc_ecam_fp.to_series(), 'ignore')
@@ -672,37 +752,6 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             'Region', n_estimators=10, n_jobs=1, cv=1,
             random_state=123, parameter_tuning=False, classification=True,
             missing_samples='ignore')
-        # zero samples (if mapping file and table have no common samples)
-        with self.assertRaisesRegex(ValueError, "metadata"):
-            estimator, cm, accuracy, importances = split_optimize_classify(
-                self.table_ecam_fp, self.md_chard_fp, 'Region', estimator,
-                self.temp_dir.name, test_size=0.5, cv=1, random_state=123,
-                n_jobs=1, optimize_feature_selection=False,
-                parameter_tuning=False, param_dist=None,
-                calc_feature_importance=False, missing_samples='ignore')
-        # too few samples to stratify
-        with self.assertRaisesRegex(ValueError, "metadata"):
-            estimator, cm, accuracy, importances = split_optimize_classify(
-                self.table_chard_fp, self.md_chard_fp, 'Region', estimator,
-                self.temp_dir.name, test_size=0.9, cv=1, random_state=123,
-                n_jobs=1, optimize_feature_selection=False,
-                parameter_tuning=False, param_dist=None,
-                calc_feature_importance=False, missing_samples='ignore')
-        # regressor chosen for classification problem
-        with self.assertRaisesRegex(ValueError, "convert"):
-            estimator, cm, accuracy, importances = split_optimize_classify(
-                self.table_chard_fp, self.md_chard_fp, 'Region', regressor,
-                self.temp_dir.name, test_size=0.5, cv=1, random_state=123,
-                n_jobs=1, optimize_feature_selection=False,
-                parameter_tuning=False, param_dist=None,
-                calc_feature_importance=False, missing_samples='ignore')
-        # metadata is a subset of feature table ids... raise error or else
-        # an inner merge is taken, causing samples to be silently dropped!
-        with self.assertRaisesRegex(ValueError, 'Missing samples'):
-            md = self.md_chard_fp.filter_ids(self.md_chard_fp.ids[:5])
-            estimator, cm, accuracy, importances = split_optimize_classify(
-                self.table_chard_fp, md, 'Region', regressor,
-                self.temp_dir.name, missing_samples='error')
 
     def test_split_table_no_rounding_error(self):
         X_train, X_test = split_table(
@@ -723,12 +772,6 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 random_state=123, stratify=True, missing_samples='ignore')
 
     # test experimental functions
-    def test_maturity_index(self):
-        maturity_index(self.temp_dir.name, self.table_ecam_fp, self.md_ecam_fp,
-                       column='month', group_by='delivery', random_state=123,
-                       n_jobs=1, control='Vaginal', test_size=0.4,
-                       missing_samples='ignore')
-
     def test_detect_outliers(self):
         detect_outliers(self.table_chard_fp, self.md_chard_fp,
                         random_state=123, n_jobs=1, contamination=0.05)
@@ -827,6 +870,45 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             mse, seeded_predict_results['RandomForestRegressor'])
 
 
+class TestHeatmap(SampleClassifierTestPluginBase):
+
+    def setUp(self):
+        super().setUp()
+        md_ecam = self.get_data_path('ecam_map_maturity.txt')
+        md_ecam = qiime2.Metadata.load(md_ecam)
+        self.md_ecam = md_ecam.get_column('delivery')
+        table_ecam = self.get_data_path('ecam-table-maturity.qza')
+        table_ecam = qiime2.Artifact.load(table_ecam)
+        self.table_ecam, = feature_table.actions.filter_samples(
+            table_ecam, metadata=md_ecam)
+        imp = pd.DataFrame.from_csv(
+            self.get_data_path('importance.tsv'), sep='\t')
+        self.imp = qiime2.Artifact.import_data('FeatureData[Importance]', imp)
+
+    def test_heatmap_default_feature_count_zero(self):
+        heatmap, table, = sample_classifier.actions.heatmap(
+            self.table_ecam, self.imp, self.md_ecam, group_samples=True,
+            feature_count=0)
+        self.assertEqual(table.view(biom.Table).shape, (1056, 2))
+
+    def test_heatmap_importance_threshold(self):
+        heatmap, table, = sample_classifier.actions.heatmap(
+            self.table_ecam, self.imp, self.md_ecam,
+            importance_threshold=0.017, group_samples=False, feature_count=0)
+        self.assertEqual(table.view(biom.Table).shape, (10, 121))
+
+    def test_heatmap_feature_count(self):
+        heatmap, table, = sample_classifier.actions.heatmap(
+            self.table_ecam, self.imp, self.md_ecam, group_samples=True,
+            feature_count=20)
+        self.assertEqual(table.view(biom.Table).shape, (20, 2))
+
+    def test_heatmap_must_group_or_die(self):
+        with self.assertRaisesRegex(ValueError, "metadata are not optional"):
+            heatmap, table, = sample_classifier.actions.heatmap(
+                self.table_ecam, self.imp, metadata=None, group_samples=True)
+
+
 class NowLetsTestTheActions(SampleClassifierTestPluginBase):
 
     def setUp(self):
@@ -835,6 +917,7 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
                        index=['a', 'b', 'c', 'd', 'e'], name='bugs')
         md.index.name = 'SampleID'
         self.md = qiime2.CategoricalMetadataColumn(md)
+
         tab = biom.Table(
             np.array([[3, 6, 7, 3, 6], [3, 4, 5, 6, 2], [8, 6, 4, 1, 0],
                       [8, 6, 4, 1, 0], [8, 6, 4, 1, 0]]),
@@ -842,11 +925,119 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
             sample_ids=['a', 'b', 'c', 'd', 'e'])
         self.tab = qiime2.Artifact.import_data('FeatureTable[Frequency]', tab)
 
+        md2 = pd.DataFrame({'trash': ['a', 'a', 'b', 'b', 'b', 'junk'],
+                            'floats': [0.1, 0.1, 1.3, 1.8, 1000.1, 0.1],
+                            'ints': [0, 1, 2, 2, 2, 0],
+                            'nans': [1, 1, 2, 2, np.nan, np.nan],
+                            'negatives': [-7, -3, -1.2, -4, -9, -1]},
+                           index=['a', 'b', 'c', 'd', 'e', 'peanut'])
+        md2.index.name = 'SampleID'
+        self.md2 = qiime2.Metadata(md2)
+
     # let's make sure the correct transformers are in place! See issue 114
     # if this runs without error, that's good enough for me. We already
     # validate the function above.
     def test_action_split_table(self):
         sample_classifier.actions.split_table(self.tab, self.md, test_size=0.5)
+
+    def test_metatable(self):
+        exp = biom.Table(
+            np.array([[0.1, 0.1, 1.3, 1.8, 1000.1, 0.1],
+                      [0, 1, 2, 2, 2, 0]]),
+            observation_ids=['floats', 'ints'],
+            sample_ids=['a', 'b', 'c', 'd', 'e', 'peanut'])
+        res, = sample_classifier.actions.metatable(
+            self.md2, missing_values='drop_features')
+        report = res.view(biom.Table).descriptive_equality(exp)
+        self.assertIn('Tables appear equal', report, report)
+
+    def test_metatable_missing_error(self):
+        with self.assertRaisesRegex(ValueError, "missing values"):
+            sample_classifier.actions.metatable(
+                self.md2, missing_values='error')
+
+    def test_metatable_drop_samples(self):
+        exp = biom.Table(
+            np.array([[3, 6, 7, 3], [3, 4, 5, 6], [8, 6, 4, 1],
+                      [8, 6, 4, 1], [8, 6, 4, 1],
+                      [0.1, 0.1, 1.3, 1.8],
+                      [0, 1, 2, 2], [1, 1, 2, 2]]),
+            observation_ids=['v', 'w', 'x', 'y', 'z', 'floats', 'ints',
+                             'nans'],
+            sample_ids=['a', 'b', 'c', 'd'])
+        res, = sample_classifier.actions.metatable(
+            self.md2, self.tab, missing_values='drop_samples')
+        report = res.view(biom.Table).descriptive_equality(exp)
+        self.assertIn('Tables appear equal', report, report)
+
+    def test_metatable_fill_na(self):
+        exp = biom.Table(
+            np.array([[3, 6, 7, 3, 6], [3, 4, 5, 6, 2], [8, 6, 4, 1, 0],
+                      [8, 6, 4, 1, 0], [8, 6, 4, 1, 0],
+                      [0.1, 0.1, 1.3, 1.8, 1000.1],
+                      [0, 1, 2, 2, 2], [1., 1., 2., 2., 0.]]),
+            observation_ids=['v', 'w', 'x', 'y', 'z', 'floats', 'ints',
+                             'nans'],
+            sample_ids=['a', 'b', 'c', 'd', 'e'])
+        res, = sample_classifier.actions.metatable(
+            self.md2, self.tab, missing_values='fill')
+        report = res.view(biom.Table).descriptive_equality(exp)
+        self.assertIn('Tables appear equal', report, report)
+
+    def test_metatable_with_merge(self):
+        exp = biom.Table(
+            np.array([[3, 6, 7, 3, 6], [3, 4, 5, 6, 2], [8, 6, 4, 1, 0],
+                      [8, 6, 4, 1, 0], [8, 6, 4, 1, 0],
+                      [0.1, 0.1, 1.3, 1.8, 1000.1],
+                      [0, 1, 2, 2, 2]]),
+            observation_ids=['v', 'w', 'x', 'y', 'z', 'floats', 'ints'],
+            sample_ids=['a', 'b', 'c', 'd', 'e'])
+        res, = sample_classifier.actions.metatable(
+            self.md2, self.tab, missing_values='drop_features')
+        report = res.view(biom.Table).descriptive_equality(exp)
+        self.assertIn('Tables appear equal', report, report)
+
+    def test_metatable_with_merge_successful_inner_join(self):
+        exp = biom.Table(
+            np.array([[3, 6, 7, 3], [3, 4, 5, 6], [8, 6, 4, 1],
+                      [8, 6, 4, 1], [8, 6, 4, 1], [0.1, 0.1, 1.3, 1.8],
+                      [0, 1, 2, 2], [1., 1., 2., 2.]]),
+            observation_ids=['v', 'w', 'x', 'y', 'z', 'floats', 'ints',
+                             'nans'],
+            sample_ids=['a', 'b', 'c', 'd'])
+        res, = sample_classifier.actions.metatable(
+            self.md2.filter_ids(['a', 'b', 'c', 'd']), self.tab,
+            missing_values='error')
+        report = res.view(biom.Table).descriptive_equality(exp)
+        self.assertIn('Tables appear equal', report, report)
+
+    def test_metatable_with_merge_error_inner_join(self):
+        with self.assertRaisesRegex(ValueError, "Missing samples"):
+            sample_classifier.actions.metatable(
+                self.md2.filter_ids(['a', 'b', 'c', 'd']),
+                self.tab, missing_samples='error',
+                missing_values='drop_samples')
+
+    def test_metatable_empty_metadata_after_filtering(self):
+        with self.assertRaisesRegex(
+                ValueError, "All metadata"):  # are belong to us
+            sample_classifier.actions.metatable(
+                self.md2.filter_ids(['b', 'c']), self.tab,
+                missing_values='drop_samples')
+
+    def test_metatable_no_samples_after_filtering(self):
+        junk_md = pd.DataFrame(
+            {'trash': ['a', 'a', 'b', 'b', 'b', 'junk'],
+             'floats': [np.nan, np.nan, np.nan, 1.8, 1000.1, 0.1],
+             'ints': [0, 1, 2, np.nan, 2, 0],
+             'nans': [1, 1, 2, 2, np.nan, np.nan],
+             'negatives': [-7, -4, -1.2, -4, -9, -1]},
+            index=['a', 'b', 'c', 'd', 'e', 'peanut'])
+        junk_md.index.name = 'SampleID'
+        junk_md = qiime2.Metadata(junk_md)
+        with self.assertRaisesRegex(ValueError, "All metadata samples"):
+            sample_classifier.actions.metatable(
+                junk_md, missing_values='drop_samples')
 
 
 class SampleEstimatorTestBase(SampleClassifierTestPluginBase):

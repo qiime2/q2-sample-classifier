@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Copyright (c) 2017-2018, QIIME 2 development team.
+# Copyright (c) 2017-2019, QIIME 2 development team.
 #
 # Distributed under the terms of the Modified BSD License.
 #
@@ -16,11 +16,14 @@ from q2_types.feature_table import (
     PercentileNormalized)
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
+from q2_types.distance_matrix import DistanceMatrix
+from q2_feature_table import heatmap_choices
 from .classify import (
-    classify_samples, regress_samples, maturity_index, regress_samples_ncv,
+    classify_samples, classify_samples_from_dist, regress_samples,
+    regress_samples_ncv,
     classify_samples_ncv, fit_classifier, fit_regressor, split_table,
     predict_classification, predict_regression, confusion_matrix, scatterplot,
-    summarize)
+    summarize, metatable, heatmap)
 from .visuals import _custom_palettes
 from ._format import (SampleEstimatorDirFmt,
                       BooleanSeriesFormat,
@@ -200,6 +203,11 @@ pipeline_outputs = [
     ('model_summary', Visualization),
     ('accuracy_results', Visualization)]
 
+regressor_pipeline_outputs = [
+    ('sample_estimator', SampleEstimator[Regressor]),
+    ('feature_importance', FeatureData[Importance]),
+    ('predictions', SampleData[RegressorPredictions])] + pipeline_outputs
+
 pipeline_output_descriptions = {
     'sample_estimator': 'Trained sample estimator.',
     **output_descriptions,
@@ -226,13 +234,41 @@ plugin.pipelines.register_function(
 
 
 plugin.pipelines.register_function(
+    function=classify_samples_from_dist,
+    inputs={'distance_matrix': DistanceMatrix},
+    parameters={
+        'metadata': MetadataColumn[Categorical],
+        'k': Int,
+        'palette': Str % Choices(_custom_palettes().keys()),
+    },
+    outputs=[
+        ('predictions', SampleData[ClassifierPredictions]),
+        ('accuracy_results', Visualization),
+    ],
+    input_descriptions={'distance_matrix': 'a distance matrix'},
+    parameter_descriptions={
+        'metadata': 'Categorical metadata column to use as prediction target.',
+        'k': 'Number of nearest neighbors',
+        'palette': 'The color palette to use for plotting.',
+        },
+    output_descriptions={
+        'predictions': 'leave one out predictions for each sample',
+        'accuracy_results': 'Accuracy results visualization.',
+    },
+    name=('Run k-nearest-neighbors on a labeled distance matrix.'),
+    description=(
+        'Run k-nearest-neighbors on a labeled distance matrix.'
+        ' Return cross-validated (leave one out) predictions and '
+        ' accuracy. k = 1 by default'
+    )
+)
+
+
+plugin.pipelines.register_function(
     function=regress_samples,
     inputs=inputs,
     parameters=regressor_pipeline_parameters,
-    outputs=[
-        ('sample_estimator', SampleEstimator[Regressor]),
-        ('feature_importance', FeatureData[Importance]),
-        ('predictions', SampleData[RegressorPredictions])] + pipeline_outputs,
+    outputs=regressor_pipeline_outputs,
     input_descriptions=input_descriptions,
     parameter_descriptions=regressor_pipeline_parameter_descriptions,
     output_descriptions=pipeline_output_descriptions,
@@ -463,55 +499,92 @@ plugin.visualizers.register_function(
 )
 
 
-plugin.visualizers.register_function(
-    function=maturity_index,
+plugin.pipelines.register_function(
+    function=metatable,
     inputs=inputs,
-    parameters={'group_by': Str,
-                'control': Str,
-                'estimator': regressors,
-                **parameters['base'],
-                **parameters['rfe'],
-                **parameters['cv'],
-                **parameters['splitter'],
-                'metadata': Metadata,
-                'column': Str,
-                **parameters['regressor'],
-                'maz_stats': Bool,
-                },
+    parameters={'metadata': Metadata,
+                'missing_samples': parameters['base']['missing_samples'],
+                'missing_values': Str % Choices(
+                    ['drop_samples', 'drop_features', 'error', 'fill'])},
+    outputs=[('converted_table', FeatureTable[Frequency])],
     input_descriptions=input_descriptions,
     parameter_descriptions={
-        **parameter_descriptions['base'],
-        **parameter_descriptions['rfe'],
-        **parameter_descriptions['cv'],
-        **parameter_descriptions['splitter'],
-        'column': 'Numeric metadata column to use as prediction target.',
-        'group_by': ('Categorical metadata column to use for plotting and '
-                     'significance testing between main treatment groups.'),
-        'control': (
-            'Value of group_by to use as control group. The regression model '
-            'will be trained using only control group data, and the maturity '
-            'scores of other groups consequently will be assessed relative to '
-            'this group.'),
-        'estimator': 'Regression model to use for prediction.',
-        **parameter_descriptions['regressor'],
-        'maz_stats': 'Calculate anova and pairwise tests on MAZ scores.',
+        'metadata': 'Metadata file to convert to feature table.',
+        'missing_samples': parameter_descriptions['base']['missing_samples'],
+        'missing_values': (
+            'How to handle missing values (nans) in metadata. Either '
+            '"drop_samples" with missing values, "drop_features" with missing '
+            'values, "fill" missing values with zeros, or "error" if '
+            'any missing values are found.')
     },
-    name='Microbial maturity index prediction.',
-    description=('Calculates a "microbial maturity" index from a regression '
-                 'model trained on feature data to predict a given continuous '
-                 'metadata column, e.g., to predict age as a function of '
-                 'microbiota composition. The model is trained on a subset of '
-                 'control group samples, then predicts the column value for '
-                 'all samples. This visualization computes maturity index '
-                 'z-scores to compare relative "maturity" between each group, '
-                 'as described in doi:10.1038/nature13421. This method can '
-                 'be used to predict between-group differences in relative '
-                 'trajectory across any type of continuous metadata gradient, '
-                 'e.g., intestinal microbiome development by age, microbial '
-                 'succession during wine fermentation, or microbial community '
-                 'differences along environmental gradients, as a function of '
-                 'two or more different "treatment" groups.'),
-    citations=[citations['subramanian2014persistent']]
+    output_descriptions={'converted_table': 'Converted feature table'},
+    name='Convert (and merge) positive numeric metadata (in)to feature table.',
+    description='Convert numeric sample metadata from TSV file into a feature '
+                'table. Optionally merge with an existing feature table. Only '
+                'numeric metadata will be converted; categorical columns will '
+                'be silently dropped. By default, if a table is used as input '
+                'only samples found in both the table and metadata '
+                '(intersection) are merged, and others are silently dropped. '
+                'Set missing_samples="error" to raise an error if samples '
+                'found in the table are missing from the metadata file. The '
+                'metadata file can always contain a superset of samples. Note '
+                'that columns will be dropped if they are non-numeric, '
+                'contain only unique values, contain no unique values (zero '
+                'variance), contain only empty cells, or contain negative '
+                'values. This method currently only converts '
+                'postive numeric metadata into feature data. Tip: convert '
+                'categorical columns to dummy variables to include them in '
+                'the output feature table.'
+)
+
+
+plugin.pipelines.register_function(
+    function=heatmap,
+    inputs={**inputs, 'importance': FeatureData[Importance]},
+    parameters={'metadata': MetadataColumn[Categorical],
+                'feature_count': Int % Range(0, None),
+                'importance_threshold': Float % Range(0, None),
+                'group_samples': Bool,
+                'normalize': Bool,
+                'metric': Str % Choices(heatmap_choices['metric']),
+                'method': Str % Choices(heatmap_choices['method']),
+                'cluster': Str % Choices(heatmap_choices['cluster']),
+                'color_scheme': Str % Choices(heatmap_choices['color_scheme']),
+                },
+    outputs=[('heatmap', Visualization),
+             ('filtered_table', FeatureTable[Frequency])],
+    input_descriptions={**input_descriptions,
+                        'importance': 'Feature importances.'},
+    parameter_descriptions={
+        'metadata': 'Metadata file to convert to feature table.',
+        'feature_count': 'Filter feature table to include top N most '
+                         'important features. Set to zero to include all '
+                         'features.',
+        'importance_threshold': 'Filter feature table to exclude any features '
+                                'with an importance score less than this '
+                                'threshold. Set to zero to include all '
+                                'features.',
+        'group_samples': 'Group samples by metadata.',
+        'normalize': 'Normalize the feature table by adding a psuedocount '
+                     'of 1 and then taking the log10 of the table.',
+        'metric': 'Metrics exposed by seaborn (see http://seaborn.pydata.org/'
+                  'generated/seaborn.clustermap.html#seaborn.clustermap for '
+                  'more detail).',
+        'method': 'Clustering methods exposed by seaborn (see http://seaborn.'
+                  'pydata.org/generated/seaborn.clustermap.html#seaborn.clust'
+                  'ermap for more detail).',
+        'cluster': 'Specify which axes to cluster.',
+        'color_scheme': 'Color scheme for heatmap.',
+    },
+    output_descriptions={
+        'heatmap': 'Heatmap of important features.',
+        'filtered_table': 'Filtered feature table containing data displayed '
+                          'in heatmap.'},
+    name='Generate heatmap of important features.',
+    description='Generate a heatmap of important features. Features are '
+                'filtered based on importance scores; samples are optionally '
+                'grouped by metadata; and a heatmap is generated that '
+                'displays (normalized) feature abundances per sample.'
 )
 
 

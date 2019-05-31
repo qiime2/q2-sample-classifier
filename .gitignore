@@ -64,6 +64,9 @@ target/
 # vi
 .*.swp
 
+# pytest cache
+.pytest_cache/
+
 # other
 *~
 

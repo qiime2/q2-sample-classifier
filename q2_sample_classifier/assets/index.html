@@ -16,46 +16,11 @@
       <p>Download as PDF</p>
     </a>
     {% endif %}
-    {% if classification and predictions %}
+    {% if predictions %}
     <div class="col-lg-12">
       {{ predictions }}
       <a href="predictive_accuracy.tsv">
         <p>Download accuracy results as tsv</p>
-      </a>
-    </div>
-    {% endif %}
-    {% if maturity_index %}
-    <h1>Predicted values</h1>
-    <div class="text-center">
-      <a href="maz_predictions.pdf">
-        <img src="maz_predictions.png">
-        <br>
-        <p>Download as PDF</p>
-      </a>
-    </div>
-    <h1>Maturity index Z-scores</h1>
-    <div class="text-center">
-      <a href="maz_boxplots.pdf">
-        <img src="maz_boxplots.png">
-        <br>
-        <p>Download as PDF</p>
-        <a href="maz_scores.tsv">
-          <p>Download scores as tsv</p>
-        </a>
-        <a href="maz_aov.tsv">
-          <p>Download ANOVA results as tsv</p>
-        </a>
-        <a href="maz_pairwise.tsv">
-          <p>Download paired t-test results as tsv</p>
-        </a>
-      </a>
-    </div>
-    <h1>Feature abundance cluster map</h1>
-    <div class="text-center">
-      <a href="maz_heatmaps.pdf">
-        <img src="maz_heatmaps.png">
-        <br>
-        <p>Download as PDF</p>
       </a>
     </div>
     {% endif %}
@@ -73,30 +38,6 @@
     <h1>Model parameters</h1>
     <div class="col-lg-12">
       {{ result }}
-    </div>
-    {% endif %}
-    {% if importances and not importances.empty %}
-    <h1>Feature Importance</h1>
-    <div class="col-lg-12">
-      <a href="feature_importance.tsv">
-        <p>Download as tsv</p>
-      </a>
-      <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
-        <div class="panel panel-default">
-          <div class="panel-heading" role="tab" id="accordion-heading">
-            <h4 class="panel-title">
-              <a role="button" data-toggle="collapse" data-parent="#accordion" href="#importances-table" aria-expanded="true" aria-controls="importances-table">
-                Click to Collapse/Expand
-              </a>
-            </h4>
-          </div>
-          <div id="importances-table" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="accordion-heading">
-            <div class="panel-body">
-              {{ importances }}
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
     {% endif %}
   </div>

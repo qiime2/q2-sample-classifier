@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------------
-# Copyright (c) 2017-2018, QIIME 2 development team.
+# Copyright (c) 2017-2019, QIIME 2 development team.
 #
 # Distributed under the terms of the Modified BSD License.
 #
@@ -17,7 +17,7 @@ def _validate_record_len(cells, current_line_number, exp_len):
     if len(cells) != exp_len:
         raise ValidationError(
             "Expected data record to be TSV with {0} "
-            "fields. Detected {1} fields at line {2}:\n\n{2!r}"
+            "fields. Detected {1} fields at line {2}:\n\n{3!r}"
             .format(exp_len, len(cells), current_line_number, cells))
 
 
@@ -100,7 +100,9 @@ class PredictionsFormat(model.TextFileFormat):
             # validate body
             has_data = False
             for line_number, line in enumerate(fh, start=2):
-                cells = line.strip().split('\t')
+                # we want to strip each cell, not the original line
+                # otherwise empty cells are dropped, causing a TypeError
+                cells = [c.strip() for c in line.split('\t')]
                 _validate_record_len(cells, line_number, 2)
                 has_data = True
                 if n_records is not None and (line_number - 1) >= n_records:
