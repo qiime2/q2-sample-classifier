@@ -41,6 +41,7 @@ from q2_sample_classifier import (
 from q2_sample_classifier._format import JSONFormat
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
+from q2_types.feature_table import (FeatureTable, PercentileNormalized)
 import pkg_resources
 from qiime2.plugin.testing import TestPluginBase
 from qiime2.plugin import ValidationError
@@ -537,6 +538,15 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             self.get_data_path('importance.tsv'), sep='\t')
         self.exp_pred = pd.Series.from_csv(
             self.get_data_path('predictions.tsv'), sep='\t', header=0)
+        index = pd.Index(['A', 'B', 'C', 'D'], name='id')
+        self.table_percnorm = qiime2.Artifact.import_data(
+            FeatureTable[PercentileNormalized], pd.DataFrame(
+                [[20.0, 20.0, 50.0, 10.0], [10.0, 10.0, 70.0, 10.0],
+                 [90.0, 8.0, 1.0, 1.0], [30.0, 15.0, 20.0, 35.0]],
+                index=['A', 'B', 'C', 'D'],
+                columns=['feat1', 'feat2', 'feat3', 'feat4'])).view(biom.Table)
+        self.mdc_percnorm = qiime2.CategoricalMetadataColumn(
+            pd.Series(['X', 'X', 'Y', 'Y'], index=index, name='name'))
 
     # test feature extraction
     def test_extract_features(self):
@@ -770,6 +780,12 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             X_train, X_test = split_table(
                 self.table_chard_fp, self.mdc_chard_fp, test_size=1.0,
                 random_state=123, stratify=True, missing_samples='ignore')
+
+    def test_split_table_percnorm(self):
+        X_train, X_test = split_table(
+            self.table_percnorm, self.mdc_percnorm, test_size=0.5,
+            random_state=123, stratify=True, missing_samples='ignore')
+        self.assertEqual(len(X_train.ids()) + len(X_test.ids()), 4)
 
     # test experimental functions
     def test_detect_outliers(self):
