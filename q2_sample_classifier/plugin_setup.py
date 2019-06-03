@@ -461,7 +461,8 @@ plugin.methods.register_function(
         **parameters['regressor']},
     outputs=[('training_table', FeatureTable[T]),
              ('test_table', FeatureTable[T])],
-    input_descriptions=input_descriptions,
+    input_descriptions={'table': 'Feature table containing all features that '
+                        'should be used for target prediction.'},
     parameter_descriptions={
         'random_state': parameter_descriptions['base']['random_state'],
         'missing_samples': parameter_descriptions['base']['missing_samples'],
