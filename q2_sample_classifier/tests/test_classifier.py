@@ -543,7 +543,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             FeatureTable[PercentileNormalized], pd.DataFrame(
                 [[20.0, 20.0, 50.0, 10.0], [10.0, 10.0, 70.0, 10.0],
                  [90.0, 8.0, 1.0, 1.0], [30.0, 15.0, 20.0, 35.0]],
-                index=['A', 'B', 'C', 'D'],
+                index=index,
                 columns=['feat1', 'feat2', 'feat3', 'feat4'])).view(biom.Table)
         self.mdc_percnorm = qiime2.CategoricalMetadataColumn(
             pd.Series(['X', 'X', 'Y', 'Y'], index=index, name='name'))

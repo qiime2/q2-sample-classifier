@@ -85,9 +85,7 @@ predict_description = (
     'contain overlapping features with the feature table used to train '
     'the estimator.')
 
-inputs = {'table': FeatureTable[Frequency | RelativeFrequency |
-                                PresenceAbsence | Balance |
-                                PercentileNormalized]}
+inputs = {'table': FeatureTable[Frequency]}
 
 input_descriptions = {'table': ('Feature table containing all features that '
                                 'should be used for target prediction.')}
