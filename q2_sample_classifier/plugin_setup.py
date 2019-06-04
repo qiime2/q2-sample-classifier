@@ -10,8 +10,10 @@ import importlib
 
 from qiime2.plugin import (
     Int, Str, Float, Range, Bool, Plugin, Metadata, Choices, MetadataColumn,
-    Numeric, Categorical, Citations, Visualization)
-from q2_types.feature_table import FeatureTable, Frequency
+    Numeric, Categorical, Citations, Visualization, TypeMatch)
+from q2_types.feature_table import (
+    FeatureTable, Frequency, RelativeFrequency, PresenceAbsence, Balance,
+    PercentileNormalized)
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
 from q2_types.distance_matrix import DistanceMatrix
@@ -446,18 +448,21 @@ plugin.visualizers.register_function(
 )
 
 
+T = TypeMatch([Frequency, RelativeFrequency, PresenceAbsence, Balance,
+              PercentileNormalized])
 plugin.methods.register_function(
     function=split_table,
-    inputs=inputs,
+    inputs={'table': FeatureTable[T]},
     parameters={
         'random_state': parameters['base']['random_state'],
         'missing_samples': parameters['base']['missing_samples'],
         **parameters['splitter'],
         'metadata': MetadataColumn[Numeric | Categorical],
         **parameters['regressor']},
-    outputs=[('training_table', FeatureTable[Frequency]),
-             ('test_table', FeatureTable[Frequency])],
-    input_descriptions=input_descriptions,
+    outputs=[('training_table', FeatureTable[T]),
+             ('test_table', FeatureTable[T])],
+    input_descriptions={'table': 'Feature table containing all features that '
+                        'should be used for target prediction.'},
     parameter_descriptions={
         'random_state': parameter_descriptions['base']['random_state'],
         'missing_samples': parameter_descriptions['base']['missing_samples'],
