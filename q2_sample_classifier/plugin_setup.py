@@ -553,7 +553,7 @@ plugin.pipelines.register_function(
     input_descriptions={**input_descriptions,
                         'importance': 'Feature importances.'},
     parameter_descriptions={
-        'metadata': 'Metadata file to convert to feature table.',
+        'metadata': 'Metadata column to use for sample labeling or grouping.',
         'feature_count': 'Filter feature table to include top N most '
                          'important features. Set to zero to include all '
                          'features.',
