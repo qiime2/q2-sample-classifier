@@ -228,7 +228,7 @@ class TestRFEExtractor(SampleClassifierTestPluginBase):
         selector = RFECV(LinearSVR(random_state=123), step=steps, cv=2)
         selector = selector.fit(self.X, self.y)
         pdt.assert_series_equal(
-            _extract_rfe_scores(selector), expected, check_less_precise=3)
+            _extract_rfe_scores(selector), expected, check_less_precise=1)
 
     def test_extract_rfe_scores_step_int_one(self):
         self.extract_rfe_scores_template(1, self.exp1)
