@@ -317,7 +317,8 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         exp = pd.Series([True, False, True, False, True, False],
                         name='outlier', index=exp_index)
         obs = transformer(exp)
-        obs = pd.Series.from_csv(str(obs), sep='\t', header=0, index_col=0)
+        obs = pd.read_csv(str(obs), sep='\t', header=0, index_col=0,
+                                 squeeze=True)
         self.assertEqual(sorted(exp), sorted(obs))
 
     def test_boolean_format_to_pd_series(self):
@@ -377,7 +378,8 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         exp = pd.Series([1, 2, 3, 4],
                         name='prediction', index=['a', 'b', 'c', 'd'])
         obs = transformer(exp)
-        obs = pd.Series.from_csv(str(obs), sep='\t', header=0, index_col=0)
+        obs = pd.read_csv(str(obs), sep='\t', header=0, index_col=0,
+                                 squeeze=True)
         pdt.assert_series_equal(obs, exp)
 
     def test_pd_series_to_Predictions_format_allow_nans(self):
@@ -385,7 +387,8 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         exp = pd.Series([1, np.nan, 3, np.nan],
                         name='prediction', index=['a', 'b', 'c', 'd'])
         obs = transformer(exp)
-        obs = pd.Series.from_csv(str(obs), sep='\t', header=0, index_col=0)
+        obs = pd.read_csv(str(obs), sep='\t', header=0, index_col=0,
+                                 squeeze=True)
         pdt.assert_series_equal(obs, exp)
 
     def test_Predictions_format_to_pd_series(self):
@@ -540,9 +543,9 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         self.exp_imp = pd.read_csv(
             self.get_data_path('importance.tsv'), sep='\t', header=0,
             index_col=0)
-        self.exp_pred = pd.Series.from_csv(
+        self.exp_pred = pd.read_csv(
             self.get_data_path('predictions.tsv'), sep='\t', header=0,
-            index_col=0)
+            index_col=0, squeeze=True)
         index = pd.Index(['A', 'B', 'C', 'D'], name='id')
         self.table_percnorm = qiime2.Artifact.import_data(
             FeatureTable[PercentileNormalized], pd.DataFrame(
