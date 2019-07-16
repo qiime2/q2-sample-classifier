@@ -350,7 +350,8 @@ def summarize(output_dir: str, sample_estimator: Pipeline):
     _summarize_estimator(output_dir, sample_estimator)
 
 
-def heatmap(ctx, table, importance, metadata=None, feature_count=50,
+def heatmap(ctx, table, importance, sample_metadata=None,
+            feature_metadata=None, feature_count=50,
             importance_threshold=0, group_samples=False, normalize=True,
             metric='braycurtis', method='average', cluster='features',
             color_scheme='rocket'):
@@ -358,9 +359,9 @@ def heatmap(ctx, table, importance, metadata=None, feature_count=50,
     group = ctx.get_action('feature_table', 'group')
     make_heatmap = ctx.get_action('feature_table', 'heatmap')
 
-    if group_samples and metadata is None:
+    if group_samples and sample_metadata is None:
         raise ValueError(
-            'If group_samples is enabled, metadata are not optional.')
+            'If group_samples is enabled, sample_metadata are not optional.')
 
     clustermap_params = {
         'cluster': cluster, 'normalize': normalize, 'metric': metric,
@@ -386,9 +387,14 @@ def heatmap(ctx, table, importance, metadata=None, feature_count=50,
     # optionally group feature table by sample metadata
     # otherwise annotate heatmap with sample metadata
     if group_samples:
-        table, = group(table, metadata=metadata, axis='sample', mode='sum')
-    elif metadata is not None:
-        clustermap_params['metadata'] = metadata
+        table, = group(table, metadata=sample_metadata, axis='sample',
+                       mode='sum')
+    elif sample_metadata is not None:
+        clustermap_params['sample_metadata'] = sample_metadata
+
+    # label features using feature metadata
+    if feature_metadata is not None:
+        clustermap_params['feature_metadata'] = feature_metadata
 
     # make yer heatmap
     clustermap, = make_heatmap(table, **clustermap_params)

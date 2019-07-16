@@ -922,7 +922,8 @@ class TestHeatmap(SampleClassifierTestPluginBase):
     def test_heatmap_must_group_or_die(self):
         with self.assertRaisesRegex(ValueError, "metadata are not optional"):
             heatmap, table, = sample_classifier.actions.heatmap(
-                self.table_ecam, self.imp, metadata=None, group_samples=True)
+                self.table_ecam, self.imp, sample_metadata=None,
+                group_samples=True)
 
 
 class NowLetsTestTheActions(SampleClassifierTestPluginBase):
