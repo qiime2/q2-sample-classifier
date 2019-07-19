@@ -174,9 +174,12 @@ def classify_samples(ctx,
 
     print(probabilities.view(pd.DataFrame))
 
+<<<<<<< HEAD
     accuracy_results, = confusion(predictions, metadata, probabilities,
                                   missing_samples='ignore', palette=palette)
 
+=======
+>>>>>>> ncv predict_probabilities wired up
     return (sample_estimator, importance, predictions, summary,
             accuracy_results, probabilities)
 
@@ -273,6 +276,7 @@ def predict_base(table, sample_estimator, n_jobs):
 
     # log prediction probabilities (classifiers only)
 <<<<<<< HEAD
+<<<<<<< HEAD
     if sample_estimator.named_steps.est.__class__.__name__ in _classifiers:
         probs = predict_probabilities(sample_estimator, feature_data, index)
     else:
@@ -281,10 +285,19 @@ def predict_base(table, sample_estimator, n_jobs):
     return y_pred, probs
 =======
     if sample_estimator.__class__.__name__ in _classifiers:
+=======
+    if sample_estimator.named_steps.est.__class__.__name__ in _classifiers:
+>>>>>>> ncv predict_probabilities wired up
         probs = predict_probabilities(sample_estimator, feature_data, index)
+    else:
+        probs = None
 
+<<<<<<< HEAD
     return y_pred
 >>>>>>> ProbabilitiesFormat registration and function integration
+=======
+    return y_pred, probs
+>>>>>>> ncv predict_probabilities wired up
 
 
 def predict_classification(table: biom.Table, sample_estimator: Pipeline,
