@@ -9,9 +9,11 @@
 from ._format import (
     BooleanSeriesFormat, BooleanSeriesDirectoryFormat,
     PredictionsFormat, PredictionsDirectoryFormat, ImportanceFormat,
-    ImportanceDirectoryFormat, SampleEstimatorDirFmt, PickleFormat)
+    ImportanceDirectoryFormat, SampleEstimatorDirFmt, PickleFormat,
+    ProbabilitiesFormat, ProbabilitiesDirectoryFormat)
 from ._type import (BooleanSeries, ClassifierPredictions, RegressorPredictions,
-                    Importance, SampleEstimator, Classifier, Regressor)
+                    Importance, SampleEstimator, Classifier, Regressor,
+                    Probabilities)
 from ._version import get_versions
 
 
@@ -23,4 +25,5 @@ __all__ = ['BooleanSeriesFormat', 'BooleanSeriesDirectoryFormat',
            'ImportanceFormat', 'ImportanceDirectoryFormat',
            'SampleEstimatorDirFmt', 'PickleFormat', 'BooleanSeries',
            'ClassifierPredictions', 'RegressorPredictions', 'Importance',
-           'Classifier', 'Regressor', 'SampleEstimator']
+           'Classifier', 'Regressor', 'SampleEstimator', 'Probabilities',
+           'ProbabilitiesFormat', 'ProbabilitiesDirectoryFormat']

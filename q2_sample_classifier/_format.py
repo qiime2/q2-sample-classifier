@@ -163,3 +163,15 @@ class ImportanceFormat(model.TextFileFormat):
 ImportanceDirectoryFormat = model.SingleFileDirectoryFormat(
     'ImportanceDirectoryFormat', 'importance.tsv',
     ImportanceFormat)
+
+
+class ProbabilitiesFormat(ImportanceFormat):
+    # The probabilities format is a 2+-column format identical to
+    # ImportanceFormat, but containing probabilities (a SampleData type)
+    # instead of feature importances (a FeatureData type)
+    pass
+
+
+ProbabilitiesDirectoryFormat = model.SingleFileDirectoryFormat(
+    'ProbabilitiesDirectoryFormat', 'class_probabilities.tsv',
+    ProbabilitiesFormat)

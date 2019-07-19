@@ -21,7 +21,8 @@ import skbio
 from .utilities import (_load_data, _prepare_training_data,
                         nested_cross_validation, _fit_estimator,
                         _extract_features, _plot_accuracy,
-                        _summarize_estimator)
+                        _summarize_estimator, predict_probabilities,
+                        _classifiers)
 
 
 defaults = {
@@ -253,6 +254,7 @@ def fit_regressor(table: biom.Table,
 def predict_base(table, sample_estimator, n_jobs):
     # extract feature data from biom
     feature_data = _extract_features(table)
+    index = table.ids()
 
     # reset n_jobs if this is a valid parameter for the estimator
     if 'est__n_jobs' in sample_estimator.get_params().keys():
@@ -262,8 +264,12 @@ def predict_base(table, sample_estimator, n_jobs):
     y_pred = sample_estimator.predict(feature_data)
     # need to flatten arrays that come out as multidimensional
     y_pred = y_pred.flatten()
-    y_pred = pd.Series(y_pred, index=table.ids(), name='prediction')
+    y_pred = pd.Series(y_pred, index=index, name='prediction')
     y_pred.index.name = 'SampleID'
+
+    # log prediction probabilities (classifiers only)
+    if sample_estimator.__class__.__name__ in _classifiers:
+        probs = predict_probabilities(sample_estimator, feature_data, index)
 
     return y_pred
 
@@ -303,7 +309,7 @@ def regress_samples_ncv(
         missing_samples: str = defaults['missing_samples']
         ) -> (pd.Series, pd.DataFrame):
 
-    y_pred, importances = nested_cross_validation(
+    y_pred, importances, probabilities = nested_cross_validation(
         table, metadata, cv, random_state, n_jobs, n_estimators, estimator,
         stratify, parameter_tuning, classification=False,
         scoring=mean_squared_error, missing_samples=missing_samples)
@@ -320,7 +326,7 @@ def classify_samples_ncv(
         missing_samples: str = defaults['missing_samples']
         ) -> (pd.Series, pd.DataFrame):
 
-    y_pred, importances = nested_cross_validation(
+    y_pred, importances, probabilities = nested_cross_validation(
         table, metadata, cv, random_state, n_jobs, n_estimators, estimator,
         stratify=True, parameter_tuning=parameter_tuning, classification=False,
         scoring=accuracy_score, missing_samples=missing_samples)

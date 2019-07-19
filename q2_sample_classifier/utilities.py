@@ -36,9 +36,9 @@ import biom
 from .visuals import (_linear_regress, _plot_confusion_matrix, _plot_RFE,
                       _regplot_from_dataframe)
 
-classifiers = ['RandomForestClassifier', 'ExtraTreesClassifier',
-               'GradientBoostingClassifier', 'AdaBoostClassifier',
-               'KNeighborsClassifier', 'LinearSVC', 'SVC']
+_classifiers = ['RandomForestClassifier', 'ExtraTreesClassifier',
+                'GradientBoostingClassifier', 'AdaBoostClassifier',
+                'KNeighborsClassifier', 'LinearSVC', 'SVC']
 
 parameters = {
     'ensemble': {"max_depth": [4, 8, 16, None],
@@ -288,9 +288,11 @@ def nested_cross_validation(table, metadata, cv, random_state, n_jobs,
         random_state, parameter_tuning, classification)
 
     # predict values for all samples via (nested) CV
-    scores, predictions, importances, tops = _fit_and_predict_cv(
-        X_train, y_train[column], estimator, param_dist, n_jobs, scoring,
-        random_state, cv, stratify, calc_feature_importance, parameter_tuning)
+    scores, predictions, importances, tops, probabilities = \
+        _fit_and_predict_cv(
+            X_train, y_train[column], estimator, param_dist, n_jobs, scoring,
+            random_state, cv, stratify, calc_feature_importance,
+            parameter_tuning)
 
     # Print accuracy score to stdout
     print("Estimator Accuracy: {0} ± {1}".format(
@@ -299,7 +301,7 @@ def nested_cross_validation(table, metadata, cv, random_state, n_jobs,
     # TODO: save down estimator with tops parameters (currently the estimator
     # would be untrained, and tops parameters are not reported)
 
-    return predictions['prediction'], importances
+    return predictions['prediction'], importances, probabilities
 
 
 def _fit_estimator(features, targets, estimator, n_estimators=100, step=0.05,
@@ -617,7 +619,7 @@ def _fit_and_predict_cv(table, metadata, estimator, param_dist, n_jobs,
         predictions = pd.concat([predictions, pred])
 
         # log prediction probabilities (classifiers only)
-        if estimator.__class__.__name__ in classifiers:
+        if estimator.__class__.__name__ in _classifiers:
             probs = predict_probabilities(estimator, test_set, index)
             probabilities = pd.concat([probabilities, probs])
 
@@ -648,8 +650,9 @@ def _fit_and_predict_cv(table, metadata, estimator, param_dist, n_jobs,
 
     predictions.columns = ['prediction']
     predictions.index.name = 'SampleID'
+    probabilities.index.name = 'SampleID'
 
-    return scores, predictions, importances, tops
+    return scores, predictions, importances, tops, probabilities
 
 
 def predict_probabilities(estimator, test_set, index):

@@ -37,7 +37,8 @@ from q2_sample_classifier import (
     PredictionsFormat, PredictionsDirectoryFormat, ClassifierPredictions,
     RegressorPredictions, ImportanceFormat, ImportanceDirectoryFormat,
     Importance, SampleEstimatorDirFmt, PickleFormat, SampleEstimator,
-    Classifier, Regressor)
+    Classifier, Regressor, ProbabilitiesFormat, ProbabilitiesDirectoryFormat,
+    Probabilities)
 from q2_sample_classifier._format import JSONFormat
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
@@ -489,6 +490,85 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
                            columns=['importance'],
                            index=exp_index, dtype='str')
         pdt.assert_frame_equal(obs.to_dataframe()[:4], exp)
+
+    # test Probabilities format
+    def test_Probabilities_format_validate_positive(self):
+        filepath = self.get_data_path('class_probabilities.tsv')
+        format = ProbabilitiesFormat(filepath, mode='r')
+        format.validate(level='min')
+        format.validate()
+
+    def test_Probabilities_format_validate_negative_nonnumeric(self):
+        filepath = self.get_data_path('chardonnay.map.txt')
+        format = ProbabilitiesFormat(filepath, mode='r')
+        with self.assertRaisesRegex(ValidationError, 'numeric values'):
+            format.validate()
+
+    def test_Probabilities_format_validate_negative_empty(self):
+        filepath = self.get_data_path('empty_file.txt')
+        format = ProbabilitiesFormat(filepath, mode='r')
+        with self.assertRaisesRegex(ValidationError, 'one data record'):
+            format.validate()
+
+    def test_Probabilities_format_validate_negative(self):
+        filepath = self.get_data_path('garbage.txt')
+        format = ProbabilitiesFormat(filepath, mode='r')
+        with self.assertRaisesRegex(ValidationError, 'two or more fields'):
+            format.validate()
+
+    def test_Probabilities_dir_fmt_validate_positive(self):
+        filepath = self.get_data_path('class_probabilities.tsv')
+        shutil.copy(filepath, self.temp_dir.name)
+        format = ProbabilitiesDirectoryFormat(self.temp_dir.name, mode='r')
+        format.validate()
+
+    def test_Probabilities_semantic_type_registration(self):
+        self.assertRegisteredSemanticType(Probabilities)
+
+    def test_sample_data_Probabilities_to_Probs_dir_fmt_registration(self):
+        self.assertSemanticTypeRegisteredToFormat(
+            SampleData[Probabilities], ProbabilitiesDirectoryFormat)
+
+    def test_pd_dataframe_to_Probabilities_format(self):
+        transformer = self.get_transformer(pd.DataFrame, ProbabilitiesFormat)
+        exp = pd.DataFrame([[0.1, 0.77], [0.8, 0.4], [0.7, 0.1], [0.44, 0.73]],
+                           columns=['classA', 'classB'],
+                           index=['a', 'b', 'c', 'd'])
+        obs = transformer(exp)
+        obs = pd.DataFrame.from_csv(str(obs), sep='\t', header=0)
+        pdt.assert_frame_equal(exp, obs)
+
+    def test_Probabilities_format_to_pd_dataframe(self):
+        _, obs = self.transform_format(
+            ProbabilitiesFormat, pd.DataFrame, 'class_probabilities.tsv')
+        exp_index = pd.Index(['s1', 's2', 's3', 's4', 's5', 's6', 's7'],
+                             name='id')
+        exp = pd.DataFrame([[0.4446, 0.9828, 0.3208],
+                            [0.0776, 0.0118, 0.4175],
+                            [0.0657, 0.0251, 0.7505],
+                            [0.0617, 0.1855, 0.8716],
+                            [0.0281, 0.8616, 0.0291],
+                            [0.0261, 0.0253, 0.9075],
+                            [0.0252, 0.7385, 0.4068]],
+                           columns=['classA', 'classB', 'classC'],
+                           index=exp_index, dtype='str')
+        pdt.assert_frame_equal(exp, obs)
+
+    def test_Probabilities_format_to_metadata(self):
+        _, obs = self.transform_format(
+            ProbabilitiesFormat, qiime2.Metadata, 'class_probabilities.tsv')
+        exp_index = pd.Index(['s1', 's2', 's3', 's4', 's5', 's6', 's7'],
+                             name='id')
+        exp = pd.DataFrame([[0.4446, 0.9828, 0.3208],
+                            [0.0776, 0.0118, 0.4175],
+                            [0.0657, 0.0251, 0.7505],
+                            [0.0617, 0.1855, 0.8716],
+                            [0.0281, 0.8616, 0.0291],
+                            [0.0261, 0.0253, 0.9075],
+                            [0.0252, 0.7385, 0.4068]],
+                           columns=['classA', 'classB', 'classC'],
+                           index=exp_index, dtype='str')
+        pdt.assert_frame_equal(obs.to_dataframe(), exp)
 
     # test utility formats
     def test_pickle_format_validate_negative(self):

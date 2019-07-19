@@ -31,11 +31,13 @@ from ._format import (SampleEstimatorDirFmt,
                       ImportanceFormat,
                       ImportanceDirectoryFormat,
                       PredictionsFormat,
-                      PredictionsDirectoryFormat)
+                      PredictionsDirectoryFormat,
+                      ProbabilitiesFormat,
+                      ProbabilitiesDirectoryFormat)
 
 from ._type import (ClassifierPredictions, RegressorPredictions,
                     SampleEstimator, BooleanSeries, Importance,
-                    Classifier, Regressor)
+                    Classifier, Regressor, Probabilities)
 import q2_sample_classifier
 
 citations = Citations.load('citations.bib', package='q2_sample_classifier')
@@ -588,7 +590,7 @@ plugin.pipelines.register_function(
 # Registrations
 plugin.register_semantic_types(
     SampleEstimator, BooleanSeries, Importance, ClassifierPredictions,
-    RegressorPredictions, Classifier, Regressor)
+    RegressorPredictions, Classifier, Regressor, Probabilities)
 plugin.register_semantic_type_to_format(
     SampleEstimator[Classifier],
     artifact_format=SampleEstimatorDirFmt)
@@ -607,8 +609,12 @@ plugin.register_semantic_type_to_format(
 plugin.register_semantic_type_to_format(
     FeatureData[Importance],
     artifact_format=ImportanceDirectoryFormat)
+plugin.register_semantic_type_to_format(
+    SampleData[Probabilities],
+    artifact_format=ProbabilitiesDirectoryFormat)
 plugin.register_formats(
     SampleEstimatorDirFmt, BooleanSeriesFormat, BooleanSeriesDirectoryFormat,
     ImportanceFormat, ImportanceDirectoryFormat, PredictionsFormat,
-    PredictionsDirectoryFormat)
+    PredictionsDirectoryFormat, ProbabilitiesFormat,
+    ProbabilitiesDirectoryFormat)
 importlib.import_module('q2_sample_classifier._transformer')
