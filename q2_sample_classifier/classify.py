@@ -272,12 +272,19 @@ def predict_base(table, sample_estimator, n_jobs):
     y_pred.index.name = 'SampleID'
 
     # log prediction probabilities (classifiers only)
+<<<<<<< HEAD
     if sample_estimator.named_steps.est.__class__.__name__ in _classifiers:
         probs = predict_probabilities(sample_estimator, feature_data, index)
     else:
         probs = None
 
     return y_pred, probs
+=======
+    if sample_estimator.__class__.__name__ in _classifiers:
+        probs = predict_probabilities(sample_estimator, feature_data, index)
+
+    return y_pred
+>>>>>>> ProbabilitiesFormat registration and function integration
 
 
 def predict_classification(table: biom.Table, sample_estimator: Pipeline,
