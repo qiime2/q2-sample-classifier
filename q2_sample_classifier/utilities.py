@@ -36,6 +36,9 @@ import biom
 from .visuals import (_linear_regress, _plot_confusion_matrix, _plot_RFE,
                       _regplot_from_dataframe)
 
+classifiers = ['RandomForestClassifier', 'ExtraTreesClassifier',
+               'GradientBoostingClassifier', 'AdaBoostClassifier',
+               'KNeighborsClassifier', 'LinearSVC', 'SVC']
 
 parameters = {
     'ensemble': {"max_depth": [4, 8, 16, None],
@@ -585,6 +588,7 @@ def _fit_and_predict_cv(table, metadata, estimator, param_dist, n_jobs,
         _cv = KFold(n_splits=cv, shuffle=True, random_state=random_state)
 
     predictions = pd.DataFrame()
+    probabilities = pd.DataFrame()
     scores = []
     top_params = []
     importances = []
@@ -611,6 +615,12 @@ def _fit_and_predict_cv(table, metadata, estimator, param_dist, n_jobs,
 
         # log predictions results
         predictions = pd.concat([predictions, pred])
+
+        # log prediction probabilities (classifiers only)
+        if estimator.__class__.__name__ in classifiers:
+            probs = predict_probabilities(estimator, test_set, index)
+            probabilities = pd.concat([probabilities, probs])
+
         # log accuracy on that fold
         scores += [scoring(pred, index)]
         # log feature importances
@@ -640,6 +650,24 @@ def _fit_and_predict_cv(table, metadata, estimator, param_dist, n_jobs,
     predictions.index.name = 'SampleID'
 
     return scores, predictions, importances, tops
+
+
+def predict_probabilities(estimator, test_set, index):
+    '''
+    Predict class probabilities for a set of test samples.
+
+    estimator: sklearn trained classifier
+    test_set: array-like of y_values (features) for test set samples that will
+              have their class probabilities predicted.
+    index: array-like of sample names
+    '''
+    try:
+        probs = pd.DataFrame(estimator.predict_proba(test_set),
+                             index=index.index, columns=estimator.classes_)
+    except AttributeError:
+        probs = pd.DataFrame(estimator.decision_function(test_set),
+                             index=index.index, columns=estimator.classes_)
+    return probs
 
 
 def _mean_feature_importance(importances):
