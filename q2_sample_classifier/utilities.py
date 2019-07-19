@@ -619,8 +619,8 @@ def _fit_and_predict_cv(table, metadata, estimator, param_dist, n_jobs,
         predictions = pd.concat([predictions, pred])
 
         # log prediction probabilities (classifiers only)
-        if estimator.__class__.__name__ in _classifiers:
-            probs = predict_probabilities(estimator, test_set, index)
+        if estimator.named_steps.est.__class__.__name__ in _classifiers:
+            probs = predict_probabilities(estimator, test_set, index.index)
             probabilities = pd.concat([probabilities, probs])
 
         # log accuracy on that fold
@@ -664,12 +664,14 @@ def predict_probabilities(estimator, test_set, index):
               have their class probabilities predicted.
     index: array-like of sample names
     '''
+    # most classifiers have a predict_proba attribute
     try:
         probs = pd.DataFrame(estimator.predict_proba(test_set),
-                             index=index.index, columns=estimator.classes_)
+                             index=index, columns=estimator.classes_)
+    # SVMs use the decision_function attribute
     except AttributeError:
         probs = pd.DataFrame(estimator.decision_function(test_set),
-                             index=index.index, columns=estimator.classes_)
+                             index=index, columns=estimator.classes_)
     return probs
 
 

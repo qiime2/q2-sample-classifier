@@ -167,14 +167,16 @@ def classify_samples(ctx,
         estimator, optimize_feature_selection, parameter_tuning,
         missing_samples='ignore')
 
-    predictions, = predict_test(X_test, sample_estimator, n_jobs)
+    predictions, probabilities, = predict_test(
+        X_test, sample_estimator, n_jobs)
 
     summary, = summarize_estimator(sample_estimator)
 
     accuracy_results, = confusion(
         predictions, metadata, missing_samples='ignore', palette=palette)
 
-    return sample_estimator, importance, predictions, summary, accuracy_results
+    return (sample_estimator, importance, predictions, summary,
+            accuracy_results, probabilities)
 
 
 def regress_samples(ctx,
@@ -268,20 +270,25 @@ def predict_base(table, sample_estimator, n_jobs):
     y_pred.index.name = 'SampleID'
 
     # log prediction probabilities (classifiers only)
-    if sample_estimator.__class__.__name__ in _classifiers:
+    if sample_estimator.named_steps.est.__class__.__name__ in _classifiers:
         probs = predict_probabilities(sample_estimator, feature_data, index)
+    else:
+        probs = None
 
-    return y_pred
+    return y_pred, probs
 
 
 def predict_classification(table: biom.Table, sample_estimator: Pipeline,
-                           n_jobs: int = defaults['n_jobs']) -> pd.Series:
+                           n_jobs: int = defaults['n_jobs']) -> (
+                            pd.Series, pd.DataFrame):
     return predict_base(table, sample_estimator, n_jobs)
 
 
 def predict_regression(table: biom.Table, sample_estimator: Pipeline,
                        n_jobs: int = defaults['n_jobs']) -> pd.Series:
-    return predict_base(table, sample_estimator, n_jobs)
+    # we only return the predictions, not the probabilities, which are empty
+    # for regressors.
+    return predict_base(table, sample_estimator, n_jobs)[0]
 
 
 def split_table(table: biom.Table, metadata: qiime2.MetadataColumn,
@@ -324,13 +331,13 @@ def classify_samples_ncv(
         estimator: str = defaults['estimator_c'],
         parameter_tuning: bool = False,
         missing_samples: str = defaults['missing_samples']
-        ) -> (pd.Series, pd.DataFrame):
+        ) -> (pd.Series, pd.DataFrame, pd.DataFrame):
 
     y_pred, importances, probabilities = nested_cross_validation(
         table, metadata, cv, random_state, n_jobs, n_estimators, estimator,
         stratify=True, parameter_tuning=parameter_tuning, classification=False,
         scoring=accuracy_score, missing_samples=missing_samples)
-    return y_pred, importances
+    return y_pred, importances, probabilities
 
 
 def scatterplot(output_dir: str, predictions: pd.Series,

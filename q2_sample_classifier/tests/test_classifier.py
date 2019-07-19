@@ -773,9 +773,46 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             missing_samples='ignore')
 
     def test_classify_samples_ncv(self):
-        y_pred, importances = classify_samples_ncv(
+        y_pred, importances, probabilities = classify_samples_ncv(
             self.table_chard_fp, self.mdc_chard_fp, random_state=123,
             n_estimators=2, n_jobs=1, missing_samples='ignore')
+
+    # test reproducibility of classifier results, probabilities
+    def test_classify_samples_ncv_accuracy(self):
+        dat = biom.Table(np.array(
+            [[4446, 9828, 3208, 776, 118, 4175, 657, 251, 7505, 617],
+             [1855, 8716, 3257, 1251, 3205, 2557, 4251, 7405, 1417, 1215],
+             [6616, 281, 8616, 291, 261, 253, 9075, 252, 7385, 4068]]),
+            observation_ids=['o1', 'o2', 'o3'],
+            sample_ids=['s1', 's2', 's3', 's4', 's5',
+                        's6', 's7', 's8', 's9', 's10'])
+        md = qiime2.CategoricalMetadataColumn(pd.Series(
+            ['red', 'red', 'red', 'red', 'red',
+             'blue', 'blue', 'blue', 'blue', 'blue'],
+            index=pd.Index(['s1', 's2', 's3', 's4', 's5',
+                            's6', 's7', 's8', 's9', 's10'],
+                           name='sample-id'), name='color'))
+        y_pred, importances, probabilities = classify_samples_ncv(
+            dat, md, random_state=123, n_estimators=2, n_jobs=1,
+            missing_samples='ignore')
+        exp_pred = pd.Series(
+            ['blue', 'blue', 'blue', 'red', 'blue',
+             'blue', 'blue', 'red', 'red', 'blue'],
+            index=pd.Index(['s1', 's7', 's5', 's9', 's3', 's10', 's4', 's6',
+                            's2', 's8'], dtype='object', name='SampleID'),
+            name='prediction')
+        exp_importances = pd.DataFrame(
+            [0.5551111111111111, 0.2671111111111111, 0.1777777777777778],
+            index=pd.Index(['o3', 'o1', 'o2']), columns=['importance'])
+        exp_probabilities = pd.DataFrame(
+            [[1., 0.], [1., 0.], [1., 0.], [0., 1.], [0.5, 0.5], [0.5, 0.5],
+             [0.5, 0.5], [0., 1.], [0., 1.], [0.5, 0.5]],
+            index=pd.Index(['s1', 's7', 's5', 's9', 's3', 's10', 's4', 's6',
+                            's2', 's8'], name='SampleID'),
+            columns=['blue', 'red'])
+        pdt.assert_series_equal(y_pred, exp_pred)
+        pdt.assert_frame_equal(importances, exp_importances)
+        pdt.assert_frame_equal(probabilities, exp_probabilities)
 
     # test ncv a second time with KNeighborsRegressor (no feature importance)
     def test_regress_samples_ncv_knn(self):
@@ -911,7 +948,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 self.table_chard_fp, self.mdc_chard_fp, random_state=123,
                 n_estimators=2, estimator=classifier, n_jobs=1,
                 missing_samples='ignore')
-            pred = predict_classification(self.table_chard_fp, estimator)
+            pred, prob = predict_classification(self.table_chard_fp, estimator)
             exp = self.mdc_chard_fp.to_series().reindex(pred.index).dropna()
             # reindex both pred and exp because not all samples present in pred
             # are present in the metadata! (hence missing_samples='ignore')
