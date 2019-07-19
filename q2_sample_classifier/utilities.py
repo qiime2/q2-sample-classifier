@@ -685,6 +685,24 @@ def predict_probabilities(estimator, test_set, index):
     return probs
 
 
+def predict_probabilities(estimator, test_set, index):
+    '''
+    Predict class probabilities for a set of test samples.
+
+    estimator: sklearn trained classifier
+    test_set: array-like of y_values (features) for test set samples that will
+              have their class probabilities predicted.
+    index: array-like of sample names
+    '''
+    try:
+        probs = pd.DataFrame(estimator.predict_proba(test_set),
+                             index=index.index, columns=estimator.classes_)
+    except AttributeError:
+        probs = pd.DataFrame(estimator.decision_function(test_set),
+                             index=index.index, columns=estimator.classes_)
+    return probs
+
+
 def _mean_feature_importance(importances):
     '''Calculate mean feature importance across a list of pd.dataframes
     containing importance scores of the same features from multiple models
