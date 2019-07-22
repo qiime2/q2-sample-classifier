@@ -403,8 +403,8 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         exp_index = pd.Index(['10249.C001.10SS', '10249.C002.05SS',
                               '10249.C004.01SS', '10249.C004.11SS'],
                              name='id', dtype=object)
-        exp = pd.Series(['4.5', '2.5', '0.5', '4.5'], name='prediction',
-                        index=exp_index, dtype=object)
+        exp = pd.Series([4.5, 2.5, 0.5, 4.5], name='prediction',
+                        index=exp_index)
         pdt.assert_series_equal(obs[:4], exp)
 
     def test_Predictions_format_to_metadata(self):
@@ -414,7 +414,7 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
                               '10249.C004.01SS', '10249.C004.11SS'],
                              name='id')
         exp = pd.DataFrame([4.5, 2.5, 0.5, 4.5], columns=['prediction'],
-                           index=exp_index, dtype='str')
+                           index=exp_index)
         pdt.assert_frame_equal(obs.to_dataframe()[:4], exp)
 
     # test Importance format
@@ -474,7 +474,7 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         exp = pd.DataFrame([0.44469828320835586, 0.07760118417569697,
                             0.06570251750505914, 0.061718558716901406],
                            columns=['importance'],
-                           index=exp_index, dtype='str')
+                           index=exp_index)
         pdt.assert_frame_equal(exp, obs[:4])
 
     def test_Importance_format_to_metadata(self):
@@ -488,7 +488,7 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         exp = pd.DataFrame([0.44469828320835586, 0.07760118417569697,
                             0.06570251750505914, 0.061718558716901406],
                            columns=['importance'],
-                           index=exp_index, dtype='str')
+                           index=exp_index)
         pdt.assert_frame_equal(obs.to_dataframe()[:4], exp)
 
     # test Probabilities format

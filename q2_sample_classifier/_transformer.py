@@ -66,13 +66,14 @@ def _4(data: pd.Series) -> (PredictionsFormat):
 def _5(ff: PredictionsFormat) -> (pd.Series):
     with ff.open() as fh:
         df = _read_dataframe(fh)
-        return df.iloc[:, 0]
+        return pd.to_numeric(df.iloc[:, 0], errors='ignore')
 
 
 @plugin.register_transformer
 def _6(ff: PredictionsFormat) -> (qiime2.Metadata):
     with ff.open() as fh:
-        return qiime2.Metadata(_read_dataframe(fh))
+        return qiime2.Metadata(_read_dataframe(fh).apply(
+            lambda x: pd.to_numeric(x, errors='ignore')))
 
 
 @plugin.register_transformer
@@ -86,13 +87,15 @@ def _7(data: pd.DataFrame) -> (ImportanceFormat):
 @plugin.register_transformer
 def _8(ff: ImportanceFormat) -> (pd.DataFrame):
     with ff.open() as fh:
-        return _read_dataframe(fh)
+        return _read_dataframe(fh).apply(
+            lambda x: pd.to_numeric(x, errors='ignore'))
 
 
 @plugin.register_transformer
 def _9(ff: ImportanceFormat) -> (qiime2.Metadata):
     with ff.open() as fh:
-        return qiime2.Metadata(_read_dataframe(fh))
+        return qiime2.Metadata(_read_dataframe(fh).apply(
+            lambda x: pd.to_numeric(x, errors='ignore')))
 
 
 @plugin.register_transformer
