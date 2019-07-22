@@ -459,16 +459,15 @@ def _class_overlap_error():
 
 def _match_series_or_die(predictions, truth, missing_samples='error'):
     # validate input metadata and predictions
-    truth_ids = truth.index
-    predictions_ids = predictions.index
-    sample_ids = predictions_ids.intersection(truth_ids)
-    if missing_samples == 'error' and len(sample_ids) < len(predictions_ids):
-        missing_ids = predictions_ids.difference(sample_ids)
+    # truth must be a superset of predictions
+    truth_ids = set(truth.index)
+    predictions_ids = set(predictions.index)
+    missing_ids = predictions_ids - truth_ids
+    if missing_samples == 'error' and len(missing_ids) > 0:
         raise ValueError('Missing samples in metadata: %r' % missing_ids)
 
     # match metadata / prediction IDs
-    predictions = predictions.loc[sample_ids]
-    truth = truth.loc[sample_ids]
+    predictions, truth = predictions.align(truth, axis=0, join='inner')
 
     return predictions, truth
 
