@@ -21,7 +21,8 @@ import numpy as np
 from sklearn.exceptions import ConvergenceWarning
 from q2_sample_classifier.visuals import (
     _linear_regress, _calculate_baseline_accuracy, _custom_palettes,
-    _plot_heatmap_from_confusion_matrix, _add_sample_size_to_xtick_labels)
+    _plot_heatmap_from_confusion_matrix, _add_sample_size_to_xtick_labels,
+    _roc_palette, _roc_per_class, _roc_micro_average, _roc_macro_average)
 from q2_sample_classifier.classify import (
     regress_samples_ncv, classify_samples_ncv, fit_classifier, fit_regressor,
     detect_outliers, split_table, predict_classification,
@@ -1348,6 +1349,80 @@ class TestPlottingVisualizers(SampleClassifierTestPluginBase):
     def test_match_series_or_die_missing_samples(self):
         with self.assertRaisesRegex(ValueError, "Missing samples"):
             a, b = _match_series_or_die(self.a, self.bogus, 'error')
+
+
+class TestROC(SampleClassifierTestPluginBase):
+    def setUp(self):
+        super().setUp()
+        self.md = np.array(
+            [[1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0],
+             [1, 0, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0],
+             [0, 1, 0], [0, 1, 0], [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1],
+             [0, 0, 1], [0, 0, 1]])
+
+        np.random.seed(0)
+        probs = np.random.rand(20, 3)
+        # probabilities should sum to 1 for each sample
+        self.probs = np.apply_along_axis(
+            lambda x: x / x.sum(), axis=1, arr=probs)
+
+        self.exp_fpr = {0: [0., 0.07692308, 0.46153846, 0.46153846,
+                                     0.76923077, 0.76923077, 0.84615385,
+                                     0.84615385, 1., 1.],
+                        1: [0., 0., 0.15384615, 0.15384615,
+                                     0.61538462, 0.61538462, 0.69230769,
+                                     0.69230769, 1., 1.],
+                        2: [0., 0.07142857, 0.07142857, 0.14285714,
+                                     0.14285714, 0.78571429, 0.78571429,
+                                     0.92857143, 0.92857143, 1.]}
+        self.exp_tdr = {0: [0., 0., 0., 0.57142857, 0.57142857,
+                                     0.71428571, 0.71428571, 0.85714286,
+                                     0.85714286, 1.],
+                        1: [0., 0.14285714, 0.14285714, 0.28571429,
+                                     0.28571429, 0.57142857, 0.57142857,
+                                     0.85714286, 0.85714286, 1.],
+                        2: [0., 0., 0.16666667, 0.16666667, 0.5,
+                                     0.5, 0.66666667, 0.66666667, 1., 1. ]}
+        self.exp_roc_auc = {0: 0.3626373626373626, 1: 0.4615384615384615,
+                            2: 0.49999999999999994}
+
+    # this test confirms that all palettes load properly.
+    def test_roc_palette(self):
+        [_roc_palette(p, 3) for p in _custom_palettes().keys()]
+
+    def test_roc_per_class(self):
+        fpr, tdr, roc_auc = _roc_per_class(self.md, self.probs, [0, 1, 2])
+        for d, e in zip([fpr, tdr, roc_auc],
+                        [self.exp_fpr, self.exp_tdr, self.exp_roc_auc]):
+            for c in [0, 1, 2]:
+                np.testing.assert_array_almost_equal(d[c], e[c])
+
+    def test_roc_micro_average(self):
+        fpr, tdr, roc_auc = _roc_micro_average(
+            self.md, self.probs, self.exp_fpr, self.exp_tdr, self.exp_roc_auc)
+        np.testing.assert_array_almost_equal(fpr['micro'], np.array(
+            [0., 0.025, 0.025, 0.075, 0.075, 0.1, 0.1, 0.225, 0.225, 0.275,
+             0.275, 0.475, 0.475, 0.575, 0.575, 0.6, 0.6, 0.65, 0.65, 0.675,
+             0.675, 0.725, 0.725, 0.75, 0.75, 0.825, 0.825, 0.925, 0.925, 1.,
+             1.]))
+        np.testing.assert_array_almost_equal(tdr['micro'], np.array(
+            [0., 0., 0.05, 0.05, 0.1, 0.1, 0.15, 0.15, 0.2, 0.2, 0.25, 0.25,
+             0.35, 0.35, 0.4, 0.4, 0.45, 0.45, 0.5, 0.5, 0.55, 0.55, 0.6, 0.6,
+             0.75, 0.75, 0.8, 0.8, 0.95, 0.95, 1.]))
+        self.assertAlmostEqual(roc_auc['micro'], 0.41374999999999995)
+
+    def test_roc_macro_average(self):
+        fpr, tdr, roc_auc = _roc_macro_average(
+            self.exp_fpr, self.exp_tdr, self.exp_roc_auc, [0, 1, 2])
+        np.testing.assert_array_almost_equal(fpr['macro'], np.array(
+            [0., 0.07142857, 0.07692308, 0.14285714, 0.15384615, 0.46153846,
+             0.61538462, 0.69230769, 0.76923077, 0.78571429, 0.84615385,
+             0.92857143, 1.]))
+        np.testing.assert_array_almost_equal(tdr['macro'], np.array(
+            [0.04761905, 0.1031746, 0.1031746, 0.21428571, 0.26190476,
+             0.45238095, 0.54761905, 0.64285714, 0.69047619, 0.74603175,
+             0.7936508, 0.90476191, 1.]))
+        self.assertAlmostEqual(roc_auc['macro'], 0.49930228548098726)
 
 
 class TestTypes(SampleClassifierTestPluginBase):

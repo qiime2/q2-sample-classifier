@@ -458,7 +458,7 @@ def _class_overlap_error():
 
 
 def _match_series_or_die(predictions, truth, missing_samples='error'):
-    # validate input metadata and predictions
+    # validate input metadata and predictions, output intersection.
     # truth must be a superset of predictions
     truth_ids = set(truth.index)
     predictions_ids = set(predictions.index)

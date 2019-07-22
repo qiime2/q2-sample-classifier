@@ -7,8 +7,10 @@
 # ----------------------------------------------------------------------------
 
 from sklearn.metrics import (
-    mean_squared_error, confusion_matrix, accuracy_score)
-
+    mean_squared_error, confusion_matrix, accuracy_score, roc_curve, auc)
+from sklearn.preprocessing import label_binarize
+from itertools import cycle
+from scipy import interp
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -161,3 +163,169 @@ def _plot_RFE(x, y):
     plt.ylabel("Accuracy")
     plt.plot(x, y, 'grey')
     return rfe
+
+
+def _generate_roc_plots(metadata, probabilities, palette):
+    '''
+    metadata: pd.Series of target values.
+    probabilities: pd.DataFrame of class probabilities.
+    palette: str specifying sample-classifier colormap name.
+
+    Returns a pretty Receiver Operator Characteristic plot with AUC scores.
+    '''
+    classes = sorted(metadata.unique())
+    probabilities = probabilities.values
+
+    # only accepts binary inputs, so binarize the target data
+    binarized_targets = label_binarize(metadata, classes=classes)
+
+    # Compute ROC curve and ROC area for each class
+    fpr, tpr, roc_auc = _roc_per_class(
+        binarized_targets, probabilities, classes)
+
+    # Compute micro-average ROC curve and ROC area under curve
+    fpr, tpr, roc_auc = _roc_micro_average(
+        binarized_targets, probabilities, fpr, tpr, roc_auc)
+
+    # Compute macro-average ROC curve and ROC area
+    fpr, tpr, roc_auc = _roc_macro_average(fpr, tpr, roc_auc, classes)
+
+    # generate ROC plot
+    colors = _roc_palette(palette, len(classes))
+    return _roc_plot(fpr, tpr, roc_auc, classes, colors)
+
+
+def _roc_palette(palette, n_classes):
+    '''
+    palette: str specifying sample-classifier colormap name.
+    n_classes: int specifying number of classes (== n of colors to select).
+
+    Returns an iterator of colors.
+    '''
+    palette = _custom_palettes()[palette]
+
+    # specify color palette. Use different specification for str palette name
+    # vs. ListedColormap.
+    try:
+        colors = cycle(sns.color_palette(palette, n_colors=n_classes))
+    except TypeError:
+        # if using a continuous ListedColormap, select from normalized
+        # colorspace. We use linspace start=0.1 to avoid light colors at start
+        # of some colormaps.
+        palette = palette(np.linspace(0.1, 1, n_classes))
+        colors = cycle(palette)
+    return colors
+
+
+# adapted from scikit-learn examples
+# https://scikit-learn.org/stable/auto_examples/model_selection/plot_roc.html
+def _roc_per_class(binarized_targets, probabilities, classes):
+    '''
+    binarized_targets: array of binarized class labels of dimensions [n, c],
+        where n = number of samples, c = number of classes.
+    probabilities: array of class probabilities of dimensions [n, c],
+        where n = number of samples, c = number of classes.
+    classes: list of classes.
+
+    Returns dicts of False Positive Rate (fpr), True Detection Rate (tdr), and
+        ROC Area Under Curve (roc_auc) for each class.
+    '''
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+    for i, c in zip(range(len(classes)), classes):
+        fpr[c], tpr[c], _ = roc_curve(
+            binarized_targets[:, i], probabilities[:, i])
+        roc_auc[c] = auc(fpr[c], tpr[c])
+    return fpr, tpr, roc_auc
+
+
+# adapted from scikit-learn examples
+# https://scikit-learn.org/stable/auto_examples/model_selection/plot_roc.html
+def _roc_micro_average(binarized_targets, probabilities, fpr, tpr, roc_auc):
+    '''
+    binarized_targets: array of binarized class labels of dimensions [n, c],
+        where n = number of samples, c = number of classes.
+    probabilities: array of class probabilities of dimensions [n, c],
+        where n = number of samples, c = number of classes.
+    fpr: dict of false-positive rates for each class.
+    tdr: dict of true-detection rates for each class.
+    roc_auc: dict of auc scores for each class.
+
+    Returns fpr, tdr, roc_auc with micro average scores added.
+    '''
+    fpr["micro"], tpr["micro"], _ = roc_curve(
+        binarized_targets.ravel(), probabilities.ravel())
+    roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+    return fpr, tpr, roc_auc
+
+
+# adapted from scikit-learn examples
+# https://scikit-learn.org/stable/auto_examples/model_selection/plot_roc.html
+def _roc_macro_average(fpr, tpr, roc_auc, classes):
+    '''
+    fpr: dict of false-positive rates for each class.
+    tdr: dict of true-detection rates for each class.
+    roc_auc: dict of auc scores for each class.
+    classes: list of classes.
+
+    Returns fpr, tdr, roc_auc with micro average scores added.
+    '''
+    # Aggregate all false positive rates for computing average
+    all_fpr = np.unique(np.concatenate([fpr[c] for c in classes]))
+
+    # Then interpolate all ROC curves at this point
+    mean_tpr = np.zeros_like(all_fpr)
+    for c in classes:
+        mean_tpr += interp(all_fpr, fpr[c], tpr[c])
+
+    # Finally average it and compute AUC
+    mean_tpr /= len(classes)
+
+    fpr["macro"] = all_fpr
+    tpr["macro"] = mean_tpr
+    roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
+    return fpr, tpr, roc_auc
+
+
+# inspired by scikit-learn examples for multi-class ROC plots
+# https://scikit-learn.org/stable/auto_examples/model_selection/plot_roc.html
+def _roc_plot(fpr, tpr, roc_auc, classes, colors):
+    '''
+    fpr: dict of false-positive rates for each class.
+    tdr: dict of true-detection rates for each class.
+    roc_auc: dict of auc scores for each class.
+    classes: list of classes.
+    colors: list of colors.
+    '''
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(12, 4), sharey=True)
+    lw = 3
+
+    # plot averages in each panel
+    for i in [0, 1]:
+        axes[i].plot(fpr['micro'], tpr['micro'], color='navy', linestyle=':',
+                     lw=lw,
+                     label='micro-average (AUC = %0.2f)' % roc_auc['micro'])
+        axes[i].plot(fpr['macro'], tpr['macro'], color='lightblue',
+                     linestyle=':', lw=lw,
+                     label='macro-average (AUC = %0.2f)' % roc_auc['macro'])
+        # plot 1:1 ratio line
+        axes[i].plot([0, 1], [0, 1], color='grey', lw=lw, linestyle='--')
+        axes[i].set_xlim([0.0, 1.0])
+        axes[i].set_ylim([0.0, 1.05])
+        axes[i].set_xlabel('False Positive Rate')
+
+    # left panel: averages only
+    axes[0].set_ylabel('True Positive Rate')
+    axes[0].set_title('Receiver Operating Characteristic Average Scores')
+    axes[0].legend(loc="lower right")
+
+    # right panel: averages and per-class ROCs
+    axes[1].set_title('Per-Class Receiver Operating Characteristics')
+
+    for c, color in zip(classes, colors):
+        plt.plot(fpr[c], tpr[c], color=color, lw=lw,
+                 label='{0} (AUC = {1:0.2f})'.format(c, roc_auc[c]))
+    axes[1].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+
+    return fig
