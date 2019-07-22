@@ -171,7 +171,7 @@ def _generate_roc_plots(metadata, probabilities, palette):
     probabilities: pd.DataFrame of class probabilities.
     palette: str specifying sample-classifier colormap name.
 
-    Returns a pretty Receiver Operator Characteristic plot with AUC scores.
+    Returns a pretty Receiver Operating Characteristic plot with AUC scores.
     '''
     classes = sorted(metadata.unique())
     probabilities = probabilities.values
@@ -234,6 +234,8 @@ def _roc_per_class(binarized_targets, probabilities, classes):
     tpr = dict()
     roc_auc = dict()
     for i, c in zip(range(len(classes)), classes):
+        print(binarized_targets[:, i])
+        print(probabilities[:, i])
         fpr[c], tpr[c], _ = roc_curve(
             binarized_targets[:, i], probabilities[:, i])
         roc_auc[c] = auc(fpr[c], tpr[c])
@@ -310,7 +312,8 @@ def _roc_plot(fpr, tpr, roc_auc, classes, colors):
                      linestyle=':', lw=lw,
                      label='macro-average (AUC = %0.2f)' % roc_auc['macro'])
         # plot 1:1 ratio line
-        axes[i].plot([0, 1], [0, 1], color='grey', lw=lw, linestyle='--')
+        axes[i].plot([0, 1], [0, 1], color='grey', lw=lw, linestyle='--',
+                     label='Chance')
         axes[i].set_xlim([0.0, 1.0])
         axes[i].set_ylim([0.0, 1.05])
         axes[i].set_xlabel('False Positive Rate')

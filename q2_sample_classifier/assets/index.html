@@ -26,6 +26,31 @@
       </a>
     </div>
     {% endif %}
+    {% if roc %}
+    <div class="col-lg-12">
+      <h2>Receiver Operating Characteristic Curves</h2>
+      {{ roc }}
+      <p>Receiver Operating Characteristic (ROC) curves are a graphical
+      representation of the classification accuracy of a machine-learning
+      model. The ROC curve pltos the relationship between the true positive
+      rate (TPR, on the y-axis) and the false positive rate (FPR, on the
+      x-axis) at various threshold settings. Thus, the top-left corner of the
+      plot represents the "optimal" performance position, indicating a false-
+      positive rate of zero and a true-positive rate of one. This "optimal"
+      scenario is unlikely to occur in practice, but a greater area under the
+      curve (AUC) indicates better performance. This can be compared to the
+      error rate achieved by random chance, which can be represented as a
+      diagonal line extending from the lower-left to upper-right corners.
+      Additionally, the "steepness" of the curve is important, as a good
+      classifier should maximize the TPR while minimizing the FPR.
+
+      In addition to showing the ROC curves for each class, average ROCs and
+      AUCs are calculated. "Micro-averaging" calculates metrics globally by
+      averaging across each sample; hence class imbalance impacts this metric.
+      "Macro-averaging" is another average metric, which gives equal weight to
+      the classification of each sample.</p>
+    </div>
+    {% endif %}
     {% if optimize_feature_selection %}
     <h1>Recursive feature extraction</h1>
     <div class="text-center">

@@ -89,8 +89,10 @@ predict_description = (
 
 inputs = {'table': FeatureTable[Frequency]}
 
-input_descriptions = {'table': ('Feature table containing all features that '
-                                'should be used for target prediction.')}
+input_descriptions = {'table': 'Feature table containing all features that '
+                               'should be used for target prediction.',
+                      'probabilities': 'Predicted class probabilities for '
+                                       'each input sample.'}
 
 parameters = {
     'base': {
@@ -225,12 +227,11 @@ plugin.pipelines.register_function(
              ('predictions', SampleData[ClassifierPredictions])
              ] + pipeline_outputs + [
                 ('probabilities', SampleData[Probabilities])],
-    input_descriptions=input_descriptions,
+    input_descriptions={'table': input_descriptions['table']},
     parameter_descriptions=classifier_pipeline_parameter_descriptions,
     output_descriptions={
         **pipeline_output_descriptions,
-        'probabilities': 'Predicted class probabilities for each input '
-                         'sample.'},
+        'probabilities': input_descriptions['probabilities']},
     name='Train and test a cross-validated supervised learning classifier.',
     description=description.format(
         'categorical', 'supervised learning classifier')
@@ -273,7 +274,7 @@ plugin.pipelines.register_function(
     inputs=inputs,
     parameters=regressor_pipeline_parameters,
     outputs=regressor_pipeline_outputs,
-    input_descriptions=input_descriptions,
+    input_descriptions={'table': input_descriptions['table']},
     parameter_descriptions=regressor_pipeline_parameter_descriptions,
     output_descriptions=pipeline_output_descriptions,
     name='Train and test a cross-validated supervised learning regressor.',
@@ -293,7 +294,7 @@ plugin.methods.register_function(
         'estimator': regressors},
     outputs=[('predictions', SampleData[RegressorPredictions]),
              ('feature_importance', FeatureData[Importance])],
-    input_descriptions=input_descriptions,
+    input_descriptions={'table': input_descriptions['table']},
     parameter_descriptions={
         **parameter_descriptions['base'],
         **parameter_descriptions['cv'],
@@ -317,15 +318,14 @@ plugin.methods.register_function(
     outputs=[('predictions', SampleData[ClassifierPredictions]),
              ('feature_importance', FeatureData[Importance]),
              ('probabilities', SampleData[Probabilities])],
-    input_descriptions=input_descriptions,
+    input_descriptions={'table': input_descriptions['table']},
     parameter_descriptions={
         **parameter_descriptions['base'],
         **parameter_descriptions['cv'],
         'metadata': 'Categorical metadata column to use as prediction target.',
         **parameter_descriptions['estimator']},
     output_descriptions={**output_descriptions,
-                         'probabilities': 'Predicted class probabilities for '
-                                          'each input sample.'},
+                         'probabilities': input_descriptions['probabilities']},
     name='Nested cross-validated supervised learning classifier.',
     description=ncv_description.format(
         'categorical', 'supervised learning classifier')
@@ -343,7 +343,7 @@ plugin.methods.register_function(
         'estimator': classifiers},
     outputs=[('sample_estimator', SampleEstimator[Classifier]),
              ('feature_importance', FeatureData[Importance])],
-    input_descriptions=input_descriptions,
+    input_descriptions={'table': input_descriptions['table']},
     parameter_descriptions={
         **parameter_descriptions['base'],
         **parameter_descriptions['rfe'],
@@ -369,7 +369,7 @@ plugin.methods.register_function(
         'estimator': regressors},
     outputs=[('sample_estimator', SampleEstimator[Regressor]),
              ('feature_importance', FeatureData[Importance])],
-    input_descriptions=input_descriptions,
+    input_descriptions={'table': input_descriptions['table']},
     parameter_descriptions={
         **parameter_descriptions['base'],
         **parameter_descriptions['rfe'],
@@ -390,14 +390,13 @@ plugin.methods.register_function(
     outputs=[('predictions', SampleData[ClassifierPredictions]),
              ('probabilities', SampleData[Probabilities])],
     input_descriptions={
-        **input_descriptions,
+        'table': input_descriptions['table'],
         'sample_estimator': 'Sample classifier trained with fit_classifier.'},
     parameter_descriptions={
         'n_jobs': parameter_descriptions['base']['n_jobs']},
     output_descriptions={
         'predictions': 'Predicted target values for each input sample.',
-        'probabilities': 'Predicted class probabilities for each input '
-                         'sample.'},
+        'probabilities': input_descriptions['probabilities']},
     name='Use trained classifier to predict target values for new samples.',
     description=predict_description
 )
@@ -409,7 +408,7 @@ plugin.methods.register_function(
     parameters={'n_jobs': parameters['base']['n_jobs']},
     outputs=[('predictions', SampleData[RegressorPredictions])],
     input_descriptions={
-        **input_descriptions,
+        'table': input_descriptions['table'],
         'sample_estimator': 'Sample regressor trained with fit_regressor.'},
     parameter_descriptions={
         'n_jobs': parameter_descriptions['base']['n_jobs']},
@@ -441,14 +440,17 @@ plugin.visualizers.register_function(
 
 plugin.visualizers.register_function(
     function=confusion_matrix,
-    inputs={'predictions': SampleData[ClassifierPredictions]},
+    inputs={'predictions': SampleData[ClassifierPredictions],
+            'probabilities': SampleData[Probabilities]},
     parameters={
         'truth': MetadataColumn[Categorical],
         'missing_samples': parameters['base']['missing_samples'],
         'palette': Str % Choices(_custom_palettes().keys())},
-    input_descriptions={'predictions': (
-        'Predicted values to plot on x axis. Should be predictions of '
-        'categorical data produced by a sample classifier.')},
+    input_descriptions={
+        'predictions': 'Predicted values to plot on x axis. Should be '
+                       'predictions of categorical data produced by a sample '
+                       'classifier.',
+        'probabilities': input_descriptions['probabilities']},
     parameter_descriptions={
         'truth': 'Metadata column (true values) to plot on y axis.',
         'missing_samples': parameter_descriptions['base']['missing_samples'],
@@ -516,7 +518,7 @@ plugin.pipelines.register_function(
                 'missing_values': Str % Choices(
                     ['drop_samples', 'drop_features', 'error', 'fill'])},
     outputs=[('converted_table', FeatureTable[Frequency])],
-    input_descriptions=input_descriptions,
+    input_descriptions={'table': input_descriptions['table']},
     parameter_descriptions={
         'metadata': 'Metadata file to convert to feature table.',
         'missing_samples': parameter_descriptions['base']['missing_samples'],
@@ -562,7 +564,7 @@ plugin.pipelines.register_function(
                 },
     outputs=[('heatmap', Visualization),
              ('filtered_table', FeatureTable[Frequency])],
-    input_descriptions={**input_descriptions,
+    input_descriptions={'table': input_descriptions['table'],
                         'importance': 'Feature importances.'},
     parameter_descriptions={
         'metadata': 'Metadata column to use for sample labeling or grouping.',

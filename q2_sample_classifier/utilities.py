@@ -34,7 +34,7 @@ from scipy.stats import randint
 import biom
 
 from .visuals import (_linear_regress, _plot_confusion_matrix, _plot_RFE,
-                      _regplot_from_dataframe)
+                      _regplot_from_dataframe, _generate_roc_plots)
 
 _classifiers = ['RandomForestClassifier', 'ExtraTreesClassifier',
                 'GradientBoostingClassifier', 'AdaBoostClassifier',
@@ -472,8 +472,8 @@ def _match_series_or_die(predictions, truth, missing_samples='error'):
     return predictions, truth
 
 
-def _plot_accuracy(output_dir, predictions, truth, missing_samples,
-                   classification, palette, plot_title):
+def _plot_accuracy(output_dir, predictions, truth, probabilities,
+                   missing_samples, classification, palette, plot_title):
     '''Plot accuracy results and send to visualizer on either categorical
     or numeric data inside two pd.Series
     '''
@@ -486,9 +486,16 @@ def _plot_accuracy(output_dir, predictions, truth, missing_samples,
         output_dir, truth, predictions, classification=classification,
         palette=palette)
 
+    # optionally generate ROC curves for classification results
+    if probabilities is not None:
+        probabilities, truth = _match_series_or_die(
+            probabilities, truth, missing_samples)
+        probabilities = _generate_roc_plots(truth, probabilities, palette)
+
     # output to viz
     _visualize(output_dir=output_dir, estimator=None, cm=predictions,
-               optimize_feature_selection=False, title=plot_title)
+               roc=probabilities, optimize_feature_selection=False,
+               title=plot_title)
 
 
 def sort_importances(importances, ascending=False):
@@ -516,12 +523,12 @@ def _summarize_estimator(output_dir, sample_estimator):
     except AttributeError:
         optimize_feature_selection = False
 
-    _visualize(output_dir=output_dir, estimator=sample_estimator,
-               cm=None, optimize_feature_selection=optimize_feature_selection,
+    _visualize(output_dir=output_dir, estimator=sample_estimator, cm=None,
+               roc=None, optimize_feature_selection=optimize_feature_selection,
                title='Estimator Summary')
 
 
-def _visualize(output_dir, estimator, cm,
+def _visualize(output_dir, estimator, cm, roc,
                optimize_feature_selection=True, title='results'):
 
     pd.set_option('display.max_colwidth', -1)
@@ -538,11 +545,15 @@ def _visualize(output_dir, estimator, cm,
             output_dir, 'predictive_accuracy.tsv'), sep='\t', index=True)
         cm = q2templates.df_to_html(cm)
 
+    if roc is not None:
+        roc = q2templates.df_to_html(roc)
+
     index = join(TEMPLATES, 'index.html')
     q2templates.render(index, output_dir, context={
         'title': title,
         'result': result,
         'predictions': cm,
+        'roc': roc,
         'optimize_feature_selection': optimize_feature_selection})
 
 
