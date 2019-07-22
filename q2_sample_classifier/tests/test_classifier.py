@@ -551,7 +551,7 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
                             [0.0261, 0.0253, 0.9075],
                             [0.0252, 0.7385, 0.4068]],
                            columns=['classA', 'classB', 'classC'],
-                           index=exp_index, dtype='str')
+                           index=exp_index)
         pdt.assert_frame_equal(exp, obs)
 
     def test_Probabilities_format_to_metadata(self):
@@ -567,7 +567,7 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
                             [0.0261, 0.0253, 0.9075],
                             [0.0252, 0.7385, 0.4068]],
                            columns=['classA', 'classB', 'classC'],
-                           index=exp_index, dtype='str')
+                           index=exp_index)
         pdt.assert_frame_equal(obs.to_dataframe(), exp)
 
     # test utility formats
