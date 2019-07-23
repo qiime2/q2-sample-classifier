@@ -227,20 +227,11 @@ plugin.pipelines.register_function(
              ('predictions', SampleData[ClassifierPredictions])
              ] + pipeline_outputs + [
                 ('probabilities', SampleData[Probabilities])],
-<<<<<<< HEAD
     input_descriptions={'table': input_descriptions['table']},
     parameter_descriptions=classifier_pipeline_parameter_descriptions,
     output_descriptions={
         **pipeline_output_descriptions,
         'probabilities': input_descriptions['probabilities']},
-=======
-    input_descriptions=input_descriptions,
-    parameter_descriptions=classifier_pipeline_parameter_descriptions,
-    output_descriptions={
-        **pipeline_output_descriptions,
-        'probabilities': 'Predicted class probabilities for each input '
-                         'sample.'},
->>>>>>> ncv predict_probabilities wired up
     name='Train and test a cross-validated supervised learning classifier.',
     description=description.format(
         'categorical', 'supervised learning classifier')
@@ -327,23 +318,14 @@ plugin.methods.register_function(
     outputs=[('predictions', SampleData[ClassifierPredictions]),
              ('feature_importance', FeatureData[Importance]),
              ('probabilities', SampleData[Probabilities])],
-<<<<<<< HEAD
     input_descriptions={'table': input_descriptions['table']},
-=======
-    input_descriptions=input_descriptions,
->>>>>>> ncv predict_probabilities wired up
     parameter_descriptions={
         **parameter_descriptions['base'],
         **parameter_descriptions['cv'],
         'metadata': 'Categorical metadata column to use as prediction target.',
         **parameter_descriptions['estimator']},
     output_descriptions={**output_descriptions,
-<<<<<<< HEAD
                          'probabilities': input_descriptions['probabilities']},
-=======
-                         'probabilities': 'Predicted class probabilities for '
-                                          'each input sample.'},
->>>>>>> ncv predict_probabilities wired up
     name='Nested cross-validated supervised learning classifier.',
     description=ncv_description.format(
         'categorical', 'supervised learning classifier')
@@ -414,12 +396,7 @@ plugin.methods.register_function(
         'n_jobs': parameter_descriptions['base']['n_jobs']},
     output_descriptions={
         'predictions': 'Predicted target values for each input sample.',
-<<<<<<< HEAD
         'probabilities': input_descriptions['probabilities']},
-=======
-        'probabilities': 'Predicted class probabilities for each input '
-                         'sample.'},
->>>>>>> ncv predict_probabilities wired up
     name='Use trained classifier to predict target values for new samples.',
     description=predict_description
 )
