@@ -29,7 +29,11 @@
     {% if roc %}
     <div class="col-lg-12">
       <h2>Receiver Operating Characteristic Curves</h2>
-      {{ roc }}
+      <a href="roc_plot.pdf">
+        <img src="roc_plot.png">
+        <br>
+        <p>Download as PDF</p>
+      </a>
       <p>Receiver Operating Characteristic (ROC) curves are a graphical
       representation of the classification accuracy of a machine-learning
       model. The ROC curve pltos the relationship between the true positive

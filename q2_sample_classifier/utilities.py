@@ -490,7 +490,11 @@ def _plot_accuracy(output_dir, predictions, truth, probabilities,
     if probabilities is not None:
         probabilities, truth = _match_series_or_die(
             probabilities, truth, missing_samples)
-        probabilities = _generate_roc_plots(truth, probabilities, palette)
+        print(probabilities)
+        roc = _generate_roc_plots(truth, probabilities, palette)
+        print(roc)
+        roc.savefig(join(output_dir, 'roc_plot.png'), bbox_inches='tight')
+        roc.savefig(join(output_dir, 'roc_plot.pdf'), bbox_inches='tight')
 
     # output to viz
     _visualize(output_dir=output_dir, estimator=None, cm=predictions,
@@ -546,7 +550,7 @@ def _visualize(output_dir, estimator, cm, roc,
         cm = q2templates.df_to_html(cm)
 
     if roc is not None:
-        roc = q2templates.df_to_html(roc)
+        roc = True
 
     index = join(TEMPLATES, 'index.html')
     q2templates.render(index, output_dir, context={

@@ -234,8 +234,6 @@ def _roc_per_class(binarized_targets, probabilities, classes):
     tpr = dict()
     roc_auc = dict()
     for i, c in zip(range(len(classes)), classes):
-        print(binarized_targets[:, i])
-        print(probabilities[:, i])
         fpr[c], tpr[c], _ = roc_curve(
             binarized_targets[:, i], probabilities[:, i])
         roc_auc[c] = auc(fpr[c], tpr[c])
