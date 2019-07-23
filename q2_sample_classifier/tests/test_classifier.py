@@ -49,7 +49,7 @@ from qiime2.plugins import sample_classifier, feature_table
 import sklearn
 from sklearn.metrics import mean_squared_error, accuracy_score
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-from sklearn.svm import LinearSVC, LinearSVR
+from sklearn.svm import LinearSVC
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_selection import RFECV
 from sklearn.pipeline import Pipeline
@@ -211,43 +211,48 @@ class TestRFEExtractor(SampleClassifierTestPluginBase):
 
     def setUp(self):
         super().setUp()
+        np.random.seed(0)
+        self.X = np.random.rand(50, 20)
+        self.y = np.random.randint(0, 2, 50)
 
-        self.X = np.array([[5, 8, 9, 5, 0], [0, 1, 7, 6, 9], [2, 4, 5, 2, 4],
-                           [9, 3, 1, 3, 8], [8, 2, 5, 4, 2], [3, 3, 1, 2, 4],
-                           [0, 9, 7, 3, 2], [2, 1, 1, 5, 4]])
-        self.y = np.array([2, 4, 7, 3, 1, 8, 2, 4])
-        self.exp1 = pd.Series({
-            1: -1.94456426, 2: -7.7027093, 3: -8.47149003, 4: -6.74509675,
-            5: -8.60643122}, name='Accuracy')
-        self.exp2 = pd.Series({
-            1: -1.94456426, 3: -1.75782560, 5: -8.60643122}, name='Accuracy')
-        self.exp3 = pd.Series(
-            {1: -1.94456426, 5: -8.60643122}, name='Accuracy')
+        self.exp1 = pd.Series([
+            0.52, 0.61, 0.475, 0.49833333, 0.515, 0.51166667, 0.43166667,
+            0.50666667, 0.61666667, 0.50333333, 0.58166667, 0.495, 0.51166667,
+            0.465, 0.57833333, 0.57833333, 0.70166667, 0.45333333, 0.60666667,
+            0.44166667], index=pd.Index(range(1, 21)), name='Accuracy')
+        self.exp2 = pd.Series([
+            0.39166666666666666, 0.47833333333333333, 0.5766666666666667,
+            0.6066666666666667, 0.5366666666666667, 0.4, 0.5316666666666666,
+            0.4, 0.57, 0.4533333333333333, 0.4416666666666666],
+            index=pd.Index([1] + [i for i in range(2, 21, 2)]),
+            name='Accuracy')
+        self.exp3 = pd.Series({1: 0.38666667, 20: 0.44166667}, name='Accuracy')
 
     def extract_rfe_scores_template(self, steps, expected):
-        selector = RFECV(LinearSVR(random_state=123), step=steps, cv=2)
+        selector = RFECV(RandomForestClassifier(
+            random_state=123, n_estimators=2), step=steps, cv=10)
         selector = selector.fit(self.X, self.y)
         pdt.assert_series_equal(
-            _extract_rfe_scores(selector), expected, check_less_precise=1)
+            _extract_rfe_scores(selector), expected)
 
     def test_extract_rfe_scores_step_int_one(self):
         self.extract_rfe_scores_template(1, self.exp1)
 
     def test_extract_rfe_scores_step_float_one(self):
-        self.extract_rfe_scores_template(0.2, self.exp1)
+        self.extract_rfe_scores_template(0.05, self.exp1)
 
     def test_extract_rfe_scores_step_int_two(self):
         self.extract_rfe_scores_template(2, self.exp2)
 
     def test_extract_rfe_scores_step_float_two(self):
-        self.extract_rfe_scores_template(0.4, self.exp2)
+        self.extract_rfe_scores_template(0.1, self.exp2)
 
     def test_extract_rfe_scores_step_full_range(self):
-        self.extract_rfe_scores_template(5, self.exp3)
+        self.extract_rfe_scores_template(20, self.exp3)
 
     def test_extract_rfe_scores_step_out_of_range(self):
         # should be equal to full_range
-        self.extract_rfe_scores_template(12, self.exp3)
+        self.extract_rfe_scores_template(21, self.exp3)
 
 
 class VisualsTests(SampleClassifierTestPluginBase):
