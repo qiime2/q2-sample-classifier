@@ -53,7 +53,7 @@ from sklearn.svm import LinearSVC, LinearSVR
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_selection import RFECV
 from sklearn.pipeline import Pipeline
-from sklearn.externals import joblib
+import joblib
 import pandas.util.testing as pdt
 import biom
 import skbio

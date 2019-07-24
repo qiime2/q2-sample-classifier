@@ -21,6 +21,7 @@ requirements:
     - python {{ python }}
     - pandas
     - scipy
+    - joblib
     - scikit-learn
     - scikit-bio
     - seaborn >=0.8
