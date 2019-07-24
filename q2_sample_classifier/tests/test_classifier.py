@@ -323,7 +323,7 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
                         name='outlier', index=exp_index)
         obs = transformer(exp)
         obs = pd.read_csv(str(obs), sep='\t', header=0, index_col=0,
-                                 squeeze=True)
+                          squeeze=True)
         self.assertEqual(sorted(exp), sorted(obs))
 
     def test_boolean_format_to_pd_series(self):
@@ -384,7 +384,7 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
                         name='prediction', index=['a', 'b', 'c', 'd'])
         obs = transformer(exp)
         obs = pd.read_csv(str(obs), sep='\t', header=0, index_col=0,
-                                 squeeze=True)
+                          squeeze=True)
         pdt.assert_series_equal(obs, exp)
 
     def test_pd_series_to_Predictions_format_allow_nans(self):
@@ -393,7 +393,7 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
                         name='prediction', index=['a', 'b', 'c', 'd'])
         obs = transformer(exp)
         obs = pd.read_csv(str(obs), sep='\t', header=0, index_col=0,
-                                 squeeze=True)
+                          squeeze=True)
         pdt.assert_series_equal(obs, exp)
 
     def test_Predictions_format_to_pd_series(self):
