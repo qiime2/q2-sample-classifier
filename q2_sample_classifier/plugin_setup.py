@@ -458,7 +458,10 @@ plugin.visualizers.register_function(
     name='Make a confusion matrix from sample classifier predictions.',
     description='Make a confusion matrix and calculate accuracy of predicted '
                 'vs. true values for a set of samples classified using a '
-                'sample classifier.'
+                'sample classifier. If per-sample class probabilities are '
+                'provided, will also generate Receiver Operating '
+                'Characteristic curves and calculate area under the curve for '
+                'each class.'
 )
 
 
