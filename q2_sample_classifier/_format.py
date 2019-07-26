@@ -160,7 +160,7 @@ class _MultiColumnNumericFormat(model.TextFileFormat):
         self._validate(record_count_map[level])
 
 
-class ImportanceFormat(MultiColumnNumericFormat):
+class ImportanceFormat(_MultiColumnNumericFormat):
     pass
 
 
@@ -169,7 +169,7 @@ ImportanceDirectoryFormat = model.SingleFileDirectoryFormat(
     ImportanceFormat)
 
 
-class ProbabilitiesFormat(MultiColumnNumericFormat):
+class ProbabilitiesFormat(_MultiColumnNumericFormat):
     pass
 
 
