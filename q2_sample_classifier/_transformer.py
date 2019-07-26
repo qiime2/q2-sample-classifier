@@ -15,7 +15,7 @@ import numpy as np
 import qiime2
 import qiime2.plugin.model as model
 import sklearn
-from sklearn.externals import joblib
+import joblib
 from sklearn.pipeline import Pipeline
 
 from .plugin_setup import plugin

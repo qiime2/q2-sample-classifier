@@ -237,7 +237,7 @@ def _rfecv_feature_selection(feature_data, targets, estimator,
          ('est', RFECV(estimator=estimator.named_steps.est, step=step, cv=cv,
                        scoring=scoring, n_jobs=n_jobs))])
 
-    rfecv.fit(feature_data, targets)
+    rfecv.fit(feature_data, targets.values.ravel())
 
     # Describe top features
     n_opt = rfecv.named_steps.est.n_features_
@@ -335,7 +335,7 @@ def _fit_estimator(features, targets, estimator, n_estimators=100, step=0.05,
             n_jobs=n_jobs, cv=cv, random_state=random_state).best_estimator_
 
     # fit estimator
-    estimator.fit(X_train, y_train)
+    estimator.fit(X_train, y_train.values.ravel())
 
     importances = _attempt_to_calculate_feature_importances(
         estimator, calc_feature_importance,
@@ -564,7 +564,7 @@ def _tune_parameters(X_train, y_train, estimator, param_dist, n_iter_search=20,
     random_search = RandomizedSearchCV(
         estimator, param_distributions=param_dist, n_iter=n_iter_search,
         n_jobs=n_jobs, cv=cv, random_state=random_state)
-    random_search.fit(X_train, y_train)
+    random_search.fit(X_train, y_train.values.ravel())
     return random_search
 
 
@@ -603,7 +603,7 @@ def _fit_and_predict_cv(table, metadata, estimator, param_dist, n_jobs,
                 random_state=random_state).best_estimator_
         else:
             # fit estimator on inner outer training set
-            estimator.fit(X_train, y_train)
+            estimator.fit(X_train, y_train.values.ravel())
         # predict values for outer loop test set
         test_set = features[test_index]
         index = metadata.iloc[test_index]
@@ -681,7 +681,7 @@ def _select_estimator(estimator, n_jobs, n_estimators, random_state=None):
             n_estimators=n_estimators, random_state=random_state)
     elif estimator == 'SVR':
         param_dist = {**parameters['svm'], 'epsilon': [0.0, 0.1]}
-        estimator = SVR(kernel='rbf')
+        estimator = SVR(kernel='rbf', gamma='scale')
     elif estimator == 'LinearSVR':
         param_dist = {**parameters['svm'], 'epsilon': [0.0, 0.1]}
         estimator = SVR(kernel='linear')
@@ -720,7 +720,7 @@ def _select_estimator(estimator, n_jobs, n_estimators, random_state=None):
         estimator = LinearSVC(random_state=random_state)
     elif estimator == 'SVC':
         param_dist = parameters['svm']
-        estimator = SVC(kernel='rbf', random_state=random_state)
+        estimator = SVC(kernel='rbf', random_state=random_state, gamma='scale')
     elif estimator == 'KNeighborsClassifier':
         param_dist = parameters['kneighbors']
         estimator = KNeighborsClassifier(algorithm='auto')
