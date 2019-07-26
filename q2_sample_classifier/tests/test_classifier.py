@@ -123,15 +123,18 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
     # test feature importance calculation with main classifier types
     def test_calculate_feature_importances_ensemble(self):
         estimator = Pipeline(
-            [('dv', DictVectorizer()), ('est', RandomForestClassifier())])
-        estimator.fit(_extract_features(self.features), self.targets)
+            [('dv', DictVectorizer()),
+             ('est', RandomForestClassifier(n_estimators=10))])
+        estimator.fit(_extract_features(self.features),
+                      self.targets.values.ravel())
         fi = _calculate_feature_importances(estimator)
         self.assertEqual(sorted(self.exp_rf), sorted(fi))
 
     def test_calculate_feature_importances_svm(self):
         estimator = Pipeline(
             [('dv', DictVectorizer()), ('est', LinearSVC())])
-        estimator.fit(_extract_features(self.features), self.targets)
+        estimator.fit(_extract_features(self.features),
+                      self.targets.values.ravel())
         fi = _calculate_feature_importances(estimator)
         self.assertEqual(sorted(self.exp_lsvm), sorted(fi))
 
@@ -231,7 +234,7 @@ class TestRFEExtractor(SampleClassifierTestPluginBase):
     def extract_rfe_scores_template(self, steps, expected):
         selector = RFECV(RandomForestClassifier(
             random_state=123, n_estimators=2), step=steps, cv=10)
-        selector = selector.fit(self.X, self.y)
+        selector = selector.fit(self.X, self.y.ravel())
         pdt.assert_series_equal(
             _extract_rfe_scores(selector), expected)
 
@@ -319,7 +322,8 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         exp = pd.Series([True, False, True, False, True, False],
                         name='outlier', index=exp_index)
         obs = transformer(exp)
-        obs = pd.Series.from_csv(str(obs), sep='\t', header=0)
+        obs = pd.read_csv(str(obs), sep='\t', header=0, index_col=0,
+                          squeeze=True)
         self.assertEqual(sorted(exp), sorted(obs))
 
     def test_boolean_format_to_pd_series(self):
@@ -379,7 +383,8 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         exp = pd.Series([1, 2, 3, 4],
                         name='prediction', index=['a', 'b', 'c', 'd'])
         obs = transformer(exp)
-        obs = pd.Series.from_csv(str(obs), sep='\t', header=0)
+        obs = pd.read_csv(str(obs), sep='\t', header=0, index_col=0,
+                          squeeze=True)
         pdt.assert_series_equal(obs, exp)
 
     def test_pd_series_to_Predictions_format_allow_nans(self):
@@ -387,7 +392,8 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         exp = pd.Series([1, np.nan, 3, np.nan],
                         name='prediction', index=['a', 'b', 'c', 'd'])
         obs = transformer(exp)
-        obs = pd.Series.from_csv(str(obs), sep='\t', header=0)
+        obs = pd.read_csv(str(obs), sep='\t', header=0, index_col=0,
+                          squeeze=True)
         pdt.assert_series_equal(obs, exp)
 
     def test_Predictions_format_to_pd_series(self):
@@ -453,7 +459,7 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         exp = pd.DataFrame([1, 2, 3, 4],
                            columns=['importance'], index=['a', 'b', 'c', 'd'])
         obs = transformer(exp)
-        obs = pd.DataFrame.from_csv(str(obs), sep='\t', header=0)
+        obs = pd.read_csv(str(obs), sep='\t', header=0, index_col=0)
         pdt.assert_frame_equal(exp, obs)
 
     def test_Importance_format_to_pd_dataframe(self):
@@ -517,19 +523,19 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
 
         def _load_md(md_fp):
             md_fp = self.get_data_path(md_fp)
-            md = pd.DataFrame.from_csv(md_fp, sep='\t')
+            md = pd.read_csv(md_fp, sep='\t', header=0, index_col=0)
             md = qiime2.Metadata(md)
             return md
 
         def _load_nmc(md_fp, column):
             md_fp = self.get_data_path(md_fp)
-            md = pd.DataFrame.from_csv(md_fp, sep='\t')
+            md = pd.read_csv(md_fp, sep='\t', header=0, index_col=0)
             md = qiime2.NumericMetadataColumn(md[column])
             return md
 
         def _load_cmc(md_fp, column):
             md_fp = self.get_data_path(md_fp)
-            md = pd.DataFrame.from_csv(md_fp, sep='\t')
+            md = pd.read_csv(md_fp, sep='\t', header=0, index_col=0)
             md = qiime2.CategoricalMetadataColumn(md[column])
             return md
 
@@ -539,10 +545,12 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         self.table_ecam_fp = _load_biom('ecam-table-maturity.qza')
         self.md_ecam_fp = _load_md('ecam_map_maturity.txt')
         self.mdc_ecam_fp = _load_nmc('ecam_map_maturity.txt', 'month')
-        self.exp_imp = pd.DataFrame.from_csv(
-            self.get_data_path('importance.tsv'), sep='\t')
-        self.exp_pred = pd.Series.from_csv(
-            self.get_data_path('predictions.tsv'), sep='\t', header=0)
+        self.exp_imp = pd.read_csv(
+            self.get_data_path('importance.tsv'), sep='\t', header=0,
+            index_col=0)
+        self.exp_pred = pd.read_csv(
+            self.get_data_path('predictions.tsv'), sep='\t', header=0,
+            index_col=0, squeeze=True)
         index = pd.Index(['A', 'B', 'C', 'D'], name='id')
         self.table_percnorm = qiime2.Artifact.import_data(
             FeatureTable[PercentileNormalized], pd.DataFrame(
@@ -709,8 +717,9 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         pipeline, importances = fit_regressor(
             self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
             n_estimators=2, n_jobs=1, missing_samples='ignore')
-        exp_imp = pd.DataFrame.from_csv(
-            self.get_data_path('importance_cv.tsv'), sep='\t')
+        exp_imp = pd.read_csv(
+            self.get_data_path('importance_cv.tsv'), sep='\t', header=0,
+            index_col=0)
         pdt.assert_frame_equal(importances, exp_imp)
 
     # just make sure this method runs. Uses the same internal function as
@@ -902,8 +911,9 @@ class TestHeatmap(SampleClassifierTestPluginBase):
         table_ecam = qiime2.Artifact.load(table_ecam)
         self.table_ecam, = feature_table.actions.filter_samples(
             table_ecam, metadata=md_ecam)
-        imp = pd.DataFrame.from_csv(
-            self.get_data_path('importance.tsv'), sep='\t')
+        imp = pd.read_csv(
+            self.get_data_path('importance.tsv'), sep='\t', header=0,
+            index_col=0)
         self.imp = qiime2.Artifact.import_data('FeatureData[Importance]', imp)
 
     def test_heatmap_default_feature_count_zero(self):
@@ -1075,7 +1085,7 @@ class SampleEstimatorTestBase(SampleClassifierTestPluginBase):
 
         def _load_cmc(md_fp, column):
             md_fp = self.get_data_path(md_fp)
-            md = pd.DataFrame.from_csv(md_fp, sep='\t')
+            md = pd.read_csv(md_fp, sep='\t', header=0, index_col=0)
             md = qiime2.CategoricalMetadataColumn(md[column])
             return md
 
@@ -1308,7 +1318,7 @@ seeded_results = {
     'GradientBoostingClassifier': 0.272727272727,
     'AdaBoostClassifier': 0.272727272727,
     'LinearSVC': 0.727272727273,
-    'SVC': 0.545454545455,
+    'SVC': 0.36363636363636365,
     'KNeighborsClassifier': 0.363636363636,
     'RandomForestRegressor': 23.226508,
     'ExtraTreesRegressor': 19.725397,
@@ -1319,7 +1329,7 @@ seeded_results = {
     'ElasticNet': 618.532273,
     'KNeighborsRegressor': 44.7847619048,
     'LinearSVR': 511.816385601,
-    'SVR': 72.6666666667}
+    'SVR': 51.325146}
 
 seeded_predict_results = {
     'RandomForestClassifier': 18,
@@ -1327,7 +1337,7 @@ seeded_predict_results = {
     'GradientBoostingClassifier': 21,
     'AdaBoostClassifier': 21,
     'LinearSVC': 21,
-    'SVC': 21,
+    'SVC': 12,
     'KNeighborsClassifier': 14,
     'RandomForestRegressor': 7.4246031746,
     'ExtraTreesRegressor': 0.,
@@ -1337,5 +1347,5 @@ seeded_predict_results = {
     'Ridge': 7.57617215386,
     'ElasticNet': 0.0614243397637,
     'KNeighborsRegressor': 26.8625396825,
-    'SVR': 59.7152380952,
+    'SVR': 37.86704865859832,
     'LinearSVR': 0.0099912565770459132}
