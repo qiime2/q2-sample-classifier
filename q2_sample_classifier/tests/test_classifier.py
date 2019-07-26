@@ -346,8 +346,14 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         self.assertEqual(obs, exp)
 
     # test predictions format
-    def test_Predictions_format_validate_positive(self):
+    def test_Predictions_format_validate_positive_numeric_predictions(self):
         filepath = self.get_data_path('predictions.tsv')
+        format = PredictionsFormat(filepath, mode='r')
+        format.validate(level='min')
+        format.validate()
+
+    def test_Predictions_format_validate_positive_nonnumeric_predictions(self):
+        filepath = self.get_data_path('categorical_predictions.tsv')
         format = PredictionsFormat(filepath, mode='r')
         format.validate(level='min')
         format.validate()

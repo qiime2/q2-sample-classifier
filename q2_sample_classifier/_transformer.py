@@ -87,14 +87,14 @@ def _7(data: pd.DataFrame) -> (ImportanceFormat):
 def _8(ff: ImportanceFormat) -> (pd.DataFrame):
     with ff.open() as fh:
         return _read_dataframe(fh).apply(
-            lambda x: pd.to_numeric(x, errors='ignore'))
+            lambda x: pd.to_numeric(x, errors='raise'))
 
 
 @plugin.register_transformer
 def _9(ff: ImportanceFormat) -> (qiime2.Metadata):
     with ff.open() as fh:
         return qiime2.Metadata(_read_dataframe(fh).apply(
-            lambda x: pd.to_numeric(x, errors='ignore')))
+            lambda x: pd.to_numeric(x, errors='raise')))
 
 
 @plugin.register_transformer
