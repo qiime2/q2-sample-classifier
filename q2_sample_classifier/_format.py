@@ -120,7 +120,7 @@ PredictionsDirectoryFormat = model.SingleFileDirectoryFormat(
     PredictionsFormat)
 
 
-class MultiColumnNumericFormat(model.TextFileFormat):
+class _MultiColumnNumericFormat(model.TextFileFormat):
     def _validate(self, n_records=None):
         with self.open() as fh:
             # validate header
