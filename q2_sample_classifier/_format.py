@@ -120,7 +120,7 @@ PredictionsDirectoryFormat = model.SingleFileDirectoryFormat(
     PredictionsFormat)
 
 
-class ImportanceFormat(model.TextFileFormat):
+class MultiColumnNumericFormat(model.TextFileFormat):
     def _validate(self, n_records=None):
         with self.open() as fh:
             # validate header
@@ -160,15 +160,16 @@ class ImportanceFormat(model.TextFileFormat):
         self._validate(record_count_map[level])
 
 
+class ImportanceFormat(MultiColumnNumericFormat):
+    pass
+
+
 ImportanceDirectoryFormat = model.SingleFileDirectoryFormat(
     'ImportanceDirectoryFormat', 'importance.tsv',
     ImportanceFormat)
 
 
-class ProbabilitiesFormat(ImportanceFormat):
-    # The probabilities format is a 2+-column format identical to
-    # ImportanceFormat, but containing probabilities (a SampleData type)
-    # instead of feature importances (a FeatureData type)
+class ProbabilitiesFormat(MultiColumnNumericFormat):
     pass
 
 
