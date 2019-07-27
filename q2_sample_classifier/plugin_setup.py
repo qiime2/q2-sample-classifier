@@ -31,11 +31,13 @@ from ._format import (SampleEstimatorDirFmt,
                       ImportanceFormat,
                       ImportanceDirectoryFormat,
                       PredictionsFormat,
-                      PredictionsDirectoryFormat)
+                      PredictionsDirectoryFormat,
+                      ProbabilitiesFormat,
+                      ProbabilitiesDirectoryFormat)
 
 from ._type import (ClassifierPredictions, RegressorPredictions,
                     SampleEstimator, BooleanSeries, Importance,
-                    Classifier, Regressor)
+                    Classifier, Regressor, Probabilities)
 import q2_sample_classifier
 
 citations = Citations.load('citations.bib', package='q2_sample_classifier')
@@ -218,13 +220,17 @@ plugin.pipelines.register_function(
     function=classify_samples,
     inputs=inputs,
     parameters=classifier_pipeline_parameters,
-    outputs=[
-        ('sample_estimator', SampleEstimator[Classifier]),
-        ('feature_importance', FeatureData[Importance]),
-        ('predictions', SampleData[ClassifierPredictions])] + pipeline_outputs,
+    outputs=[('sample_estimator', SampleEstimator[Classifier]),
+             ('feature_importance', FeatureData[Importance]),
+             ('predictions', SampleData[ClassifierPredictions])
+             ] + pipeline_outputs + [
+                ('probabilities', SampleData[Probabilities])],
     input_descriptions=input_descriptions,
     parameter_descriptions=classifier_pipeline_parameter_descriptions,
-    output_descriptions=pipeline_output_descriptions,
+    output_descriptions={
+        **pipeline_output_descriptions,
+        'probabilities': 'Predicted class probabilities for each input '
+                         'sample.'},
     name='Train and test a cross-validated supervised learning classifier.',
     description=description.format(
         'categorical', 'supervised learning classifier')
@@ -309,14 +315,17 @@ plugin.methods.register_function(
         'metadata': MetadataColumn[Categorical],
         'estimator': classifiers},
     outputs=[('predictions', SampleData[ClassifierPredictions]),
-             ('feature_importance', FeatureData[Importance])],
+             ('feature_importance', FeatureData[Importance]),
+             ('probabilities', SampleData[Probabilities])],
     input_descriptions=input_descriptions,
     parameter_descriptions={
         **parameter_descriptions['base'],
         **parameter_descriptions['cv'],
         'metadata': 'Categorical metadata column to use as prediction target.',
         **parameter_descriptions['estimator']},
-    output_descriptions=output_descriptions,
+    output_descriptions={**output_descriptions,
+                         'probabilities': 'Predicted class probabilities for '
+                                          'each input sample.'},
     name='Nested cross-validated supervised learning classifier.',
     description=ncv_description.format(
         'categorical', 'supervised learning classifier')
@@ -378,14 +387,17 @@ plugin.methods.register_function(
     function=predict_classification,
     inputs={**inputs, 'sample_estimator': SampleEstimator[Classifier]},
     parameters={'n_jobs': parameters['base']['n_jobs']},
-    outputs=[('predictions', SampleData[ClassifierPredictions])],
+    outputs=[('predictions', SampleData[ClassifierPredictions]),
+             ('probabilities', SampleData[Probabilities])],
     input_descriptions={
         **input_descriptions,
         'sample_estimator': 'Sample classifier trained with fit_classifier.'},
     parameter_descriptions={
         'n_jobs': parameter_descriptions['base']['n_jobs']},
     output_descriptions={
-        'predictions': 'Predicted target values for each input sample.'},
+        'predictions': 'Predicted target values for each input sample.',
+        'probabilities': 'Predicted class probabilities for each input '
+                         'sample.'},
     name='Use trained classifier to predict target values for new samples.',
     description=predict_description
 )
@@ -588,7 +600,7 @@ plugin.pipelines.register_function(
 # Registrations
 plugin.register_semantic_types(
     SampleEstimator, BooleanSeries, Importance, ClassifierPredictions,
-    RegressorPredictions, Classifier, Regressor)
+    RegressorPredictions, Classifier, Regressor, Probabilities)
 plugin.register_semantic_type_to_format(
     SampleEstimator[Classifier],
     artifact_format=SampleEstimatorDirFmt)
@@ -607,8 +619,12 @@ plugin.register_semantic_type_to_format(
 plugin.register_semantic_type_to_format(
     FeatureData[Importance],
     artifact_format=ImportanceDirectoryFormat)
+plugin.register_semantic_type_to_format(
+    SampleData[Probabilities],
+    artifact_format=ProbabilitiesDirectoryFormat)
 plugin.register_formats(
     SampleEstimatorDirFmt, BooleanSeriesFormat, BooleanSeriesDirectoryFormat,
     ImportanceFormat, ImportanceDirectoryFormat, PredictionsFormat,
-    PredictionsDirectoryFormat)
+    PredictionsDirectoryFormat, ProbabilitiesFormat,
+    ProbabilitiesDirectoryFormat)
 importlib.import_module('q2_sample_classifier._transformer')
