@@ -816,9 +816,11 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             index=pd.Index(['s1', 's7', 's5', 's9', 's3', 's10', 's4', 's6',
                             's2', 's8'], name='SampleID'),
             columns=['blue', 'red'])
-        pdt.assert_series_equal(y_pred, exp_pred)
+        # order does not matter for predictions or probabilities, so align
+        pdt.assert_series_equal(*y_pred.align(exp_pred, axis=0))
+        # order matters for importances, so do not align
         pdt.assert_frame_equal(importances, exp_importances)
-        pdt.assert_frame_equal(probabilities, exp_probabilities)
+        pdt.assert_frame_equal(*probabilities.align(exp_probabilities, axis=0))
 
     # test ncv a second time with KNeighborsRegressor (no feature importance)
     def test_regress_samples_ncv_knn(self):
