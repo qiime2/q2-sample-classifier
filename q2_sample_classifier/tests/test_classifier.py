@@ -786,10 +786,12 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     # test reproducibility of classifier results, probabilities
     def test_classify_samples_ncv_accuracy(self):
         dat = biom.Table(np.array(
-            [[4446, 9828, 3208, 776, 118, 4175, 657, 251, 7505, 617],
-             [1855, 8716, 3257, 1251, 3205, 2557, 4251, 7405, 1417, 1215],
-             [6616, 281, 8616, 291, 261, 253, 9075, 252, 7385, 4068]]),
-            observation_ids=['o1', 'o2', 'o3'],
+            [[4446, 9828, 3208, 5776, 1118, 417, 657, 251, 505, 617],
+             [1855, 8716, 3257, 1251, 3205, 557, 251, 405, 417, 215],
+             [616, 281, 616, 291, 261, 5253, 9075, 2252, 7385, 4068],
+             [0, 1, 3, 4, 2, 102, 103, 148, 223, 931],
+             [302, 332, 431, 884, 268, 0, 0, 0, 0, 0]]),
+            observation_ids=['o1', 'o2', 'o3', 'o4', 'o5'],
             sample_ids=['s1', 's2', 's3', 's4', 's5',
                         's6', 's7', 's8', 's9', 's10'])
         md = qiime2.CategoricalMetadataColumn(pd.Series(
@@ -802,23 +804,24 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             dat, md, random_state=123, n_estimators=2, n_jobs=1,
             missing_samples='ignore')
         exp_pred = pd.Series(
-            ['blue', 'blue', 'blue', 'red', 'blue',
-             'blue', 'blue', 'red', 'red', 'blue'],
-            index=pd.Index(['s1', 's7', 's5', 's9', 's3', 's10', 's4', 's6',
-                            's2', 's8'], dtype='object', name='SampleID'),
+            ['red', 'blue', 'red', 'blue', 'blue',
+             'blue', 'red', 'blue', 'red', 'blue'],
+            index=pd.Index(['s2', 's7', 's4', 's9', 's5', 's10', 's1', 's6',
+                            's3', 's8'], dtype='object', name='SampleID'),
             name='prediction')
         exp_importances = pd.DataFrame(
-            [0.5551111111111111, 0.2671111111111111, 0.1777777777777778],
-            index=pd.Index(['o3', 'o1', 'o2']), columns=['importance'])
+            [0.5, 0.5, 0., 0., 0.],
+            index=pd.Index(['o1', 'o2', 'o3', 'o4', 'o5'], name='feature'),
+            columns=['importance'])
         exp_probabilities = pd.DataFrame(
-            [[1., 0.], [1., 0.], [1., 0.], [0., 1.], [0.5, 0.5], [0.5, 0.5],
-             [0.5, 0.5], [0., 1.], [0., 1.], [0.5, 0.5]],
-            index=pd.Index(['s1', 's7', 's5', 's9', 's3', 's10', 's4', 's6',
-                            's2', 's8'], name='SampleID'),
+            [[0., 1.], [1., 0.], [0., 1.], [1., 0.], [0.5, 0.5], [1., 0.],
+             [0., 1.], [1., 0.], [0., 1.], [1., 0.]],
+            index=pd.Index(['s2', 's7', 's4', 's9', 's5', 's10', 's1', 's6',
+                            's3', 's8'], name='SampleID'),
             columns=['blue', 'red'])
-        pdt.assert_series_equal(y_pred, exp_pred)
+        pdt.assert_series_equal(*y_pred.align(exp_pred))
         pdt.assert_frame_equal(importances, exp_importances)
-        pdt.assert_frame_equal(probabilities, exp_probabilities)
+        pdt.assert_frame_equal(*probabilities.align(exp_probabilities))
 
     # test ncv a second time with KNeighborsRegressor (no feature importance)
     def test_regress_samples_ncv_knn(self):
