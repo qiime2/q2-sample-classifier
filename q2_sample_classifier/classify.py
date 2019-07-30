@@ -172,8 +172,8 @@ def classify_samples(ctx,
 
     summary, = summarize_estimator(sample_estimator)
 
-    accuracy_results, = confusion(
-        predictions, metadata, missing_samples='ignore', palette=palette)
+    accuracy_results, = confusion(predictions, metadata, probabilities,
+                                  missing_samples='ignore', palette=palette)
 
     return (sample_estimator, importance, predictions, summary,
             accuracy_results, probabilities)
@@ -345,16 +345,20 @@ def scatterplot(output_dir: str, predictions: pd.Series,
                 missing_samples: str = defaults['missing_samples']) -> None:
     predictions = pd.to_numeric(predictions)
 
-    _plot_accuracy(output_dir, predictions, truth, missing_samples,
+    _plot_accuracy(output_dir, predictions, truth, probabilities=None,
+                   missing_samples=missing_samples,
                    classification=False, palette=None,
                    plot_title='regression scatterplot')
 
 
-def confusion_matrix(output_dir: str, predictions: pd.Series,
+def confusion_matrix(output_dir: str,
+                     predictions: pd.Series,
                      truth: qiime2.CategoricalMetadataColumn,
+                     probabilities: pd.DataFrame = None,
                      missing_samples: str = defaults['missing_samples'],
                      palette: str = defaults['palette']) -> None:
-    _plot_accuracy(output_dir, predictions, truth, missing_samples,
+    _plot_accuracy(output_dir, predictions, truth, probabilities,
+                   missing_samples=missing_samples,
                    classification=True, palette=palette,
                    plot_title='confusion matrix')
 

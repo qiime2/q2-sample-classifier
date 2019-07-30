@@ -110,7 +110,7 @@ def _10(data: pd.DataFrame) -> (ProbabilitiesFormat):
 def _11(ff: ProbabilitiesFormat) -> (pd.DataFrame):
     with ff.open() as fh:
         return _read_dataframe(fh).apply(
-            lambda x: pd.to_numeric(x, errors='ignore'))
+            lambda x: pd.to_numeric(x, errors='raise'))
 
 
 @plugin.register_transformer

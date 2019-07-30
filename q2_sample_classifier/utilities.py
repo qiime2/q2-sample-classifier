@@ -34,7 +34,7 @@ from scipy.stats import randint
 import biom
 
 from .visuals import (_linear_regress, _plot_confusion_matrix, _plot_RFE,
-                      _regplot_from_dataframe)
+                      _regplot_from_dataframe, _generate_roc_plots)
 
 _classifiers = ['RandomForestClassifier', 'ExtraTreesClassifier',
                 'GradientBoostingClassifier', 'AdaBoostClassifier',
@@ -458,23 +458,22 @@ def _class_overlap_error():
 
 
 def _match_series_or_die(predictions, truth, missing_samples='error'):
-    # validate input metadata and predictions
-    truth_ids = truth.index
-    predictions_ids = predictions.index
-    sample_ids = predictions_ids.intersection(truth_ids)
-    if missing_samples == 'error' and len(sample_ids) < len(predictions_ids):
-        missing_ids = predictions_ids.difference(sample_ids)
+    # validate input metadata and predictions, output intersection.
+    # truth must be a superset of predictions
+    truth_ids = set(truth.index)
+    predictions_ids = set(predictions.index)
+    missing_ids = predictions_ids - truth_ids
+    if missing_samples == 'error' and len(missing_ids) > 0:
         raise ValueError('Missing samples in metadata: %r' % missing_ids)
 
     # match metadata / prediction IDs
-    predictions = predictions.loc[sample_ids]
-    truth = truth.loc[sample_ids]
+    predictions, truth = predictions.align(truth, axis=0, join='inner')
 
     return predictions, truth
 
 
-def _plot_accuracy(output_dir, predictions, truth, missing_samples,
-                   classification, palette, plot_title):
+def _plot_accuracy(output_dir, predictions, truth, probabilities,
+                   missing_samples, classification, palette, plot_title):
     '''Plot accuracy results and send to visualizer on either categorical
     or numeric data inside two pd.Series
     '''
@@ -487,9 +486,20 @@ def _plot_accuracy(output_dir, predictions, truth, missing_samples,
         output_dir, truth, predictions, classification=classification,
         palette=palette)
 
+    # optionally generate ROC curves for classification results
+    if probabilities is not None:
+        probabilities, truth = _match_series_or_die(
+            probabilities, truth, missing_samples)
+        print(probabilities)
+        roc = _generate_roc_plots(truth, probabilities, palette)
+        print(roc)
+        roc.savefig(join(output_dir, 'roc_plot.png'), bbox_inches='tight')
+        roc.savefig(join(output_dir, 'roc_plot.pdf'), bbox_inches='tight')
+
     # output to viz
     _visualize(output_dir=output_dir, estimator=None, cm=predictions,
-               optimize_feature_selection=False, title=plot_title)
+               roc=probabilities, optimize_feature_selection=False,
+               title=plot_title)
 
 
 def sort_importances(importances, ascending=False):
@@ -517,12 +527,12 @@ def _summarize_estimator(output_dir, sample_estimator):
     except AttributeError:
         optimize_feature_selection = False
 
-    _visualize(output_dir=output_dir, estimator=sample_estimator,
-               cm=None, optimize_feature_selection=optimize_feature_selection,
+    _visualize(output_dir=output_dir, estimator=sample_estimator, cm=None,
+               roc=None, optimize_feature_selection=optimize_feature_selection,
                title='Estimator Summary')
 
 
-def _visualize(output_dir, estimator, cm,
+def _visualize(output_dir, estimator, cm, roc,
                optimize_feature_selection=True, title='results'):
 
     pd.set_option('display.max_colwidth', -1)
@@ -539,11 +549,15 @@ def _visualize(output_dir, estimator, cm,
             output_dir, 'predictive_accuracy.tsv'), sep='\t', index=True)
         cm = q2templates.df_to_html(cm)
 
+    if roc is not None:
+        roc = True
+
     index = join(TEMPLATES, 'index.html')
     q2templates.render(index, output_dir, context={
         'title': title,
         'result': result,
         'predictions': cm,
+        'roc': roc,
         'optimize_feature_selection': optimize_feature_selection})
 
 
