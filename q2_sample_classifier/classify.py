@@ -175,8 +175,10 @@ def classify_samples(ctx,
     accuracy_results, = confusion(predictions, metadata, probabilities,
                                   missing_samples='ignore', palette=palette)
 
+    _heatmap, _ = heatmap(ctx, table, importance)
+
     return (sample_estimator, importance, predictions, summary,
-            accuracy_results, probabilities)
+            accuracy_results, probabilities, _heatmap)
 
 
 def regress_samples(ctx,
@@ -214,7 +216,10 @@ def regress_samples(ctx,
 
     accuracy_results, = scatter(predictions, metadata, 'ignore')
 
-    return sample_estimator, importance, predictions, summary, accuracy_results
+    _heatmap, _ = heatmap(ctx, table, importance)
+
+    return (sample_estimator, importance, predictions, summary,
+            accuracy_results, _heatmap)
 
 
 def fit_classifier(table: biom.Table,

@@ -226,7 +226,8 @@ plugin.pipelines.register_function(
              ('feature_importance', FeatureData[Importance]),
              ('predictions', SampleData[ClassifierPredictions])
              ] + pipeline_outputs + [
-                ('probabilities', SampleData[Probabilities])],
+                ('probabilities', SampleData[Probabilities]),
+                ('_heatmap', Visualization)],
     input_descriptions={'table': input_descriptions['table']},
     parameter_descriptions=classifier_pipeline_parameter_descriptions,
     output_descriptions={
@@ -273,7 +274,7 @@ plugin.pipelines.register_function(
     function=regress_samples,
     inputs=inputs,
     parameters=regressor_pipeline_parameters,
-    outputs=regressor_pipeline_outputs,
+    outputs=regressor_pipeline_outputs + [('_heatmap', Visualization)],
     input_descriptions={'table': input_descriptions['table']},
     parameter_descriptions=regressor_pipeline_parameter_descriptions,
     output_descriptions=pipeline_output_descriptions,
