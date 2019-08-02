@@ -98,9 +98,10 @@ def _linear_regress(actual, pred):
         index=[actual.name])
 
 
-def _plot_heatmap_from_confusion_matrix(cm, palette):
+def _plot_heatmap_from_confusion_matrix(cm, palette, vmin=None, vmax=None):
     palette = _custom_palettes()[palette]
-    return sns.heatmap(cm, cmap=palette, cbar_kws={'label': 'Proportion'})
+    return sns.heatmap(cm, vmin=vmin, vmax=vmax, cmap=palette,
+                       cbar_kws={'label': 'Proportion'})
 
 
 def _add_sample_size_to_xtick_labels(ser, classes):
@@ -109,7 +110,8 @@ def _add_sample_size_to_xtick_labels(ser, classes):
     return labels
 
 
-def _plot_confusion_matrix(y_test, y_pred, classes, normalize, palette):
+def _plot_confusion_matrix(y_test, y_pred, classes, normalize, palette,
+                           vmin=None, vmax=None):
 
     accuracy = accuracy_score(y_test, pd.DataFrame(y_pred))
     cm = confusion_matrix(y_test, y_pred)
@@ -121,7 +123,8 @@ def _plot_confusion_matrix(y_test, y_pred, classes, normalize, palette):
     # these will appear as whitespace in plots and results table.
     cm = np.nan_to_num(cm)
 
-    confusion = _plot_heatmap_from_confusion_matrix(cm, palette)
+    confusion = _plot_heatmap_from_confusion_matrix(cm, palette, vmin=vmin,
+                                                    vmax=vmax)
 
     x_tick_labels = _add_sample_size_to_xtick_labels(y_pred, classes)
     y_tick_labels = _add_sample_size_to_xtick_labels(y_test, classes)

@@ -421,8 +421,8 @@ def _calculate_feature_importances(estimator):
     return importances
 
 
-def _predict_and_plot(output_dir, y_test, y_pred, classification=True,
-                      palette='sirocco'):
+def _predict_and_plot(output_dir, y_test, y_pred, vmin=None, vmax=None,
+                      classification=True, palette='sirocco'):
     if classification:
         x_classes = set(y_test.unique())
         y_classes = set(y_pred.unique())
@@ -433,7 +433,8 @@ def _predict_and_plot(output_dir, y_test, y_pred, classification=True,
         else:
             classes = sorted(list(x_classes.union(y_classes)))
         predictions, predict_plot = _plot_confusion_matrix(
-            y_test, y_pred, classes, normalize=True, palette=palette)
+            y_test, y_pred, classes, normalize=True, palette=palette,
+            vmin=vmin, vmax=vmax)
     else:
         predictions = _linear_regress(y_test, y_pred)
         predict_plot = _regplot_from_dataframe(y_test, y_pred)
@@ -473,7 +474,8 @@ def _match_series_or_die(predictions, truth, missing_samples='error'):
 
 
 def _plot_accuracy(output_dir, predictions, truth, probabilities,
-                   missing_samples, classification, palette, plot_title):
+                   missing_samples, classification, palette, plot_title,
+                   vmin=None, vmax=None):
     '''Plot accuracy results and send to visualizer on either categorical
     or numeric data inside two pd.Series
     '''
@@ -483,8 +485,8 @@ def _plot_accuracy(output_dir, predictions, truth, probabilities,
 
     # calculate prediction accuracy and plot results
     predictions, predict_plot = _predict_and_plot(
-        output_dir, truth, predictions, classification=classification,
-        palette=palette)
+        output_dir, truth, predictions, vmin=vmin, vmax=vmax,
+        classification=classification, palette=palette)
 
     # optionally generate ROC curves for classification results
     if probabilities is not None:
