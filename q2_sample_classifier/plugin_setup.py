@@ -447,6 +447,8 @@ plugin.visualizers.register_function(
     parameters={
         'truth': MetadataColumn[Categorical],
         'missing_samples': parameters['base']['missing_samples'],
+        'vmin': Float | Str % Choices(['auto']),
+        'vmax': Float | Str % Choices(['auto']),
         'palette': Str % Choices(_custom_palettes().keys())},
     input_descriptions={
         'predictions': 'Predicted values to plot on x axis. Should be '
@@ -456,6 +458,8 @@ plugin.visualizers.register_function(
     parameter_descriptions={
         'truth': 'Metadata column (true values) to plot on y axis.',
         'missing_samples': parameter_descriptions['base']['missing_samples'],
+        'vmin': 'The minimum color value for the heatmap',
+        'vmax': 'The maximum color value for the heatmap',
         'palette': 'The color palette to use for plotting.'},
     name='Make a confusion matrix from sample classifier predictions.',
     description='Make a confusion matrix and calculate accuracy of predicted '
