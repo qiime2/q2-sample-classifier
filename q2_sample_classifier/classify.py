@@ -175,7 +175,8 @@ def classify_samples(ctx,
     accuracy_results, = confusion(predictions, metadata, probabilities,
                                   missing_samples='ignore', palette=palette)
 
-    _heatmap, _ = heatmap(ctx, table, importance)
+    _heatmap, _ = heatmap(ctx, table, importance, metadata=metadata,
+                          group_samples=True, missing_samples=missing_samples)
 
     return (sample_estimator, importance, predictions, summary,
             accuracy_results, probabilities, _heatmap)
@@ -216,10 +217,8 @@ def regress_samples(ctx,
 
     accuracy_results, = scatter(predictions, metadata, 'ignore')
 
-    _heatmap, _ = heatmap(ctx, table, importance)
-
     return (sample_estimator, importance, predictions, summary,
-            accuracy_results, _heatmap)
+            accuracy_results)
 
 
 def fit_classifier(table: biom.Table,
@@ -374,8 +373,8 @@ def summarize(output_dir: str, sample_estimator: Pipeline):
 
 def heatmap(ctx, table, importance, metadata=None, feature_count=50,
             importance_threshold=0, group_samples=False, normalize=True,
-            metric='braycurtis', method='average', cluster='features',
-            color_scheme='rocket'):
+            missing_samples='ignore', metric='braycurtis',
+            method='average', cluster='features', color_scheme='rocket'):
     filter_features = ctx.get_action('feature_table', 'filter_features')
     group = ctx.get_action('feature_table', 'group')
     make_heatmap = ctx.get_action('feature_table', 'heatmap')
@@ -383,6 +382,10 @@ def heatmap(ctx, table, importance, metadata=None, feature_count=50,
     if group_samples and metadata is None:
         raise ValueError(
             'If group_samples is enabled, metadata are not optional.')
+
+    if missing_samples == 'ignore' and metadata is None:
+        raise ValueError(
+            'If missing_samples is ignore, metadata are not optional')
 
     clustermap_params = {
         'cluster': cluster, 'normalize': normalize, 'metric': metric,
@@ -404,6 +407,14 @@ def heatmap(ctx, table, importance, metadata=None, feature_count=50,
 
     # filter features by importance
     table, = filter_features(table, metadata=importance)
+
+    if missing_samples == 'ignore':
+        df = metadata.to_dataframe()
+        table = table.view(biom.Table)
+        index = set(df.index)
+        index = [ix for ix in table.ids() if ix in index]
+        table = table.filter(index, inplace=False)
+        table = qiime2.Artifact.import_data('FeatureTable[Frequency]', table)
 
     # optionally group feature table by sample metadata
     # otherwise annotate heatmap with sample metadata

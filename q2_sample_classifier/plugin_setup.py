@@ -227,12 +227,13 @@ plugin.pipelines.register_function(
              ('predictions', SampleData[ClassifierPredictions])
              ] + pipeline_outputs + [
                 ('probabilities', SampleData[Probabilities]),
-                ('_heatmap', Visualization)],
+                ('heatmap', Visualization)],
     input_descriptions={'table': input_descriptions['table']},
     parameter_descriptions=classifier_pipeline_parameter_descriptions,
     output_descriptions={
         **pipeline_output_descriptions,
-        'probabilities': input_descriptions['probabilities']},
+        'probabilities': input_descriptions['probabilities'],
+        'heatmap': 'A heatmap of important features from the table.'},
     name='Train and test a cross-validated supervised learning classifier.',
     description=description.format(
         'categorical', 'supervised learning classifier')
@@ -274,7 +275,7 @@ plugin.pipelines.register_function(
     function=regress_samples,
     inputs=inputs,
     parameters=regressor_pipeline_parameters,
-    outputs=regressor_pipeline_outputs + [('_heatmap', Visualization)],
+    outputs=regressor_pipeline_outputs,
     input_descriptions={'table': input_descriptions['table']},
     parameter_descriptions=regressor_pipeline_parameter_descriptions,
     output_descriptions=pipeline_output_descriptions,
@@ -561,6 +562,7 @@ plugin.pipelines.register_function(
                 'importance_threshold': Float % Range(0, None),
                 'group_samples': Bool,
                 'normalize': Bool,
+                'missing_samples': parameters['base']['missing_samples'],
                 'metric': Str % Choices(heatmap_choices['metric']),
                 'method': Str % Choices(heatmap_choices['method']),
                 'cluster': Str % Choices(heatmap_choices['cluster']),
@@ -582,6 +584,8 @@ plugin.pipelines.register_function(
         'group_samples': 'Group samples by metadata.',
         'normalize': 'Normalize the feature table by adding a psuedocount '
                      'of 1 and then taking the log10 of the table.',
+        'missing_samples': 'How to handle samples present in data but not in '
+                           'metadata.',
         'metric': 'Metrics exposed by seaborn (see http://seaborn.pydata.org/'
                   'generated/seaborn.clustermap.html#seaborn.clustermap for '
                   'more detail).',
