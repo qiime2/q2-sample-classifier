@@ -555,7 +555,8 @@ plugin.pipelines.register_function(
 plugin.pipelines.register_function(
     function=heatmap,
     inputs={**inputs, 'importance': FeatureData[Importance]},
-    parameters={'metadata': MetadataColumn[Categorical],
+    parameters={'sample_metadata': MetadataColumn[Categorical],
+                'feature_metadata': MetadataColumn[Categorical],
                 'feature_count': Int % Range(0, None),
                 'importance_threshold': Float % Range(0, None),
                 'group_samples': Bool,
@@ -570,7 +571,10 @@ plugin.pipelines.register_function(
     input_descriptions={'table': input_descriptions['table'],
                         'importance': 'Feature importances.'},
     parameter_descriptions={
-        'metadata': 'Metadata column to use for sample labeling or grouping.',
+        'sample_metadata': 'Sample metadata column to use for sample labeling '
+                           'or grouping.',
+        'feature_metadata': 'Feature metadata (e.g., taxonomy) to use for '
+                            'labeling features in the heatmap.',
         'feature_count': 'Filter feature table to include top N most '
                          'important features. Set to zero to include all '
                          'features.',
@@ -578,7 +582,7 @@ plugin.pipelines.register_function(
                                 'with an importance score less than this '
                                 'threshold. Set to zero to include all '
                                 'features.',
-        'group_samples': 'Group samples by metadata.',
+        'group_samples': 'Group samples by sample metadata.',
         'normalize': 'Normalize the feature table by adding a psuedocount '
                      'of 1 and then taking the log10 of the table.',
         'metric': 'Metrics exposed by seaborn (see http://seaborn.pydata.org/'
@@ -597,7 +601,7 @@ plugin.pipelines.register_function(
     name='Generate heatmap of important features.',
     description='Generate a heatmap of important features. Features are '
                 'filtered based on importance scores; samples are optionally '
-                'grouped by metadata; and a heatmap is generated that '
+                'grouped by sample metadata; and a heatmap is generated that '
                 'displays (normalized) feature abundances per sample.'
 )
 
