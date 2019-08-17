@@ -183,7 +183,7 @@ def _generate_roc_plots(metadata, probabilities, palette):
 
     Returns a pretty Receiver Operating Characteristic plot with AUC scores.
     '''
-    classes = sorted(metadata.unique())
+    classes = probabilities.columns
     probabilities = probabilities.values
 
     # only accepts binary inputs, so binarize the target data
