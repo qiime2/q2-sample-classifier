@@ -1460,7 +1460,7 @@ class TestROC(SampleClassifierTestPluginBase):
              0.7936508, 0.90476191, 1.]))
         self.assertAlmostEqual(roc_auc['macro'], 0.49930228548098726)
 
-    # these that the ROC nuts + bolts work if predictions does not have all
+    # Proves that the ROC nuts + bolts work if predictions does not have all
     # the classes present in probabilities. This will occur if there are many
     # classes or few samples and the data are not stratified:
     # https://github.com/qiime2/q2-sample-classifier/issues/171
