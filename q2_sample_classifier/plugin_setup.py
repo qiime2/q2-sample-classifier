@@ -233,7 +233,8 @@ plugin.pipelines.register_function(
     output_descriptions={
         **pipeline_output_descriptions,
         'probabilities': input_descriptions['probabilities'],
-        'heatmap': 'A heatmap of important features from the table.'},
+        'heatmap': 'A heatmap of the top 50 most important features from the '
+                   'table.'},
     name='Train and test a cross-validated supervised learning classifier.',
     description=description.format(
         'categorical', 'supervised learning classifier')

@@ -175,7 +175,7 @@ def classify_samples(ctx,
     accuracy_results, = confusion(predictions, metadata, probabilities,
                                   missing_samples='ignore', palette=palette)
 
-    _heatmap, _ = heatmap(ctx, table, importance, metadata=metadata,
+    _heatmap, _ = heatmap(ctx, table, importance, sample_metadata=metadata,
                           group_samples=True, missing_samples=missing_samples)
 
     return (sample_estimator, importance, predictions, summary,
@@ -384,7 +384,7 @@ def heatmap(ctx, table, importance, metadata=None, feature_count=50,
         raise ValueError(
             'If group_samples is enabled, metadata are not optional.')
 
-    if missing_samples == 'ignore' and metadata is None:
+    if missing_samples == 'ignore' and sample_metadata is None:
         raise ValueError(
             'If missing_samples is ignore, metadata are not optional')
 
