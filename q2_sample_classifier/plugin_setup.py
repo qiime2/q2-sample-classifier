@@ -584,8 +584,7 @@ plugin.pipelines.register_function(
         'group_samples': 'Group samples by metadata.',
         'normalize': 'Normalize the feature table by adding a psuedocount '
                      'of 1 and then taking the log10 of the table.',
-        'missing_samples': 'How to handle samples present in data but not in '
-                           'metadata.',
+        'missing_samples': parameter_descriptions['base']['missing_samples'],
         'metric': 'Metrics exposed by seaborn (see http://seaborn.pydata.org/'
                   'generated/seaborn.clustermap.html#seaborn.clustermap for '
                   'more detail).',

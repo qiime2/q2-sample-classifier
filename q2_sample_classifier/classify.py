@@ -378,6 +378,7 @@ def heatmap(ctx, table, importance, metadata=None, feature_count=50,
     filter_features = ctx.get_action('feature_table', 'filter_features')
     group = ctx.get_action('feature_table', 'group')
     make_heatmap = ctx.get_action('feature_table', 'heatmap')
+    filter_samples = ctx.get_action('feature_table', 'filter_samples')
 
     if group_samples and metadata is None:
         raise ValueError(
@@ -407,14 +408,9 @@ def heatmap(ctx, table, importance, metadata=None, feature_count=50,
 
     # filter features by importance
     table, = filter_features(table, metadata=importance)
-
     if missing_samples == 'ignore':
-        df = metadata.to_dataframe()
-        table = table.view(biom.Table)
-        index = set(df.index)
-        index = [ix for ix in table.ids() if ix in index]
-        table = table.filter(index, inplace=False)
-        table = qiime2.Artifact.import_data('FeatureTable[Frequency]', table)
+        table, = filter_samples(table, metadata=qiime2.Metadata(
+                                                metadata.to_dataframe()))
 
     # optionally group feature table by sample metadata
     # otherwise annotate heatmap with sample metadata
