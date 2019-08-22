@@ -10,7 +10,7 @@ import importlib
 
 from qiime2.plugin import (
     Int, Str, Float, Range, Bool, Plugin, Metadata, Choices, MetadataColumn,
-    Numeric, Categorical, Citations, Visualization, TypeMatch)
+    Numeric, Categorical, Citations, Visualization, TypeMatch, TypeMap)
 from q2_types.feature_table import (
     FeatureTable, Frequency, RelativeFrequency, PresenceAbsence, Balance,
     PercentileNormalized)
@@ -437,7 +437,10 @@ plugin.visualizers.register_function(
                 'regressor.'
 )
 
-
+vmin_vmax, mask, __ = TypeMap({
+    (Float, Bool % Choices(False)): Visualization,
+    (Str % Choices('auto'), Bool): Visualization,
+})
 plugin.visualizers.register_function(
     function=confusion_matrix,
     inputs={'predictions': SampleData[ClassifierPredictions],
@@ -445,8 +448,9 @@ plugin.visualizers.register_function(
     parameters={
         'truth': MetadataColumn[Categorical],
         'missing_samples': parameters['base']['missing_samples'],
-        'vmin': Float | Str % Choices(['auto']),
-        'vmax': Float | Str % Choices(['auto']),
+        'vmin': vmin_vmax,
+        'vmax': vmin_vmax,
+        'mask': mask,
         'palette': Str % Choices(_custom_palettes().keys())},
     input_descriptions={
         'predictions': 'Predicted values to plot on x axis. Should be '

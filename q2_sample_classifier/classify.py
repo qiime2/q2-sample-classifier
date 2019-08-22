@@ -357,6 +357,7 @@ def confusion_matrix(output_dir: str,
                      probabilities: pd.DataFrame = None,
                      missing_samples: str = defaults['missing_samples'],
                      vmin: int = 'auto', vmax: int = 'auto',
+                     mask: bool = False,
                      palette: str = defaults['palette']) -> None:
     if vmin == 'auto':
         vmin = None
@@ -368,7 +369,8 @@ def confusion_matrix(output_dir: str,
     _plot_accuracy(output_dir, predictions, truth, probabilities,
                    missing_samples=missing_samples,
                    classification=True, palette=palette,
-                   plot_title='confusion matrix', vmin=vmin, vmax=vmax)
+                   plot_title='confusion matrix', vmin=vmin, vmax=vmax,
+                   mask=False)
 
 
 def summarize(output_dir: str, sample_estimator: Pipeline):
