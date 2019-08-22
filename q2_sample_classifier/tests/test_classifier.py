@@ -1266,6 +1266,11 @@ class TestPlottingVisualizers(SampleClassifierTestPluginBase):
         with self.assertRaisesRegex(ValueError, "do not overlap"):
             confusion_matrix(self.tmpd, self.a, b)
 
+    def test_confusion_matrix_vmin_greater_vmax(self):
+        b = qiime2.CategoricalMetadataColumn(self.a)
+        with self.assertRaisesRegex(ValueError, 'vmin must be less than'):
+            confusion_matrix(self.tmpd, self.a, b, vmin=2, vmax=1)
+
     # test confusion matrix plotting independently to see how it handles
     # partially overlapping classes when true labels are superset
     def test_predict_and_plot_true_labels_are_superset(self):
