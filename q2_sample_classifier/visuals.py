@@ -165,6 +165,16 @@ def _plot_RFE(x, y):
     return rfe
 
 
+def _binarize_labels(metadata, classes):
+    binarized_targets = label_binarize(metadata, classes=classes)
+    # to generalize downstream steps, we need to coerce binary data into an
+    # array of shape [n_samples, n_classes]
+    if len(classes) == 2:
+        binarized_targets = np.hstack((
+            1 - binarized_targets, binarized_targets))
+    return binarized_targets
+
+
 def _generate_roc_plots(metadata, probabilities, palette):
     '''
     metadata: pd.Series of target values.
@@ -177,7 +187,7 @@ def _generate_roc_plots(metadata, probabilities, palette):
     probabilities = probabilities.values
 
     # only accepts binary inputs, so binarize the target data
-    binarized_targets = label_binarize(metadata, classes=classes)
+    binarized_targets = _binarize_labels(metadata, classes)
 
     # Compute ROC curve and ROC area for each class
     fpr, tpr, roc_auc = _roc_per_class(

@@ -22,7 +22,8 @@ from sklearn.exceptions import ConvergenceWarning
 from q2_sample_classifier.visuals import (
     _linear_regress, _calculate_baseline_accuracy, _custom_palettes,
     _plot_heatmap_from_confusion_matrix, _add_sample_size_to_xtick_labels,
-    _roc_palette, _roc_per_class, _roc_micro_average, _roc_macro_average)
+    _roc_palette, _roc_per_class, _roc_micro_average, _roc_macro_average,
+    _binarize_labels)
 from q2_sample_classifier.classify import (
     regress_samples_ncv, classify_samples_ncv, fit_classifier, fit_regressor,
     detect_outliers, split_table, predict_classification,
@@ -1024,6 +1025,43 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             mse, seeded_predict_results['RandomForestRegressor'])
 
 
+# test classifier pipelines succeed on binary data
+class TestBinaryClassification(SampleClassifierTestPluginBase):
+
+    def setUp(self):
+        super().setUp()
+        self.md = qiime2.CategoricalMetadataColumn(pd.Series(
+            ['a', 'a', 'a', 'b', 'b', 'b'],
+            index=pd.Index([c for c in 'abcdef'], name='id'), name='foo'))
+
+        tab = biom.Table(np.array(
+            [[13, 26, 37, 3, 6, 1], [33, 24, 23, 5, 6, 2],
+             [38, 26, 33, 4, 1, 0], [3, 2, 1, 22, 25, 31],
+             [2, 1, 3, 44, 46, 42]]),
+            observation_ids=[c for c in 'vwxyz'],
+            sample_ids=[c for c in 'abcdef'])
+        self.tab = qiime2.Artifact.import_data('FeatureTable[Frequency]', tab)
+
+    # we will make sure predictions are correct, but no need to validate
+    # other outputs, which are tested elsewhere.
+    def test_classify_samples_binary(self):
+        res = sample_classifier.actions.classify_samples(
+            table=self.tab, metadata=self.md,
+            test_size=0.3, cv=1, n_estimators=2, n_jobs=1, random_state=123,
+            parameter_tuning=False, optimize_feature_selection=False)
+        exp = pd.Series(['a', 'b'], name='prediction',
+                        index=pd.Index(['c', 'f'], name='id'))
+        pdt.assert_series_equal(exp, res[2].view(pd.Series))
+
+    def test_classify_samples_ncv_binary(self):
+        res = sample_classifier.actions.classify_samples_ncv(
+            table=self.tab, metadata=self.md, cv=3, n_estimators=2, n_jobs=1,
+            random_state=123, parameter_tuning=False)
+        exp = pd.Series([c for c in 'ababab'], name='prediction',
+                        index=pd.Index([i for i in 'aebdcf'], name='id'))
+        pdt.assert_series_equal(exp, res[0].view(pd.Series))
+
+
 class TestHeatmap(SampleClassifierTestPluginBase):
 
     def setUp(self):
@@ -1061,7 +1099,8 @@ class TestHeatmap(SampleClassifierTestPluginBase):
     def test_heatmap_must_group_or_die(self):
         with self.assertRaisesRegex(ValueError, "metadata are not optional"):
             heatmap, table, = sample_classifier.actions.heatmap(
-                self.table_ecam, self.imp, metadata=None, group_samples=True)
+                self.table_ecam, self.imp, sample_metadata=None,
+                group_samples=True)
 
 
 class NowLetsTestTheActions(SampleClassifierTestPluginBase):
@@ -1420,6 +1459,24 @@ class TestROC(SampleClassifierTestPluginBase):
              0.45238095, 0.54761905, 0.64285714, 0.69047619, 0.74603175,
              0.7936508, 0.90476191, 1.]))
         self.assertAlmostEqual(roc_auc['macro'], 0.49930228548098726)
+
+
+class TestBinarize(SampleClassifierTestPluginBase):
+    def setUp(self):
+        super().setUp()
+
+    def test_binarize_labels_binary(self):
+        md = pd.Series([c for c in 'aabbaa'])
+        labels = _binarize_labels(md, ['a', 'b'])
+        exp = np.array([[1, 0], [1, 0], [0, 1], [0, 1], [1, 0], [1, 0]])
+        np.testing.assert_array_equal(exp, labels)
+
+    def test_binarize_labels_multiclass(self):
+        md = pd.Series([c for c in 'abcabc'])
+        labels = _binarize_labels(md, ['a', 'b', 'c'])
+        exp = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1],
+                        [1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        np.testing.assert_array_equal(exp, labels)
 
 
 class TestTypes(SampleClassifierTestPluginBase):
