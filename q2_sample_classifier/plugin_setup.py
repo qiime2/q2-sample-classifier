@@ -519,7 +519,8 @@ plugin.pipelines.register_function(
     parameters={'metadata': Metadata,
                 'missing_samples': parameters['base']['missing_samples'],
                 'missing_values': Str % Choices(
-                    ['drop_samples', 'drop_features', 'error', 'fill'])},
+                    ['drop_samples', 'drop_features', 'error', 'fill']),
+                'drop_all_unique': Bool},
     outputs=[('converted_table', FeatureTable[Frequency])],
     input_descriptions={'table': input_descriptions['table']},
     parameter_descriptions={
@@ -529,7 +530,9 @@ plugin.pipelines.register_function(
             'How to handle missing values (nans) in metadata. Either '
             '"drop_samples" with missing values, "drop_features" with missing '
             'values, "fill" missing values with zeros, or "error" if '
-            'any missing values are found.')
+            'any missing values are found.'),
+        'drop_all_unique': 'If True, columns that contain a unique value for '
+                           'every ID will be dropped.'
     },
     output_descriptions={'converted_table': 'Converted feature table'},
     name='Convert (and merge) positive numeric metadata (in)to feature table.',
@@ -543,7 +546,7 @@ plugin.pipelines.register_function(
                 'found in the table are missing from the metadata file. The '
                 'metadata file can always contain a superset of samples. Note '
                 'that columns will be dropped if they are non-numeric, '
-                'contain only unique values, contain no unique values (zero '
+                'contain no unique values (zero '
                 'variance), contain only empty cells, or contain negative '
                 'values. This method currently only converts '
                 'postive numeric metadata into feature data. Tip: convert '

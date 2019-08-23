@@ -42,13 +42,16 @@ def metatable(ctx,
               metadata,
               table=None,
               missing_samples='ignore',
-              missing_values='error'):
+              missing_values='error',
+              drop_all_unique=False):
     # gather numeric metadata
     metadata = metadata.filter_columns(
-        column_type='numeric', drop_all_unique=True, drop_zero_variance=True,
-        drop_all_missing=True).to_dataframe()
+        column_type='numeric', drop_all_unique=drop_all_unique,
+        drop_zero_variance=True, drop_all_missing=True).to_dataframe()
     # drop columns with negative values
-    metadata = metadata[-(metadata < 0).any(axis=1)]
+    # pd.DataFrame.any() reverses the normal axis definition: axis=0 reduces
+    # the index, return a Series whose index is the original column labels.
+    metadata = metadata.loc[:, -(metadata < 0).any(axis=0)]
 
     if missing_values == 'drop_samples':
         metadata = metadata.dropna(axis=0)
