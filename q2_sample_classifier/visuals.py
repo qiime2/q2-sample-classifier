@@ -32,6 +32,7 @@ def _custom_palettes():
         'summer': 'summer_r',
         'copper': 'copper_r',
         'viridis': 'viridis_r',
+        'cividis': 'cividis_r',
         'plasma': 'plasma_r',
         'inferno': 'inferno_r',
         'magma': 'magma_r',
