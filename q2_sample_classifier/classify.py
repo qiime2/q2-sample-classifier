@@ -409,15 +409,15 @@ def heatmap(ctx, table, importance, metadata=None, feature_count=50,
     # filter features by importance
     table, = filter_features(table, metadata=importance)
     if missing_samples == 'ignore':
-        table, = filter_samples(table, metadata=qiime2.Metadata(
-                                                metadata.to_dataframe()))
+        table, = filter_samples(
+            table, metadata=qiime2.Metadata(sample_metadata.to_dataframe()))
 
     # optionally group feature table by sample metadata
     # otherwise annotate heatmap with sample metadata
     if group_samples:
-        table, = group(table, metadata=metadata, axis='sample', mode='sum')
-    elif metadata is not None:
-        clustermap_params['metadata'] = metadata
+        table, = group(table, metadata=sample_metadata, axis='sample', mode='sum')
+    elif sample_metadata is not None:
+        clustermap_params['metadata'] = sample_metadata
 
     # make yer heatmap
     clustermap, = make_heatmap(table, **clustermap_params)
