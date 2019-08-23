@@ -1147,7 +1147,7 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
 
     def test_metatable_missing_error(self):
         with self.assertRaisesRegex(ValueError, "missing values"):
-            print(sample_classifier.actions.metatable(
+            (sample_classifier.actions.metatable(
                 self.md2, missing_values='error').view(pd.DataFrame))
 
     def test_metatable_drop_samples(self):
