@@ -158,6 +158,7 @@ def classify_samples(ctx,
         'sample_classifier', 'predict_classification')
     summarize_estimator = ctx.get_action('sample_classifier', 'summarize')
     confusion = ctx.get_action('sample_classifier', 'confusion_matrix')
+    heat = ctx.get_action('sample_classifier', 'heatmap')
 
     X_train, X_test = split(table, metadata, test_size, random_state,
                             stratify=True, missing_samples=missing_samples)
@@ -175,8 +176,8 @@ def classify_samples(ctx,
     accuracy_results, = confusion(predictions, metadata, probabilities,
                                   missing_samples='ignore', palette=palette)
 
-    _heatmap, _ = heatmap(ctx, table, importance, sample_metadata=metadata,
-                          group_samples=True, missing_samples=missing_samples)
+    _heatmap, _ = heat(table, importance, sample_metadata=metadata,
+                       group_samples=True, missing_samples=missing_samples)
 
     return (sample_estimator, importance, predictions, summary,
             accuracy_results, probabilities, _heatmap)
