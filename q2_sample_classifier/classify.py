@@ -158,6 +158,7 @@ def classify_samples(ctx,
         'sample_classifier', 'predict_classification')
     summarize_estimator = ctx.get_action('sample_classifier', 'summarize')
     confusion = ctx.get_action('sample_classifier', 'confusion_matrix')
+    heat = ctx.get_action('sample_classifier', 'heatmap')
 
     X_train, X_test = split(table, metadata, test_size, random_state,
                             stratify=True, missing_samples=missing_samples)
@@ -175,8 +176,11 @@ def classify_samples(ctx,
     accuracy_results, = confusion(predictions, metadata, probabilities,
                                   missing_samples='ignore', palette=palette)
 
+    _heatmap, _ = heat(table, importance, sample_metadata=metadata,
+                       group_samples=True, missing_samples=missing_samples)
+
     return (sample_estimator, importance, predictions, summary,
-            accuracy_results, probabilities)
+            accuracy_results, probabilities, _heatmap)
 
 
 def regress_samples(ctx,
@@ -214,7 +218,8 @@ def regress_samples(ctx,
 
     accuracy_results, = scatter(predictions, metadata, 'ignore')
 
-    return sample_estimator, importance, predictions, summary, accuracy_results
+    return (sample_estimator, importance, predictions, summary,
+            accuracy_results)
 
 
 def fit_classifier(table: biom.Table,
@@ -370,15 +375,20 @@ def summarize(output_dir: str, sample_estimator: Pipeline):
 def heatmap(ctx, table, importance, sample_metadata=None,
             feature_metadata=None, feature_count=50,
             importance_threshold=0, group_samples=False, normalize=True,
-            metric='braycurtis', method='average', cluster='features',
-            color_scheme='rocket'):
+            missing_samples='ignore', metric='braycurtis',
+            method='average', cluster='features', color_scheme='rocket'):
     filter_features = ctx.get_action('feature_table', 'filter_features')
     group = ctx.get_action('feature_table', 'group')
     make_heatmap = ctx.get_action('feature_table', 'heatmap')
+    filter_samples = ctx.get_action('feature_table', 'filter_samples')
 
     if group_samples and sample_metadata is None:
         raise ValueError(
             'If group_samples is enabled, sample_metadata are not optional.')
+
+    if missing_samples == 'ignore' and sample_metadata is None:
+        raise ValueError(
+            'If missing_samples is ignore, metadata are not optional')
 
     clustermap_params = {
         'cluster': cluster, 'normalize': normalize, 'metric': metric,
@@ -400,6 +410,9 @@ def heatmap(ctx, table, importance, sample_metadata=None,
 
     # filter features by importance
     table, = filter_features(table, metadata=importance)
+    if missing_samples == 'ignore':
+        table, = filter_samples(
+            table, metadata=qiime2.Metadata(sample_metadata.to_dataframe()))
 
     # optionally group feature table by sample metadata
     # otherwise annotate heatmap with sample metadata
@@ -408,7 +421,6 @@ def heatmap(ctx, table, importance, sample_metadata=None,
                        mode='sum')
     elif sample_metadata is not None:
         clustermap_params['sample_metadata'] = sample_metadata
-
     # label features using feature metadata
     if feature_metadata is not None:
         clustermap_params['feature_metadata'] = feature_metadata
