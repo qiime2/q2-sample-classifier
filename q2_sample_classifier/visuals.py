@@ -98,10 +98,29 @@ def _linear_regress(actual, pred):
         index=[actual.name])
 
 
-def _plot_heatmap_from_confusion_matrix(cm, palette, vmin=None, vmax=None,
-                                        mask=False):
+def _plot_heatmap_from_confusion_matrix(cm, palette, vmin=None, vmax=None):
     palette = _custom_palettes()[palette]
-    return sns.heatmap(cm, vmin=vmin, vmax=vmax, cmap=palette, mask=mask,
+
+    lowest_frequency = np.amin(cm)
+    highest_frequency = np.amax(cm)
+
+    error = ''
+    if vmin is not None:
+        if vmin > lowest_frequency:
+            error += ('Your vmin value must be less than or equal to the '
+                      'lowest prediction frequency present:\n'
+                      f'\t{vmin!r} is greater than {lowest_frequency!r}')
+    if vmax is not None:
+        if vmax < highest_frequency:
+            if error:
+                error += '\n'
+            error += ('Your vmax value must be greater than or equal to the '
+                      'highest prediction frequency present:\n'
+                      f'\t{vmax!r} is less than {highest_frequency!r}')
+    if error:
+        raise ValueError(error)
+
+    return sns.heatmap(cm, vmin=vmin, vmax=vmax, cmap=palette,
                        cbar_kws={'label': 'Proportion'})
 
 
@@ -112,7 +131,7 @@ def _add_sample_size_to_xtick_labels(ser, classes):
 
 
 def _plot_confusion_matrix(y_test, y_pred, classes, normalize, palette,
-                           vmin=None, vmax=None, mask=False):
+                           vmin=None, vmax=None):
 
     accuracy = accuracy_score(y_test, pd.DataFrame(y_pred))
     cm = confusion_matrix(y_test, y_pred)
@@ -125,7 +144,7 @@ def _plot_confusion_matrix(y_test, y_pred, classes, normalize, palette,
     cm = np.nan_to_num(cm)
 
     confusion = _plot_heatmap_from_confusion_matrix(cm, palette, vmin=vmin,
-                                                    vmax=vmax, mask=mask)
+                                                    vmax=vmax)
 
     x_tick_labels = _add_sample_size_to_xtick_labels(y_pred, classes)
     y_tick_labels = _add_sample_size_to_xtick_labels(y_test, classes)
