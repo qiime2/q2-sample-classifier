@@ -23,7 +23,7 @@ from q2_sample_classifier.visuals import (
     _linear_regress, _calculate_baseline_accuracy, _custom_palettes,
     _plot_heatmap_from_confusion_matrix, _add_sample_size_to_xtick_labels,
     _roc_palette, _roc_per_class, _roc_micro_average, _roc_macro_average,
-    _binarize_labels)
+    _binarize_labels, _generate_roc_plots)
 from q2_sample_classifier.classify import (
     regress_samples_ncv, classify_samples_ncv, fit_classifier, fit_regressor,
     detect_outliers, split_table, predict_classification,
@@ -1459,6 +1459,20 @@ class TestROC(SampleClassifierTestPluginBase):
              0.45238095, 0.54761905, 0.64285714, 0.69047619, 0.74603175,
              0.7936508, 0.90476191, 1.]))
         self.assertAlmostEqual(roc_auc['macro'], 0.49930228548098726)
+
+    # Proves that the ROC nuts + bolts work if predictions does not have all
+    # the classes present in probabilities. This will occur if there are many
+    # classes or few samples and the data are not stratified:
+    # https://github.com/qiime2/q2-sample-classifier/issues/171
+    def test_binarize_and_roc_on_missing_classes(self):
+        # seven samples with only 4 classes (adeh) of 8 possible classes
+        # (abcdefgh) represented
+        md = pd.Series([i for i in 'hedhadd'])
+        # array of 7 samples X 8 classes
+        # the values do not matter, only the labels
+        probs = pd.DataFrame(np.random.rand(7, 8),
+                             columns=[i for i in 'abcdefgh'])
+        _generate_roc_plots(md, probs, 'GreenBlue')
 
 
 class TestBinarize(SampleClassifierTestPluginBase):
