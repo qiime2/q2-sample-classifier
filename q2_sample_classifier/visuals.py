@@ -100,26 +100,6 @@ def _linear_regress(actual, pred):
 
 def _plot_heatmap_from_confusion_matrix(cm, palette, vmin=None, vmax=None):
     palette = _custom_palettes()[palette]
-
-    lowest_frequency = np.amin(cm)
-    highest_frequency = np.amax(cm)
-
-    error = ''
-    if vmin is not None:
-        if vmin > lowest_frequency:
-            error += ('Your vmin value must be less than or equal to the '
-                      'lowest prediction frequency present:\n'
-                      f'\t{vmin!r} is greater than {lowest_frequency!r}')
-    if vmax is not None:
-        if vmax < highest_frequency:
-            if error:
-                error += '\n'
-            error += ('Your vmax value must be greater than or equal to the '
-                      'highest prediction frequency present:\n'
-                      f'\t{vmax!r} is less than {highest_frequency!r}')
-    if error:
-        raise ValueError(error)
-
     return sns.heatmap(cm, vmin=vmin, vmax=vmax, cmap=palette,
                        cbar_kws={'label': 'Proportion'})
 
@@ -142,6 +122,7 @@ def _plot_confusion_matrix(y_test, y_pred, classes, normalize, palette,
     # fill na values (e.g., true values that were not predicted) otherwise
     # these will appear as whitespace in plots and results table.
     cm = np.nan_to_num(cm)
+    _check_vmin_and_vmax(cm, vmin, vmax)
 
     confusion = _plot_heatmap_from_confusion_matrix(cm, palette, vmin=vmin,
                                                     vmax=vmax)
@@ -170,6 +151,27 @@ def _plot_confusion_matrix(y_test, y_pred, classes, normalize, palette,
     predictions.loc["Accuracy Ratio"]["Overall Accuracy"] = accuracy_ratio
 
     return predictions, confusion
+
+
+def _check_vmin_and_vmax(cm, vmin, vmax):
+    lowest_frequency = np.amin(cm)
+    highest_frequency = np.amax(cm)
+
+    error = ''
+    if vmin is not None:
+        if vmin > lowest_frequency:
+            error += ('Your vmin value must be less than or equal to the '
+                      'lowest prediction frequency present:\n'
+                      f'\t{vmin!r} is greater than {lowest_frequency!r}')
+    if vmax is not None:
+        if vmax < highest_frequency:
+            if error:
+                error += '\n'
+            error += ('Your vmax value must be greater than or equal to the '
+                      'highest prediction frequency present:\n'
+                      f'\t{vmax!r} is less than {highest_frequency!r}')
+    if error:
+        raise ValueError(error)
 
 
 def _calculate_baseline_accuracy(y_test, accuracy):
