@@ -160,15 +160,15 @@ def _check_vmin_and_vmax(cm, vmin, vmax):
     error = ''
     if vmin is not None:
         if vmin > lowest_frequency:
-            error += ('Your vmin value must be less than or equal to the '
-                      'lowest prediction frequency present:\n'
+            error += ('vmin must be less than or equal to the lowest '
+                      'predicted class frequency:\n'
                       f'\t{vmin!r} is greater than {lowest_frequency!r}')
     if vmax is not None:
         if vmax < highest_frequency:
             if error:
                 error += '\n'
-            error += ('Your vmax value must be greater than or equal to the '
-                      'highest prediction frequency present:\n'
+            error += ('vmax must be greater than or equal to the highest '
+                      'predicted class frequency:\n'
                       f'\t{vmax!r} is less than {highest_frequency!r}')
     if error:
         raise ValueError(error)

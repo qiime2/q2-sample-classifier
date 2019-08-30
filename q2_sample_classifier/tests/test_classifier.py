@@ -1268,22 +1268,21 @@ class TestPlottingVisualizers(SampleClassifierTestPluginBase):
 
     def test_confusion_matrix_vmin_too_high(self):
         b = qiime2.CategoricalMetadataColumn(self.a)
-        with self.assertRaisesRegex(ValueError, 'vmin value must be less '
-                                    r'than.*\s\s0\.5.*greater.*0\.0'):
+        with self.assertRaisesRegex(ValueError, r'vmin must be less than.*\s\s'
+                                    r'0\.5.*greater.*0\.0'):
             confusion_matrix(self.tmpd, self.a, b, vmin=.5, vmax=None)
 
     def test_confusion_matrix_vmax_too_low(self):
         b = qiime2.CategoricalMetadataColumn(self.a)
-        with self.assertRaisesRegex(ValueError, 'vmax value must be greater '
-                                    r'than.*\s\s0\.5.*less.*1\.0'):
+        with self.assertRaisesRegex(ValueError, r'vmax must be greater than.*'
+                                    r'\s\s0\.5.*less.*1\.0'):
             confusion_matrix(self.tmpd, self.a, b, vmin=None, vmax=.5)
 
     def test_confusion_matrix_vmin_too_high_and_vmax_too_low(self):
         b = qiime2.CategoricalMetadataColumn(self.a)
-        with self.assertRaisesRegex(ValueError, 'vmin value must be less '
-                                    r'than.*\s\s0\.5.*greater.*0\.0\s.*vmax '
-                                    r'value must be greater than.*\s\s0\.5.*'
-                                    r'less.*1\.0'):
+        with self.assertRaisesRegex(ValueError, r'vmin must be less than.*\s'
+                                    r'\s0\.5.*greater.*0\.0\s.*vmax must be '
+                                    r'greater than.*\s\s0\.5.*less.*1\.0'):
             confusion_matrix(self.tmpd, self.a, b, vmin=.5, vmax=.5)
 
     # test confusion matrix plotting independently to see how it handles
