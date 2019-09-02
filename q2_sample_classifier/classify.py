@@ -323,6 +323,68 @@ def regress_samples_ncv(
     return y_pred, importances
 
 
+def regress_samples_ncv_piepline(
+        ctx, table: biom.Table, metadata: qiime2.NumericMetadataColumn,
+        test_size=defaults['test_size'], step=defaults['step'],
+        cv: int = defaults['cv'], random_state: int = None,
+        n_jobs: int = defaults['n_jobs'],
+        n_estimators: int = defaults['n_estimators'],
+        estimator: str = defaults['estimator_r'], stratify: str = False,
+        parameter_tuning: bool = False,
+        missing_samples: str = defaults['missing_samples']
+        ) -> (pd.Series, pd.DataFrame):
+
+    y_pred, importances, probabilities = nested_cross_validation(
+        table, metadata, cv, random_state, n_jobs, n_estimators, estimator,
+        stratify, parameter_tuning, classification=False,
+        scoring=mean_squared_error, missing_samples=missing_samples)
+
+    confusion = ctx.get_action('sample_classifier', 'confusion_matrix')
+
+    accuracy_results, = confusion(y_pred, metadata, probabilities,
+                                  missing_samples='ignore')
+
+    return y_pred, importances, accuracy_results
+
+
+def classify_samples_ncv_pipeline(
+        ctx, table: biom.Table, metadata: qiime2.CategoricalMetadataColumn,
+        test_size=defaults['test_size'], step=defaults['step'],
+        optimize_feature_selection=False,
+        cv: int = defaults['cv'], random_state: int = None,
+        n_jobs: int = defaults['n_jobs'],
+        n_estimators: int = defaults['n_estimators'],
+        estimator: str = defaults['estimator_c'],
+        parameter_tuning: bool = False,
+        missing_samples: str = defaults['missing_samples']
+        ) -> (pd.Series, pd.DataFrame, pd.DataFrame):
+
+    y_pred, importances, probabilities = nested_cross_validation(
+        table, metadata, cv, random_state, n_jobs, n_estimators, estimator,
+        stratify=True, parameter_tuning=parameter_tuning, classification=False,
+        scoring=accuracy_score, missing_samples=missing_samples)
+
+    split = ctx.get_action('sample_classifier', 'split_table')
+    fit = ctx.get_action('sample_classifier', 'fit_classifier')
+    confusion = ctx.get_action('sample_classifier', 'confusion_matrix')
+    heat = ctx.get_action('sample_classifier', 'heatmap')
+
+    X_train, X_test = split(table, metadata, test_size, random_state,
+                            stratify=True, missing_samples=missing_samples)
+
+    sample_estimator, importance = fit(
+        X_train, metadata, step, cv, random_state, n_jobs, n_estimators,
+        estimator, optimize_feature_selection, parameter_tuning,
+        missing_samples='ignore')
+
+    accuracy_results, = confusion(y_pred, metadata, probabilities,
+                                  missing_samples='ignore')
+    _heatmap, _ = heat(table, importance, sample_metadata=metadata,
+                       group_samples=True, missing_samples=missing_samples)
+
+    return (y_pred, importances, probabilities, accuracy_results, _heatmap)
+
+
 def classify_samples_ncv(
         table: biom.Table, metadata: qiime2.CategoricalMetadataColumn,
         cv: int = defaults['cv'], random_state: int = None,
