@@ -543,7 +543,8 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
                            columns=['classA', 'classB'],
                            index=['a', 'b', 'c', 'd'])
         obs = transformer(exp)
-        obs = pd.DataFrame.from_csv(str(obs), sep='\t', header=0)
+        obs = pd.read_csv(str(obs), sep='\t', header=0, index_col=0,
+                          parse_dates=True)
         pdt.assert_frame_equal(exp, obs)
 
     def test_Probabilities_format_to_pd_dataframe(self):
