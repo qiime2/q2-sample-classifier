@@ -102,7 +102,7 @@ def _9(ff: ImportanceFormat) -> (qiime2.Metadata):
 def _10(data: pd.DataFrame) -> (ProbabilitiesFormat):
     ff = ProbabilitiesFormat()
     with ff.open() as fh:
-        data.to_csv(fh, sep='\t', header=True, na_rep=np.nan)
+        data.to_csv(fh, sep='\t', na_rep=np.nan, header=True)
     return ff
 
 
