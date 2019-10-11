@@ -42,13 +42,12 @@ def metatable(ctx,
               metadata,
               table=None,
               missing_samples='ignore',
-              missing_values='error'):
+              missing_values='error',
+              drop_all_unique=False):
     # gather numeric metadata
     metadata = metadata.filter_columns(
-        column_type='numeric', drop_all_unique=True, drop_zero_variance=True,
-        drop_all_missing=True).to_dataframe()
-    # drop columns with negative values
-    metadata = metadata[-(metadata < 0).any(axis=1)]
+        column_type='numeric', drop_all_unique=drop_all_unique,
+        drop_zero_variance=True, drop_all_missing=True).to_dataframe()
 
     if missing_values == 'drop_samples':
         metadata = metadata.dropna(axis=0)
@@ -62,6 +61,10 @@ def metatable(ctx,
                          'to review your options.')
     elif missing_values == 'fill':
         metadata = metadata.fillna(0.)
+
+    # drop columns with negative values
+    # grab column IDs with all values >= 0
+    metadata = metadata.loc[:, (metadata >= 0).all(axis=0)]
 
     if len(metadata.columns) == 0:
         raise ValueError('All metadata columns have been filtered.')

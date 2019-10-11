@@ -1213,12 +1213,12 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
                 self.tab, missing_samples='error',
                 missing_values='drop_samples')
 
-    def test_metatable_empty_metadata_after_filtering(self):
+    def test_metatable_empty_metadata_after_drop_all_unique(self):
         with self.assertRaisesRegex(
                 ValueError, "All metadata"):  # are belong to us
             sample_classifier.actions.metatable(
                 self.md2.filter_ids(['b', 'c']), self.tab,
-                missing_values='drop_samples')
+                missing_values='drop_samples', drop_all_unique=True)
 
     def test_metatable_no_samples_after_filtering(self):
         junk_md = pd.DataFrame(
