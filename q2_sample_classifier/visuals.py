@@ -101,6 +101,7 @@ def _linear_regress(actual, pred):
 
 def _plot_heatmap_from_confusion_matrix(cm, palette, vmin=None, vmax=None):
     palette = _custom_palettes()[palette]
+    plt.figure()
     return sns.heatmap(cm, vmin=vmin, vmax=vmax, cmap=palette,
                        cbar_kws={'label': 'Proportion'})
 
