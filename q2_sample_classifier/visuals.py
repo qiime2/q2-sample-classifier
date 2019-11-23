@@ -101,6 +101,7 @@ def _linear_regress(actual, pred):
 
 def _plot_heatmap_from_confusion_matrix(cm, palette, vmin=None, vmax=None):
     palette = _custom_palettes()[palette]
+    plt.figure()
     scaletron, labelsize, dpi = 20, 8, 100
     sns.set(rc={'xtick.labelsize': labelsize, 'ytick.labelsize': labelsize,
             'figure.dpi': dpi})
