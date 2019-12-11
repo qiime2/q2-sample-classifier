@@ -102,7 +102,7 @@ def _linear_regress(actual, pred):
 def _plot_heatmap_from_confusion_matrix(cm, palette, vmin=None, vmax=None):
     palette = _custom_palettes()[palette]
     plt.figure()
-    scaletron, labelsize, dpi = 20, 8, 100
+    scaler, labelsize, dpi, cbar_min = 20, 8, 100, .15
     sns.set(rc={'xtick.labelsize': labelsize, 'ytick.labelsize': labelsize,
             'figure.dpi': dpi})
     fig, (ax, cax) = plt.subplots(ncols=2, constrained_layout=True)
@@ -112,9 +112,9 @@ def _plot_heatmap_from_confusion_matrix(cm, palette, vmin=None, vmax=None):
 
     # Resize the plot dynamically based on number of classes
     hm_pos = ax.get_position()
-    scale = len(cm) / scaletron
-    # set minimum color bar height for readability
-    cbar_height = scale if (scale >= .15) else .15
+    scale = len(cm) / scaler
+    # prevent cbar from getting unreadably small
+    cbar_height = max(cbar_min, scale)
     ax.set_position([hm_pos.x0, hm_pos.y0, scale, scale])
     cax.set_position([hm_pos.x0 + scale * .95, hm_pos.y0, scale / len(cm),
                      cbar_height])
