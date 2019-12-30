@@ -371,6 +371,12 @@ def confusion_matrix(output_dir: str,
     if vmax == 'auto':
         vmax = None
 
+    try:
+        dtype = type(truth.to_series()[0])
+        predictions = predictions.astype(dtype)
+    except ValueError:
+        pass
+
     _plot_accuracy(output_dir, predictions, truth, probabilities,
                    missing_samples=missing_samples,
                    classification=True, palette=palette,
