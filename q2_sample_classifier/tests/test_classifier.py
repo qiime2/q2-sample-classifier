@@ -1298,6 +1298,21 @@ class TestPlottingVisualizers(SampleClassifierTestPluginBase):
         b = qiime2.CategoricalMetadataColumn(self.a)
         confusion_matrix(self.tmpd, self.a, b)
 
+    def test_confusion_matrix_dtype_coercion(self):
+        # NOTE: the targets are numbers but represented as str
+        test_targets = qiime2.CategoricalMetadataColumn(pd.Series(
+            [x for x in '121212'], index=pd.Index(
+                [i for i in 'abcdef'], name='sample-id'), name='target'))
+
+        test_features = pd.Series([1, 1, 1, 2, 2, 2],
+                                  index=pd.Index([i for i in 'abcdef'],
+                                  name='sample_id'), name='features')
+
+        confusion_matrix(self.tmpd, test_features, test_targets)
+
+        # checkpoint assertion
+        self.assertTrue(True)
+
     def test_confusion_matrix_class_overlap_error(self):
         b = pd.Series([1, 2, 3, 4, 5, 6], name='site',
                       index=['a1', 'a2', 'b1', 'b2', 'c1', 'c2'])
