@@ -1,10 +1,18 @@
+import os
+import tempfile
+import tarfile
 import pandas as pd
 import pandas.util.testing as pdt
 import biom
+import shutil
+import json
 import numpy as np
+import joblib
+import sklearn
 from sklearn.metrics import mean_squared_error, accuracy_score
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.feature_extraction import DictVectorizer
+from sklearn.pipeline import Pipeline
 import skbio
 
 import qiime2
@@ -16,10 +24,111 @@ from q2_sample_classifier.tests.test_base_class import \
 from q2_sample_classifier.classify import (
     regress_samples_ncv, classify_samples_ncv, fit_classifier, fit_regressor,
     detect_outliers, split_table, predict_classification,
-    predict_regression)
+    predict_regression, summarize)
 from q2_sample_classifier.utilities import (
     _set_parameters_and_estimator, _train_adaboost_base_estimator,
     _match_series_or_die, _extract_features)
+from q2_sample_classifier import (
+    SampleEstimatorDirFmt, PickleFormat)
+
+
+class SampleEstimatorTestBase(SampleClassifierTestPluginBase):
+    package = 'q2_sample_classifier.tests'
+
+    def setUp(self):
+        super().setUp()
+
+        def _load_biom(table_fp):
+            table_fp = self.get_data_path(table_fp)
+            table = qiime2.Artifact.load(table_fp)
+            table = table.view(biom.Table)
+            return table
+
+        def _load_cmc(md_fp, column):
+            md_fp = self.get_data_path(md_fp)
+            md = pd.read_csv(md_fp, sep='\t', header=0, index_col=0)
+            md = qiime2.CategoricalMetadataColumn(md[column])
+            return md
+
+        table_chard_fp = _load_biom('chardonnay.table.qza')
+        mdc_chard_fp = _load_cmc('chardonnay.map.txt', 'Region')
+
+        pipeline, importances = fit_classifier(
+            table_chard_fp, mdc_chard_fp, random_state=123,
+            n_estimators=2, n_jobs=1, optimize_feature_selection=True,
+            parameter_tuning=True, missing_samples='ignore')
+        transformer = self.get_transformer(
+            Pipeline, SampleEstimatorDirFmt)
+        self._sklp = transformer(pipeline)
+        sklearn_pipeline = self._sklp.sklearn_pipeline.view(PickleFormat)
+        self.sklearn_pipeline = str(sklearn_pipeline)
+        self.pipeline = pipeline
+
+    def _custom_setup(self, version):
+        with open(os.path.join(self.temp_dir.name,
+                               'sklearn_version.json'), 'w') as fh:
+            fh.write(json.dumps({'sklearn-version': version}))
+        shutil.copy(self.sklearn_pipeline, self.temp_dir.name)
+        return SampleEstimatorDirFmt(
+            self.temp_dir.name, mode='r')
+
+
+class TestFormats(SampleEstimatorTestBase):
+    def test_sample_classifier_dir_fmt(self):
+        format = self._custom_setup(sklearn.__version__)
+
+        # Should not error
+        format.validate()
+
+
+class TestTransformers(SampleEstimatorTestBase):
+    def test_old_sklearn_version(self):
+        transformer = self.get_transformer(
+            SampleEstimatorDirFmt, Pipeline)
+        input = self._custom_setup('a very old version')
+        with self.assertRaises(ValueError):
+            transformer(input)
+
+    def test_taxo_class_dir_fmt_to_taxo_class_result(self):
+        input = self._custom_setup(sklearn.__version__)
+
+        transformer = self.get_transformer(
+            SampleEstimatorDirFmt, Pipeline)
+        obs = transformer(input)
+
+        self.assertTrue(obs)
+
+    def test_taxo_class_result_to_taxo_class_dir_fmt(self):
+        def read_pipeline(pipeline_filepath):
+            with tarfile.open(pipeline_filepath) as tar:
+                dirname = tempfile.mkdtemp()
+                tar.extractall(dirname)
+                pipeline = joblib.load(os.path.join(dirname,
+                                       'sklearn_pipeline.pkl'))
+                for fn in tar.getnames():
+                    os.unlink(os.path.join(dirname, fn))
+                os.rmdir(dirname)
+            return pipeline
+
+        exp = read_pipeline(self.sklearn_pipeline)
+        transformer = self.get_transformer(
+            Pipeline, SampleEstimatorDirFmt)
+        obs = transformer(exp)
+        sklearn_pipeline = obs.sklearn_pipeline.view(PickleFormat)
+        obs_pipeline = read_pipeline(str(sklearn_pipeline))
+        obs = obs_pipeline
+        self.assertTrue(obs)
+
+
+# make sure summarize visualizer works and that rfe_scores are stored properly
+class TestSummarize(SampleEstimatorTestBase):
+
+    def test_summary_with_rfecv(self):
+        summarize(self.temp_dir.name, self.pipeline)
+
+    def test_summary_without_rfecv(self):
+        del self.pipeline.rfe_scores
+        summarize(self.temp_dir.name, self.pipeline)
 
 
 class EstimatorsTests(SampleClassifierTestPluginBase):
