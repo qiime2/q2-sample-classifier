@@ -69,5 +69,8 @@ target/
 
 # other
 *~
+*.code-workspace
+.vscode/
+
 
 .DS_store

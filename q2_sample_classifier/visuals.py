@@ -102,8 +102,27 @@ def _linear_regress(actual, pred):
 def _plot_heatmap_from_confusion_matrix(cm, palette, vmin=None, vmax=None):
     palette = _custom_palettes()[palette]
     plt.figure()
-    return sns.heatmap(cm, vmin=vmin, vmax=vmax, cmap=palette,
-                       cbar_kws={'label': 'Proportion'})
+    scaler, labelsize, dpi, cbar_min = 20, 8, 100, .15
+    sns.set(rc={'xtick.labelsize': labelsize, 'ytick.labelsize': labelsize,
+            'figure.dpi': dpi})
+    fig, (ax, cax) = plt.subplots(ncols=2, constrained_layout=True)
+    heatmap = sns.heatmap(cm, vmin=vmin, vmax=vmax, cmap=palette, ax=ax,
+                          cbar_ax=cax, cbar_kws={'label': 'Proportion'},
+                          square=True, xticklabels=True, yticklabels=True)
+
+    # Resize the plot dynamically based on number of classes
+    hm_pos = ax.get_position()
+    scale = len(cm) / scaler
+    # prevent cbar from getting unreadably small
+    cbar_height = max(cbar_min, scale)
+    ax.set_position([hm_pos.x0, hm_pos.y0, scale, scale])
+    cax.set_position([hm_pos.x0 + scale * .95, hm_pos.y0, scale / len(cm),
+                     cbar_height])
+
+    # Make the heatmap subplot (not the colorbar) the active axis object so
+    # labels apply correctly on return
+    plt.sca(ax)
+    return heatmap
 
 
 def _add_sample_size_to_xtick_labels(ser, classes):
