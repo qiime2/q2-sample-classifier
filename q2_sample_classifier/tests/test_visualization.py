@@ -53,40 +53,40 @@ class TestHeatmap(SampleClassifierTestPluginBase):
 
     def setUp(self):
         super().setUp()
-        md_ecam = self.get_data_path('chardonnay.map.txt')
-        md_ecam = qiime2.Metadata.load(md_ecam)
-        self.md_ecam = md_ecam.get_column('Region')
-        table_ecam = self.get_data_path('chardonnay.table.qza')
-        self.table_ecam = qiime2.Artifact.load(table_ecam)
-        self.table_ecam, = feature_table.actions.filter_samples(
-            self.table_ecam, metadata=md_ecam)
+        md_vaw = self.get_data_path('vaw_map.txt')
+        md_vaw = qiime2.Metadata.load(md_vaw)
+        self.md_vaw = md_vaw.get_column('Column')
+        table_vaw = self.get_data_path('vaw.qza')
+        self.table_vaw = qiime2.Artifact.load(table_vaw)
+        self.table_vaw, = feature_table.actions.filter_samples(
+            self.table_vaw, metadata=md_vaw)
         imp = pd.read_csv(
-            self.get_data_path('importance_chardonney.tsv'), sep='\t',
+            self.get_data_path('vaw_importance.tsv'), sep='\t',
             header=0, index_col=0)
         self.imp = qiime2.Artifact.import_data('FeatureData[Importance]', imp)
 
     def test_heatmap_default_feature_count_zero(self):
         heatmap, table, = sample_classifier.actions.heatmap(
-            self.table_ecam, self.imp, self.md_ecam, group_samples=True,
+            self.table_vaw, self.imp, self.md_vaw, group_samples=True,
             feature_count=0)
-        self.assertEqual(table.view(biom.Table).shape, (163, 4))
+        self.assertEqual(table.view(biom.Table).shape, (4, 1))
 
     def test_heatmap_importance_threshold(self):
         heatmap, table, = sample_classifier.actions.heatmap(
-            self.table_ecam, self.imp, self.md_ecam,
+            self.table_vaw, self.imp, self.md_vaw,
             importance_threshold=0.017, group_samples=False, feature_count=0)
-        self.assertEqual(table.view(biom.Table).shape, (9, 21))
+        self.assertEqual(table.view(biom.Table).shape, (4, 6))
 
     def test_heatmap_feature_count(self):
         heatmap, table, = sample_classifier.actions.heatmap(
-            self.table_ecam, self.imp, self.md_ecam, group_samples=True,
+            self.table_vaw, self.imp, self.md_vaw, group_samples=True,
             feature_count=20)
-        self.assertEqual(table.view(biom.Table).shape, (20, 4))
+        self.assertEqual(table.view(biom.Table).shape, (4, 1))
 
     def test_heatmap_must_group_or_die(self):
         with self.assertRaisesRegex(ValueError, "metadata are not optional"):
             heatmap, table, = sample_classifier.actions.heatmap(
-                self.table_ecam, self.imp, sample_metadata=None,
+                self.table_vaw, self.imp, sample_metadata=None,
                 group_samples=True)
 
 
