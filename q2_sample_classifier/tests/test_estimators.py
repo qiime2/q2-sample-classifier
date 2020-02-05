@@ -170,6 +170,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         self.table_chard_fp = _load_biom('chardonnay.table.qza')
         self.md_chard_fp = _load_md('chardonnay.map.txt')
         self.mdc_chard_fp = _load_cmc('chardonnay.map.txt', 'Region')
+        self.mdc_chard_num_fp = _load_nmc('chardonnay.map.txt', 'Vineyard')
         self.table_ecam_fp = _load_biom('ecam-table-maturity.qza')
         self.md_ecam_fp = _load_md('ecam_map_maturity.txt')
         self.mdc_ecam_fp = _load_nmc('ecam_map_maturity.txt', 'month')
@@ -191,7 +192,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
 
     # test feature extraction
     def test_extract_features(self):
-        table = self.table_ecam_fp
+        table = self.table_chard_fp
         dicts = _extract_features(table)
         dv = DictVectorizer()
         dv.fit(dicts)
@@ -365,7 +366,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     # test ncv a second time with KNeighborsRegressor (no feature importance)
     def test_regress_samples_ncv_knn(self):
         y_pred, importances = regress_samples_ncv(
-            self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
+            self.table_chard_fp, self.mdc_chard_num_fp, random_state=123,
             n_estimators=2, n_jobs=1, stratify=False, parameter_tuning=False,
             estimator='KNeighborsRegressor', missing_samples='ignore')
 
@@ -392,7 +393,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     # test.
     def test_fit_classifier(self):
         pipeline, importances = fit_classifier(
-            self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
+            self.table_chard_fp, self.mdc_chard_fp, random_state=123,
             n_estimators=2, n_jobs=1, optimize_feature_selection=True,
             parameter_tuning=True, missing_samples='ignore')
 
@@ -403,17 +404,17 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                           'GradientBoostingRegressor', 'AdaBoostRegressor',
                           'Lasso', 'Ridge', 'ElasticNet',
                           'KNeighborsRegressor', 'LinearSVR', 'SVR']:
-            table_fp = self.get_data_path('ecam-table-maturity.qza')
+            table_fp = self.get_data_path('chardonnay.table.qza')
             table = qiime2.Artifact.load(table_fp)
             res = sample_classifier.actions.regress_samples(
-                table=table, metadata=self.mdc_ecam_fp,
+                table=table, metadata=self.mdc_chard_num_fp,
                 test_size=0.5, cv=1, n_estimators=10, n_jobs=1,
                 estimator=regressor, random_state=123,
                 parameter_tuning=False, optimize_feature_selection=False,
                 missing_samples='ignore', stratify=True)
             pred = res[2].view(pd.Series)
             pred, truth = _match_series_or_die(
-                pred, self.mdc_ecam_fp.to_series(), 'ignore')
+                pred, self.mdc_chard_num_fp.to_series(), 'ignore')
             accuracy = mean_squared_error(truth, pred)
             self.assertAlmostEqual(
                 accuracy, seeded_results[regressor], places=4,
@@ -518,11 +519,11 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                           'Lasso', 'Ridge', 'ElasticNet',
                           'KNeighborsRegressor', 'SVR', 'LinearSVR']:
             estimator, importances = fit_regressor(
-                self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
+                self.table_chard_fp, self.mdc_chard_num_fp, random_state=123,
                 n_estimators=2, estimator=regressor, n_jobs=1,
                 missing_samples='ignore')
-            pred = predict_regression(self.table_ecam_fp, estimator)
-            exp = self.mdc_ecam_fp.to_series()
+            pred = predict_regression(self.table_chard_fp, estimator)
+            exp = self.mdc_chard_num_fp.to_series()
             # reindex both pred and exp because not all samples present in pred
             # are present in the metadata! (hence missing_samples='ignore')
             sample_ids = pred.index.intersection(exp.index)
@@ -539,9 +540,9 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     # make sure predict still works when features are given in a different
     # order from training set.
     def test_predict_feature_order_aint_no_thing(self):
-        table = self.table_ecam_fp
+        table = self.table_chard_fp
         estimator, importances = fit_regressor(
-            table, self.mdc_ecam_fp, random_state=123, n_estimators=2,
+            table, self.mdc_chard_num_fp, random_state=123, n_estimators=2,
             n_jobs=1, missing_samples='ignore')
 
         # randomly shuffle and reorder features in biom table.
@@ -552,7 +553,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
 
         # now predict values on shuffled data
         pred = predict_regression(shuffled_table, estimator)
-        exp = self.mdc_ecam_fp.to_series()
+        exp = self.mdc_chard_num_fp.to_series()
         # reindex both pred and exp because not all samples present in pred
         # are present in the metadata! (hence missing_samples='ignore')
         sample_ids = pred.index.intersection(exp.index)
@@ -573,16 +574,16 @@ seeded_results = {
     'LinearSVC': 0.727272727273,
     'SVC': 0.36363636363636365,
     'KNeighborsClassifier': 0.363636363636,
-    'RandomForestRegressor': 23.226508,
-    'ExtraTreesRegressor': 19.725397,
-    'GradientBoostingRegressor': 34.157100,
-    'AdaBoostRegressor': 30.920635,
-    'Lasso': 722.827623,
-    'Ridge': 123.625210,
-    'ElasticNet': 618.532273,
-    'KNeighborsRegressor': 44.7847619048,
-    'LinearSVR': 511.816385601,
-    'SVR': 51.325146}
+    'RandomForestRegressor': 15.523636,
+    'ExtraTreesRegressor': 12.248181,
+    'GradientBoostingRegressor': 10.755364,
+    'AdaBoostRegressor': 19.181818,
+    'Lasso': 8.494812,
+    'Ridge': 16.119136198,
+    'ElasticNet': 11.26926385,
+    'KNeighborsRegressor': 16.9745454545,
+    'LinearSVR': 29.384650982,
+    'SVR': 17.51030021}
 
 seeded_predict_results = {
     'RandomForestClassifier': 18,
@@ -592,13 +593,13 @@ seeded_predict_results = {
     'LinearSVC': 21,
     'SVC': 12,
     'KNeighborsClassifier': 14,
-    'RandomForestRegressor': 7.4246031746,
+    'RandomForestRegressor': 3.547619,
     'ExtraTreesRegressor': 0.,
-    'GradientBoostingRegressor': 50.1955883469,
-    'AdaBoostRegressor': 9.7857142857142865,
-    'Lasso': 0.173138653701,
-    'Ridge': 7.57617215386,
-    'ElasticNet': 0.0614243397637,
-    'KNeighborsRegressor': 26.8625396825,
-    'SVR': 37.86704865859832,
-    'LinearSVR': 0.0099912565770459132}
+    'GradientBoostingRegressor': 9.7494208,
+    'AdaBoostRegressor': 5.333333333,
+    'Lasso': 0.24771313,
+    'Ridge': 2.51569259,
+    'ElasticNet': 0.0924309407,
+    'KNeighborsRegressor': 5.714285714,
+    'SVR': 13.922823305,
+    'LinearSVR': 0.0096727975}
