@@ -12,7 +12,7 @@ from os.path import join
 import biom
 
 import qiime2
-from qiime2.plugins import sample_classifier, feature_table
+from qiime2.plugins import sample_classifier
 
 from q2_sample_classifier.visuals import (
     _linear_regress, _calculate_baseline_accuracy,
@@ -58,8 +58,7 @@ class TestHeatmap(SampleClassifierTestPluginBase):
         self.md_vaw = md_vaw.get_column('Column')
         table_vaw = self.get_data_path('vaw.qza')
         self.table_vaw = qiime2.Artifact.load(table_vaw)
-        self.table_vaw, = feature_table.actions.filter_samples(
-            self.table_vaw, metadata=md_vaw)
+        self.table_vaw.save('/tmp/vaw')
         imp = pd.read_csv(
             self.get_data_path('vaw_importance.tsv'), sep='\t',
             header=0, index_col=0)
@@ -69,13 +68,13 @@ class TestHeatmap(SampleClassifierTestPluginBase):
         heatmap, table, = sample_classifier.actions.heatmap(
             self.table_vaw, self.imp, self.md_vaw, group_samples=True,
             feature_count=0)
-        self.assertEqual(table.view(biom.Table).shape, (4, 2))
+        self.assertEqual(table.view(biom.Table).shape, (5, 2))
 
     def test_heatmap_importance_threshold(self):
         heatmap, table, = sample_classifier.actions.heatmap(
             self.table_vaw, self.imp, self.md_vaw,
-            importance_threshold=0.017, group_samples=False, feature_count=0)
-        self.assertEqual(table.view(biom.Table).shape, (4, 6))
+            importance_threshold=0.062, group_samples=False, feature_count=0)
+        self.assertEqual(table.view(biom.Table).shape, (3, 6))
 
     def test_heatmap_feature_count(self):
         heatmap, table, = sample_classifier.actions.heatmap(
