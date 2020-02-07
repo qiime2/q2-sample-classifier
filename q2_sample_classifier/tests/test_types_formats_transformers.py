@@ -5,10 +5,17 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
+import os
 import pandas as pd
 import pandas.util.testing as pdt
 import numpy as np
 import shutil
+import tempfile
+import tarfile
+import joblib
+import sklearn
+from sklearn.pipeline import Pipeline
+
 
 import qiime2
 from q2_types.feature_data import FeatureData
@@ -27,6 +34,7 @@ from q2_sample_classifier.visuals import (
 from q2_sample_classifier._format import JSONFormat
 from q2_sample_classifier.tests.test_base_class import \
     SampleClassifierTestPluginBase
+from q2_sample_classifier.tests.test_estimators import SampleEstimatorTestBase
 
 
 class TestSemanticTypes(SampleClassifierTestPluginBase):
@@ -366,3 +374,50 @@ class TestTypes(SampleClassifierTestPluginBase):
     def test_sample_regressor_semantic_type_to_format_registration(self):
         self.assertSemanticTypeRegisteredToFormat(
             SampleEstimator[Regressor], SampleEstimatorDirFmt)
+
+
+class TestFormats(SampleEstimatorTestBase):
+    def test_sample_classifier_dir_fmt(self):
+        format = self._custom_setup(sklearn.__version__)
+
+        # Should not error
+        format.validate()
+
+
+class TestTransformers(SampleEstimatorTestBase):
+    def test_old_sklearn_version(self):
+        transformer = self.get_transformer(
+            SampleEstimatorDirFmt, Pipeline)
+        input = self._custom_setup('a very old version')
+        with self.assertRaises(ValueError):
+            transformer(input)
+
+    def test_taxo_class_dir_fmt_to_taxo_class_result(self):
+        input = self._custom_setup(sklearn.__version__)
+
+        transformer = self.get_transformer(
+            SampleEstimatorDirFmt, Pipeline)
+        obs = transformer(input)
+
+        self.assertTrue(obs)
+
+    def test_taxo_class_result_to_taxo_class_dir_fmt(self):
+        def read_pipeline(pipeline_filepath):
+            with tarfile.open(pipeline_filepath) as tar:
+                dirname = tempfile.mkdtemp()
+                tar.extractall(dirname)
+                pipeline = joblib.load(os.path.join(dirname,
+                                       'sklearn_pipeline.pkl'))
+                for fn in tar.getnames():
+                    os.unlink(os.path.join(dirname, fn))
+                os.rmdir(dirname)
+            return pipeline
+
+        exp = read_pipeline(self.sklearn_pipeline)
+        transformer = self.get_transformer(
+            Pipeline, SampleEstimatorDirFmt)
+        obs = transformer(exp)
+        sklearn_pipeline = obs.sklearn_pipeline.view(PickleFormat)
+        obs_pipeline = read_pipeline(str(sklearn_pipeline))
+        obs = obs_pipeline
+        self.assertTrue(obs)

@@ -53,7 +53,7 @@ class TestHeatmap(SampleClassifierTestPluginBase):
 
     def setUp(self):
         super().setUp()
-        md_vaw = self.get_data_path('vaw_map.txt')
+        md_vaw = self.get_data_path('vaw.txt')
         md_vaw = qiime2.Metadata.load(md_vaw)
         self.md_vaw = md_vaw.get_column('Column')
         table_vaw = self.get_data_path('vaw.qza')
@@ -69,7 +69,7 @@ class TestHeatmap(SampleClassifierTestPluginBase):
         heatmap, table, = sample_classifier.actions.heatmap(
             self.table_vaw, self.imp, self.md_vaw, group_samples=True,
             feature_count=0)
-        self.assertEqual(table.view(biom.Table).shape, (4, 1))
+        self.assertEqual(table.view(biom.Table).shape, (4, 2))
 
     def test_heatmap_importance_threshold(self):
         heatmap, table, = sample_classifier.actions.heatmap(
@@ -80,8 +80,8 @@ class TestHeatmap(SampleClassifierTestPluginBase):
     def test_heatmap_feature_count(self):
         heatmap, table, = sample_classifier.actions.heatmap(
             self.table_vaw, self.imp, self.md_vaw, group_samples=True,
-            feature_count=20)
-        self.assertEqual(table.view(biom.Table).shape, (4, 1))
+            feature_count=2)
+        self.assertEqual(table.view(biom.Table).shape, (2, 2))
 
     def test_heatmap_must_group_or_die(self):
         with self.assertRaisesRegex(ValueError, "metadata are not optional"):

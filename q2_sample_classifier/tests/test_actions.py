@@ -14,6 +14,8 @@ from qiime2.plugins import sample_classifier
 
 from q2_sample_classifier.tests.test_base_class import \
     SampleClassifierTestPluginBase
+from q2_sample_classifier.tests.test_estimators import SampleEstimatorTestBase
+from q2_sample_classifier.classify import summarize
 
 
 class NowLetsTestTheActions(SampleClassifierTestPluginBase):
@@ -145,3 +147,14 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
         with self.assertRaisesRegex(ValueError, "All metadata samples"):
             sample_classifier.actions.metatable(
                 junk_md, missing_values='drop_samples')
+
+
+# make sure summarize visualizer works and that rfe_scores are stored properly
+class TestSummarize(SampleEstimatorTestBase):
+
+    def test_summary_with_rfecv(self):
+        summarize(self.temp_dir.name, self.pipeline)
+
+    def test_summary_without_rfecv(self):
+        del self.pipeline.rfe_scores
+        summarize(self.temp_dir.name, self.pipeline)
