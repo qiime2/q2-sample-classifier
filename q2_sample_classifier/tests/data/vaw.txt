@@ -1,0 +1,7 @@
+#SampleID	Column
+Sample1	a
+Sample2	a
+Sample3	a
+Sample4	b
+Sample5	b
+Sample6	b
