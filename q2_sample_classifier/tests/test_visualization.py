@@ -58,7 +58,6 @@ class TestHeatmap(SampleClassifierTestPluginBase):
         self.md_vaw = md_vaw.get_column('Column')
         table_vaw = self.get_data_path('vaw.qza')
         self.table_vaw = qiime2.Artifact.load(table_vaw)
-        self.table_vaw.save('/tmp/vaw')
         imp = pd.read_csv(
             self.get_data_path('vaw_importance.tsv'), sep='\t',
             header=0, index_col=0)
