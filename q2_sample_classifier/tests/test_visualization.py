@@ -137,6 +137,21 @@ class TestPlottingVisualizers(SampleClassifierTestPluginBase):
                                     r'greater than.*\s\s0\.5.*less.*1\.0'):
             confusion_matrix(self.tmpd, self.a, b, vmin=.5, vmax=.5)
 
+    def test_confusion_matrix_dtype_coercion(self):
+        predictions = pd.Series([1, 1, 1, 2, 2, 2],
+                                index=pd.Index([i for i in 'abcdef'],
+                                name='sample_id'), name='features')
+
+        # NOTE: the targets are numbers but represented as str
+        truth = qiime2.CategoricalMetadataColumn(pd.Series(
+            [x for x in '121212'], index=pd.Index(
+                [i for i in 'abcdef'], name='sample-id'), name='target'))
+
+        confusion_matrix(self.tmpd, predictions, truth)
+
+        # checkpoint assertion
+        self.assertTrue(True)
+
     # test confusion matrix plotting independently to see how it handles
     # partially overlapping classes when true labels are superset
     def test_predict_and_plot_true_labels_are_superset(self):
