@@ -371,11 +371,12 @@ def confusion_matrix(output_dir: str,
     if vmax == 'auto':
         vmax = None
 
-    try:
-        dtype = type(truth.to_series()[0])
-        predictions = predictions.astype(dtype)
-    except ValueError:
-        pass
+    predictions = predictions.astype(str)
+
+    temp_truth = truth.to_series()
+    temp_truth = temp_truth.astype(str)
+    truth = qiime2.CategoricalMetadataColumn(temp_truth)
+
 
     _plot_accuracy(output_dir, predictions, truth, probabilities,
                    missing_samples=missing_samples,
