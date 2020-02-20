@@ -282,19 +282,19 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             dat, md, random_state=123, n_estimators=2, n_jobs=1,
             missing_samples='ignore')
         exp_pred = pd.Series(
-            ['blue', 'blue', 'blue', 'red', 'blue',
-             'blue', 'blue', 'red', 'red', 'blue'],
-            index=pd.Index(['s1', 's7', 's5', 's9', 's3', 's10', 's4', 's6',
-                            's2', 's8'], dtype='object', name='SampleID'),
+            ['blue', 'red', 'red', 'blue', 'blue',
+             'blue', 'blue', 'red', 'blue', 'blue'],
+            index=pd.Index(['s4', 's6', 's1', 's10', 's5', 's8', 's2', 's9',
+                            's3', 's7'], dtype='object', name='SampleID'),
             name='prediction')
         exp_importances = pd.DataFrame(
-            [0.5551111111111111, 0.2671111111111111, 0.1777777777777778],
+            [0.595111111111111, 0.23155555555555551, 0.17333333333333334],
             index=pd.Index(['o3', 'o1', 'o2']), columns=['importance'])
         exp_probabilities = pd.DataFrame(
-            [[1., 0.], [1., 0.], [1., 0.], [0., 1.], [0.5, 0.5], [0.5, 0.5],
-             [0.5, 0.5], [0., 1.], [0., 1.], [0.5, 0.5]],
-            index=pd.Index(['s1', 's7', 's5', 's9', 's3', 's10', 's4', 's6',
-                            's2', 's8'], name='SampleID'),
+            [[0.5, 0.5], [0., 1.], [0., 1.], [0.5, 0.5], [0.5, 0.5], [0.5, 0.5],
+             [0.5, 0.5], [0., 1.], [1., 0.], [1., 0.]],
+            index=pd.Index(['s4', 's6', 's1', 's10', 's5', 's8', 's2', 's9',
+                            's3', 's7'], name='SampleID'),
             columns=['blue', 'red'])
         pdt.assert_series_equal(y_pred, exp_pred)
         pdt.assert_frame_equal(importances, exp_importances)
@@ -516,7 +516,7 @@ seeded_results = {
     'GradientBoostingRegressor': 34.157100,
     'AdaBoostRegressor': 30.920635,
     'Lasso': 722.827623,
-    'Ridge': 123.625210,
+    'Ridge': 521.259880,
     'ElasticNet': 618.532273,
     'KNeighborsRegressor': 44.7847619048,
     'LinearSVR': 511.816385601,
@@ -535,7 +535,7 @@ seeded_predict_results = {
     'GradientBoostingRegressor': 50.1955883469,
     'AdaBoostRegressor': 9.7857142857142865,
     'Lasso': 0.173138653701,
-    'Ridge': 7.57617215386,
+    'Ridge': 6.7096833819033e-05,
     'ElasticNet': 0.0614243397637,
     'KNeighborsRegressor': 26.8625396825,
     'SVR': 37.86704865859832,

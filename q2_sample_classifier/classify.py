@@ -467,13 +467,12 @@ def detect_outliers(table: biom.Table,
         X_train = features
 
     # fit isolation tree
-    # TODO: update to behavior='new' if we ever move this out of experimental
     estimator = Pipeline(
         [('dv', DictVectorizer()),
          ('est', IsolationForest(n_jobs=n_jobs, n_estimators=n_estimators,
                                  contamination=contamination,
                                  random_state=random_state,
-                                 behaviour='old'))])
+                                ))])
     estimator.fit(X_train)
 
     # predict outlier status
