@@ -516,7 +516,7 @@ seeded_results = {
     'GradientBoostingRegressor': 34.157100,
     'AdaBoostRegressor': 30.920635,
     'Lasso': 722.827623,
-    'Ridge': 521.195194222417,
+    'Ridge': 521.195194222418,
     'ElasticNet': 618.532273,
     'KNeighborsRegressor': 44.7847619048,
     'LinearSVR': 511.816385601,
