@@ -373,10 +373,6 @@ def confusion_matrix(output_dir: str,
 
     predictions = predictions.astype(str)
 
-    temp_truth = truth.to_series()
-    temp_truth = temp_truth.astype(str)
-    truth = qiime2.CategoricalMetadataColumn(temp_truth)
-
     _plot_accuracy(output_dir, predictions, truth, probabilities,
                    missing_samples=missing_samples,
                    classification=True, palette=palette,

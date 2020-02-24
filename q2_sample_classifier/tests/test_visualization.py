@@ -139,13 +139,14 @@ class TestPlottingVisualizers(SampleClassifierTestPluginBase):
 
     def test_confusion_matrix_dtype_coercion(self):
         predictions = pd.Series([1, 1, 1, 2, 2, 2],
-                                index=pd.Index([i for i in 'abcdef'],
+                                index=pd.Index(['a', 'b', 'c', 'd', 'e', 'f'],
                                 name='sample_id'), name='features')
 
         # NOTE: the targets are numbers but represented as str
         truth = qiime2.CategoricalMetadataColumn(pd.Series(
-            [x for x in '121212'], index=pd.Index(
-                [i for i in 'abcdef'], name='sample-id'), name='target'))
+            ['1', '2', '1', '2', '1', '2'],
+            index=pd.Index(['a', 'b', 'c', 'd', 'e', 'f'], name='sample-id'),
+            name='target'))
 
         confusion_matrix(self.tmpd, predictions, truth)
 
