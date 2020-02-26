@@ -535,7 +535,7 @@ def _summarize_estimator(output_dir, sample_estimator):
 def _visualize(output_dir, estimator, cm, roc,
                optimize_feature_selection=True, title='results'):
 
-    pd.set_option('display.max_colwidth', None)
+    pd.set_option('display.max_colwidth', -1)
 
     # summarize model accuracy and params
     if estimator is not None:
@@ -694,7 +694,7 @@ def _mean_feature_importance(importances):
     containing importance scores of the same features from multiple models
     (e.g., CV importance scores).
     '''
-    imp = pd.concat(importances, axis=1, sort=True)
+    imp = pd.concat(importances, axis=1)
     # groupby column name instead of taking column mean to support 2d arrays
     imp = imp.groupby(imp.columns, axis=1).mean()
     return imp.sort_values(imp.columns[0], ascending=False)
