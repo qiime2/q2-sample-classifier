@@ -109,13 +109,13 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
     def test_mean_feature_importance_2d_arrays(self):
         exp = pd.DataFrame([[3.5] * 4, [9.5] * 4],
                            index=["importance0", "importance1"],
-                           columns=[0, 1, 2, 3]).T
+                           columns=[3, 2, 1, 0]).T
         imps = [pd.DataFrame([[6, 5, 4, 3], [14, 13, 12, 11]],
                              index=["importance0", "importance1"],
-                             columns=[0, 1, 2, 3]).T,
+                             columns=[3, 2, 1, 0]).T,
                 pd.DataFrame([[1, 2, 3, 4], [5, 6, 7, 8]],
                              index=["importance0", "importance1"],
-                             columns=[0, 1, 2, 3]).T]
+                             columns=[3, 2, 1, 0]).T]
         pdt.assert_frame_equal(_mean_feature_importance(imps), exp)
 
     # and this should not occur now, but theoretically should just concat and
