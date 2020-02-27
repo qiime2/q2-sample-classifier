@@ -7,7 +7,7 @@
 # ----------------------------------------------------------------------------
 import pandas as pd
 import pandas.util.testing as pdt
-from os import mkdir
+from os import mkdir, listdir
 from os.path import join
 import biom
 
@@ -150,8 +150,7 @@ class TestPlottingVisualizers(SampleClassifierTestPluginBase):
 
         confusion_matrix(self.tmpd, predictions, truth)
 
-        # checkpoint assertion
-        self.assertTrue(True)
+        self.assertTrue('index.html' in listdir(self.tmpd))
 
     # test confusion matrix plotting independently to see how it handles
     # partially overlapping classes when true labels are superset
