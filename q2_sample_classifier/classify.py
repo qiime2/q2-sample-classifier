@@ -371,6 +371,8 @@ def confusion_matrix(output_dir: str,
     if vmax == 'auto':
         vmax = None
 
+    predictions = predictions.astype(str)
+
     _plot_accuracy(output_dir, predictions, truth, probabilities,
                    missing_samples=missing_samples,
                    classification=True, palette=palette,

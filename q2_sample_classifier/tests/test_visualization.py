@@ -7,7 +7,7 @@
 # ----------------------------------------------------------------------------
 import pandas as pd
 import pandas.util.testing as pdt
-from os import mkdir
+from os import mkdir, listdir
 from os.path import join
 import biom
 
@@ -136,6 +136,21 @@ class TestPlottingVisualizers(SampleClassifierTestPluginBase):
                                     r'\s0\.5.*greater.*0\.0\s.*vmax must be '
                                     r'greater than.*\s\s0\.5.*less.*1\.0'):
             confusion_matrix(self.tmpd, self.a, b, vmin=.5, vmax=.5)
+
+    def test_confusion_matrix_dtype_coercion(self):
+        predictions = pd.Series([1, 1, 1, 2, 2, 2],
+                                index=pd.Index(['a', 'b', 'c', 'd', 'e', 'f'],
+                                name='sample_id'), name='features')
+
+        # NOTE: the targets are numbers but represented as str
+        truth = qiime2.CategoricalMetadataColumn(pd.Series(
+            ['1', '2', '1', '2', '1', '2'],
+            index=pd.Index(['a', 'b', 'c', 'd', 'e', 'f'], name='sample-id'),
+            name='target'))
+
+        confusion_matrix(self.tmpd, predictions, truth)
+
+        self.assertTrue('index.html' in listdir(self.tmpd))
 
     # test confusion matrix plotting independently to see how it handles
     # partially overlapping classes when true labels are superset
