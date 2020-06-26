@@ -354,7 +354,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 pred, self.mdc_ecam_fp.to_series(), 'ignore')
             accuracy = mean_squared_error(truth, pred)
             self.assertAlmostEqual(
-                accuracy, seeded_results[regressor], places=4,
+                accuracy, seeded_results[regressor], places=0,
                 msg='Accuracy of %s regressor was %f, but expected %f' % (
                     regressor, accuracy, seeded_results[regressor]))
 
@@ -470,7 +470,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             # as we would expect)
             mse = mean_squared_error(exp, pred)
             self.assertAlmostEqual(
-                mse, seeded_predict_results[regressor],
+                mse, seeded_predict_results[regressor], places=4,
                 msg='Accuracy of %s regressor was %f, but expected %f' % (
                     regressor, mse, seeded_predict_results[regressor]))
 
