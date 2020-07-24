@@ -469,12 +469,12 @@ def detect_outliers(table: biom.Table,
         X_train = features
 
     # fit isolation tree
-    estimator = Pipeline(
-        [('dv', DictVectorizer()),
-         ('est', IsolationForest(n_jobs=n_jobs, n_estimators=n_estimators,
-                                 contamination=contamination,
-                                 random_state=random_state,
-                                ))])
+    estimator = Pipeline([('dv', DictVectorizer()),
+                          ('est', IsolationForest(n_jobs=n_jobs,
+                                                  n_estimators=n_estimators,
+                                                  contamination=contamination,
+                                                  random_state=random_state,
+                                                  ))])
     estimator.fit(X_train)
 
     # predict outlier status

@@ -45,11 +45,12 @@ class TestRFEExtractor(SampleClassifierTestPluginBase):
             index=pd.Index(range(1, 21)), name='Accuracy')
         self.exp2 = pd.Series([
             0.5000000000000001, 0.52, 0.48, 0.5599999999999998, 0.5,
-            0.5799999999999998, 0.54, 0.4600000000000001, 0.6, 
+            0.5799999999999998, 0.54, 0.4600000000000001, 0.6,
             0.45999999999999996, 0.45999999999999996],
             index=pd.Index([1] + [i for i in range(2, 21, 2)]),
             name='Accuracy')
-        self.exp3 = pd.Series({1: 0.4600000000000001, 20: 0.45999999999999996}, name='Accuracy')
+        self.exp3 = pd.Series({1: 0.4600000000000001, 20: 0.45999999999999996},
+                              name='Accuracy')
 
     def extract_rfe_scores_template(self, steps, expected):
         selector = RFECV(RandomForestClassifier(
