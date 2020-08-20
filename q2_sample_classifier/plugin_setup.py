@@ -13,7 +13,7 @@ from qiime2.plugin import (
     Numeric, Categorical, Citations, Visualization, TypeMatch)
 from q2_types.feature_table import (
     FeatureTable, Frequency, RelativeFrequency, PresenceAbsence, Balance,
-    PercentileNormalized)
+    PercentileNormalized, Design)
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
 from q2_types.distance_matrix import DistanceMatrix
@@ -475,7 +475,7 @@ plugin.visualizers.register_function(
 
 
 T = TypeMatch([Frequency, RelativeFrequency, PresenceAbsence, Balance,
-              PercentileNormalized])
+               PercentileNormalized, Design])
 plugin.methods.register_function(
     function=split_table,
     inputs={'table': FeatureTable[T]},
