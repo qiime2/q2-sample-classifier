@@ -523,6 +523,11 @@ def _summarize_estimator(output_dir, sample_estimator):
         rfep.savefig(join(output_dir, 'rfe_plot.pdf'))
         plt.close('all')
         optimize_feature_selection = True
+        # generate rfe scores file
+        df = pd.DataFrame(data={'rfe_score': sample_estimator.rfe_scores},
+                          index=sample_estimator.rfe_scores.index)
+        df.index.name = 'feature_count'
+        df.to_csv(join(output_dir, 'rfe_scores.tsv'), sep='\t', index=True)
     # if the rfe_scores attribute does not exist, do nothing
     except AttributeError:
         optimize_feature_selection = False
