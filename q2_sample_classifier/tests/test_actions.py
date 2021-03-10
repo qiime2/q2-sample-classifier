@@ -5,6 +5,9 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
+
+import os
+
 import pandas as pd
 import numpy as np
 import biom
@@ -155,6 +158,15 @@ class TestSummarize(SampleEstimatorTestBase):
     def test_summary_with_rfecv(self):
         summarize(self.temp_dir.name, self.pipeline)
 
+        self.assertTrue('rfe_plot.pdf' in os.listdir(self.temp_dir.name))
+        self.assertTrue('rfe_plot.png' in os.listdir(self.temp_dir.name))
+        self.assertTrue('rfe_scores.tsv' in os.listdir(self.temp_dir.name))
+
     def test_summary_without_rfecv(self):
+        # nuke the rfe_scores to test the other branch of _summarize_estimator
         del self.pipeline.rfe_scores
         summarize(self.temp_dir.name, self.pipeline)
+
+        self.assertFalse('rfe_plot.pdf' in os.listdir(self.temp_dir.name))
+        self.assertFalse('rfe_plot.png' in os.listdir(self.temp_dir.name))
+        self.assertFalse('rfe_scores.tsv' in os.listdir(self.temp_dir.name))
