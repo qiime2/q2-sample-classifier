@@ -357,7 +357,7 @@ def _fit_estimator(features, targets, estimator, n_estimators=100, step=0.05,
         _warn_feature_selection()
         importances = pd.DataFrame(index=features.ids('observation'))
         importances["importance"] = np.nan
-        importances.index.name = 'feature-id'
+        importances.index.name = 'feature'
 
     return estimator, importances
 
