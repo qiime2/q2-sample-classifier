@@ -289,7 +289,8 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             name='prediction')
         exp_importances = pd.DataFrame(
             [0.595111111111111, 0.23155555555555551, 0.17333333333333334],
-            index=pd.Index(['o3', 'o1', 'o2']), columns=['importance'])
+            index=pd.Index(['o3', 'o1', 'o2'], name='feature'),
+            columns=['importance'])
         exp_probabilities = pd.DataFrame(
             [[0.5, 0.5], [0., 1.], [0., 1.], [0.5, 0.5], [0.5, 0.5],
              [0.5, 0.5], [0.5, 0.5], [0., 1.], [1., 0.], [1., 0.]],
