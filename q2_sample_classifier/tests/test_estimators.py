@@ -113,7 +113,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         self.mdc_ecam_fp = _load_nmc('ecam_map_maturity.txt', 'month')
         self.exp_imp = pd.read_csv(
             self.get_data_path('importance.tsv'), sep='\t', header=0,
-            index_col=0)
+            index_col=0, names=['feature-id', 'importance'])
         self.exp_pred = pd.read_csv(
             self.get_data_path('predictions.tsv'), sep='\t', header=0,
             index_col=0, squeeze=True)
@@ -289,7 +289,8 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             name='prediction')
         exp_importances = pd.DataFrame(
             [0.595111111111111, 0.23155555555555551, 0.17333333333333334],
-            index=pd.Index(['o3', 'o1', 'o2']), columns=['importance'])
+            index=pd.Index(['o3', 'o1', 'o2'], name='feature-id'),
+            columns=['importance'])
         exp_probabilities = pd.DataFrame(
             [[0.5, 0.5], [0., 1.], [0., 1.], [0.5, 0.5], [0.5, 0.5],
              [0.5, 0.5], [0.5, 0.5], [0., 1.], [1., 0.], [1., 0.]],
