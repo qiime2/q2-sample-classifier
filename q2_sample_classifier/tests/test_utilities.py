@@ -12,7 +12,7 @@ from sklearn.svm import LinearSVC
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
-import pandas.util.testing as pdt
+import pandas.testing as pdt
 
 import qiime2
 

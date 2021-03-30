@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import RFECV
-import pandas.util.testing as pdt
+import pandas.testing as pdt
 import biom
 
 import qiime2

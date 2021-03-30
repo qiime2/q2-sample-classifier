@@ -438,11 +438,14 @@ def _predict_and_plot(output_dir, y_test, y_pred, vmin=None, vmax=None,
     else:
         predictions = _linear_regress(y_test, y_pred)
         predict_plot = _regplot_from_dataframe(y_test, y_pred)
+
     if output_dir is not None:
         predict_plot.get_figure().savefig(
             join(output_dir, 'predictions.png'), bbox_inches='tight')
         predict_plot.get_figure().savefig(
             join(output_dir, 'predictions.pdf'), bbox_inches='tight')
+
+    plt.close('all')
     return predictions, predict_plot
 
 

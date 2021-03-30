@@ -7,7 +7,7 @@
 # ----------------------------------------------------------------------------
 import os
 import pandas as pd
-import pandas.util.testing as pdt
+import pandas.testing as pdt
 import biom
 import shutil
 import json

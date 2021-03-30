@@ -6,7 +6,7 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 import pandas as pd
-import pandas.util.testing as pdt
+import pandas.testing as pdt
 from os import mkdir, listdir
 from os.path import join
 import biom
