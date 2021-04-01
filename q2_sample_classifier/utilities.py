@@ -18,7 +18,7 @@ from sklearn.ensemble import (RandomForestRegressor, RandomForestClassifier,
                               ExtraTreesClassifier, ExtraTreesRegressor,
                               AdaBoostClassifier, GradientBoostingClassifier,
                               AdaBoostRegressor, GradientBoostingRegressor)
-from sklearn.svm import LinearSVC, SVR, SVC
+from sklearn.svm import SVR, SVC
 from sklearn.linear_model import Ridge, Lasso, ElasticNet
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
@@ -47,20 +47,6 @@ parameters = {
                  "min_weight_fraction_leaf": [0.0001, 0.001, 0.01]},
     'bootstrap': {"bootstrap": [True, False]},
     'criterion': {"criterion": ["gini", "entropy"]},
-    'linear_svm': {"C": [1, 0.5, 0.1, 0.9, 0.8],
-                   # should probably include penalty in grid search, but:
-                   # Unsupported set of arguments: The combination of
-                   # penalty='l1' and loss='hinge' is not supported
-                   # "penalty": ["l1", "l2"],
-                   "loss": ["hinge", "squared_hinge"],
-                   "tol": [0.00001, 0.0001, 0.001]
-                   # should probably include this in grid search, as
-                   # dual=False is preferred when samples>features. However:
-                   # Unsupported set of arguments: The combination of
-                   # penalty='l2' and loss='hinge' are not supported when
-                   # dual=False
-                   # "dual": [True, False]
-                   },
     'svm': {"C": [1, 0.5, 0.1, 0.9, 0.8],
             "tol": [0.00001, 0.0001, 0.001, 0.01],
             "shrinking": [True, False]},
@@ -683,14 +669,11 @@ def predict_probabilities(estimator, test_set, index):
               have their class probabilities predicted.
     index: array-like of sample names
     '''
-    # most classifiers have a predict_proba attribute
-    try:
-        probs = pd.DataFrame(estimator.predict_proba(test_set),
-                             index=index, columns=estimator.classes_)
-    # SVMs use the decision_function attribute
-    except AttributeError:
-        probs = pd.DataFrame(estimator.decision_function(test_set),
-                             index=index, columns=estimator.classes_)
+    # all used classifiers have a predict_proba attribute
+    # (approximated for SVCs)
+    probs = pd.DataFrame(estimator.predict_proba(test_set),
+                         index=index, columns=estimator.classes_)
+
     return probs
 
 
@@ -768,11 +751,13 @@ def _select_estimator(estimator, n_jobs, n_estimators, random_state=None):
         estimator = GradientBoostingClassifier(
             n_estimators=n_estimators, random_state=random_state)
     elif estimator == 'LinearSVC':
-        param_dist = parameters['linear_svm']
-        estimator = LinearSVC(random_state=random_state)
+        param_dist = parameters['svm']
+        estimator = SVC(kernel='linear', random_state=random_state,
+                        gamma='scale', probability=True)
     elif estimator == 'SVC':
         param_dist = parameters['svm']
-        estimator = SVC(kernel='rbf', random_state=random_state, gamma='scale')
+        estimator = SVC(kernel='rbf', random_state=random_state,
+                        gamma='scale', probability=True)
     elif estimator == 'KNeighborsClassifier':
         param_dist = parameters['kneighbors']
         estimator = KNeighborsClassifier(algorithm='auto')
