@@ -10,7 +10,7 @@ from sklearn.metrics import (
     mean_squared_error, confusion_matrix, accuracy_score, roc_curve, auc)
 from sklearn.preprocessing import label_binarize
 from itertools import cycle
-from scipy import interp
+from numpy import interp
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -72,7 +72,7 @@ def _regplot_from_dataframe(x, y, plot_style="whitegrid", arb=True,
                             color="grey"):
     '''Seaborn regplot with true 1:1 ratio set by arb (bool).'''
     sns.set_style(plot_style)
-    reg = sns.regplot(x, y, color=color)
+    reg = sns.regplot(x=x, y=y, color=color)
     plt.xlabel('True value')
     plt.ylabel('Predicted value')
     if arb is True:
