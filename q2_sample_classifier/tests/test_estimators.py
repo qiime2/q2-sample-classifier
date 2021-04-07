@@ -454,6 +454,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             sample_ids = pred.index.intersection(exp.index)
             pred = pred.loc[sample_ids]
             exp = exp.loc[sample_ids]
+            # verify predictions:
             # test that expected number of correct results is achieved (these
             # are mostly quite high as we would expect (total n=21))
             correct_results = np.sum(pred == exp)
@@ -462,6 +463,17 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 msg='Accuracy of %s classifier was %f, but expected %f' % (
                     classifier, correct_results,
                     seeded_predict_results[classifier]))
+            # verify probabilities
+            # test whether all are in correct range (0 to 1)
+            ls_pred_classes = prob.columns.tolist()
+            ls_correct_range = [col for col in ls_pred_classes if
+                                prob[col].between(
+                                    0, 1, inclusive=True).all()]
+            self.assertEqual(len(ls_correct_range), prob.shape[1],
+                             msg='Predicted probabilities of class {}'
+                             'are not in range [0,1]'.format(
+                [col for col in ls_pred_classes
+                 if col not in ls_correct_range]))
 
     def test_predict_regressions(self):
         for regressor in ['RandomForestRegressor', 'ExtraTreesRegressor',
@@ -530,7 +542,7 @@ seeded_results = {
     'ExtraTreesClassifier': 0.454545454545,
     'GradientBoostingClassifier': 0.272727272727,
     'AdaBoostClassifier': 0.272727272727,
-    'LinearSVC': 0.727272727273,
+    'LinearSVC': 0.818182,
     'SVC': 0.36363636363636365,
     'KNeighborsClassifier': 0.363636363636,
     'RandomForestRegressor': 23.226508,
