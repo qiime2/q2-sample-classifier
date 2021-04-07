@@ -152,7 +152,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             [1, 0, 4, 4],
             [4, 4, 0, 1],
             [4, 4, 1, 0],
-            ], ids=sample_ids)
+        ], ids=sample_ids)
 
         dm = qiime2.Artifact.import_data('DistanceMatrix', distance_matrix)
         categories = pd.Series(('skinny', 'skinny', 'fat', 'fat'),
@@ -182,7 +182,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             [2, 0, 1, 1],
             [3, 1, 0, 1],
             [3, 1, 1, 0],
-            ], ids=sample_ids)
+        ], ids=sample_ids)
 
         dm = qiime2.Artifact.import_data('DistanceMatrix', distance_matrix)
         categories = pd.Series(('fat', 'skinny', 'skinny', 'skinny'),
@@ -212,7 +212,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             [2, 0, 3, 4],
             [1, 3, 0, 3],
             [5, 4, 3, 0],
-            ], ids=sample_ids)
+        ], ids=sample_ids)
 
         dm = qiime2.Artifact.import_data('DistanceMatrix', distance_matrix)
         categories = pd.Series(('fat', 'skinny', 'skinny', 'skinny'),
@@ -391,28 +391,31 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             missing_samples='ignore')
 
     def test_split_table_no_rounding_error(self):
-        X_train, X_test = split_table(
+        X_train, X_test, y_train, y_test = split_table(
             self.table_chard_fp, self.mdc_chard_fp, test_size=0.5,
             random_state=123, stratify=True, missing_samples='ignore')
         self.assertEqual(len(X_train.ids()) + len(X_test.ids()), 21)
+        self.assertEqual(y_train.shape[0] + y_test.shape[0], 21)
 
     def test_split_table_no_split(self):
-        X_train, X_test = split_table(
+        X_train, X_test, y_train, y_test = split_table(
             self.table_chard_fp, self.mdc_chard_fp, test_size=0.0,
             random_state=123, stratify=True, missing_samples='ignore')
         self.assertEqual(len(X_train.ids()), 21)
+        self.assertEqual(y_train.shape[0], 21)
 
     def test_split_table_invalid_test_size(self):
         with self.assertRaisesRegex(ValueError, "at least two samples"):
-            X_train, X_test = split_table(
+            X_train, X_test, y_train, y_test = split_table(
                 self.table_chard_fp, self.mdc_chard_fp, test_size=1.0,
                 random_state=123, stratify=True, missing_samples='ignore')
 
     def test_split_table_percnorm(self):
-        X_train, X_test = split_table(
+        X_train, X_test, y_train, y_test = split_table(
             self.table_percnorm, self.mdc_percnorm, test_size=0.5,
             random_state=123, stratify=True, missing_samples='ignore')
         self.assertEqual(len(X_train.ids()) + len(X_test.ids()), 4)
+        self.assertEqual(y_train.shape[0] + y_test.shape[0], 4)
 
     # test experimental functions
     def test_detect_outliers(self):

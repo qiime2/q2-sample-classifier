@@ -176,3 +176,8 @@ class ProbabilitiesFormat(_MultiColumnNumericFormat):
 ProbabilitiesDirectoryFormat = model.SingleFileDirectoryFormat(
     'ProbabilitiesDirectoryFormat', 'class_probabilities.tsv',
     ProbabilitiesFormat)
+
+
+TrueTargetsDirectoryFormat = model.SingleFileDirectoryFormat(
+    'TrueTargetsDirectoryFormat', 'true_targets.tsv',
+    PredictionsFormat)

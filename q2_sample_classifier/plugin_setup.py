@@ -33,11 +33,13 @@ from ._format import (SampleEstimatorDirFmt,
                       PredictionsFormat,
                       PredictionsDirectoryFormat,
                       ProbabilitiesFormat,
-                      ProbabilitiesDirectoryFormat)
+                      ProbabilitiesDirectoryFormat,
+                      TrueTargetsDirectoryFormat)
 
 from ._type import (ClassifierPredictions, RegressorPredictions,
                     SampleEstimator, BooleanSeries, Importance,
-                    Classifier, Regressor, Probabilities)
+                    Classifier, Regressor, Probabilities,
+                    TrueTargets)
 import q2_sample_classifier
 
 citations = Citations.load('citations.bib', package='q2_sample_classifier')
@@ -120,16 +122,16 @@ parameter_descriptions = {
     'base': {'random_state': 'Seed used by random number generator.',
              'n_jobs': 'Number of jobs to run in parallel.',
              'n_estimators': (
-                'Number of trees to grow for estimation. More trees will '
-                'improve predictive accuracy up to a threshold level, '
-                'but will also increase time and memory requirements. This '
-                'parameter only affects ensemble estimators, such as Random '
-                'Forest, AdaBoost, ExtraTrees, and GradientBoosting.'),
+                 'Number of trees to grow for estimation. More trees will '
+                 'improve predictive accuracy up to a threshold level, '
+                 'but will also increase time and memory requirements. This '
+                 'parameter only affects ensemble estimators, such as Random '
+                 'Forest, AdaBoost, ExtraTrees, and GradientBoosting.'),
              'missing_samples': (
-                'How to handle missing samples in metadata. "error" will fail '
-                'if missing samples are detected. "ignore" will cause the '
-                'feature table and metadata to be filtered, so that only '
-                'samples found in both files are retained.')},
+                 'How to handle missing samples in metadata. "error" will fail'
+                 'if missing samples are detected. "ignore" will cause the '
+                 'feature table and metadata to be filtered, so that only '
+                 'samples found in both files are retained.')},
     'splitter': {
         'test_size': ('Fraction of input samples to exclude from training set '
                       'and use for classifier testing.')},
@@ -226,8 +228,8 @@ plugin.pipelines.register_function(
              ('feature_importance', FeatureData[Importance]),
              ('predictions', SampleData[ClassifierPredictions])
              ] + pipeline_outputs + [
-                ('probabilities', SampleData[Probabilities]),
-                ('heatmap', Visualization)],
+        ('probabilities', SampleData[Probabilities]),
+        ('heatmap', Visualization)],
     input_descriptions={'table': input_descriptions['table']},
     parameter_descriptions=classifier_pipeline_parameter_descriptions,
     output_descriptions={
@@ -258,7 +260,7 @@ plugin.pipelines.register_function(
         'metadata': 'Categorical metadata column to use as prediction target.',
         'k': 'Number of nearest neighbors',
         'palette': 'The color palette to use for plotting.',
-        },
+    },
     output_descriptions={
         'predictions': 'leave one out predictions for each sample',
         'accuracy_results': 'Accuracy results visualization.',
@@ -486,7 +488,9 @@ plugin.methods.register_function(
         'metadata': MetadataColumn[Numeric | Categorical],
         **parameters['regressor']},
     outputs=[('training_table', FeatureTable[T]),
-             ('test_table', FeatureTable[T])],
+             ('test_table', FeatureTable[T]),
+             ('training_targets', SampleData[TrueTargets]),
+             ('test_targets', SampleData[TrueTargets])],
     input_descriptions={'table': 'Feature table containing all features that '
                         'should be used for target prediction.'},
     parameter_descriptions={
@@ -497,7 +501,10 @@ plugin.methods.register_function(
         'metadata': 'Numeric metadata column to use as prediction target.'},
     output_descriptions={
         'training_table': 'Feature table containing training samples',
-        'test_table': 'Feature table containing test samples'},
+        'test_table': 'Feature table containing test samples',
+        'training_targets': 'Table containing true target values of'
+        'train samples',
+        'test_targets': 'Table containing true target values of test samples'},
     name='Split a feature table into training and testing sets.',
     description=(
         'Split a feature table into training and testing sets. By default '
@@ -623,7 +630,7 @@ plugin.pipelines.register_function(
 # Registrations
 plugin.register_semantic_types(
     SampleEstimator, BooleanSeries, Importance, ClassifierPredictions,
-    RegressorPredictions, Classifier, Regressor, Probabilities)
+    RegressorPredictions, Classifier, Regressor, Probabilities, TrueTargets)
 plugin.register_semantic_type_to_format(
     SampleEstimator[Classifier],
     artifact_format=SampleEstimatorDirFmt)
@@ -645,9 +652,13 @@ plugin.register_semantic_type_to_format(
 plugin.register_semantic_type_to_format(
     SampleData[Probabilities],
     artifact_format=ProbabilitiesDirectoryFormat)
+plugin.register_semantic_type_to_format(
+    SampleData[TrueTargets],
+    artifact_format=TrueTargetsDirectoryFormat)
 plugin.register_formats(
     SampleEstimatorDirFmt, BooleanSeriesFormat, BooleanSeriesDirectoryFormat,
     ImportanceFormat, ImportanceDirectoryFormat, PredictionsFormat,
     PredictionsDirectoryFormat, ProbabilitiesFormat,
-    ProbabilitiesDirectoryFormat)
+    ProbabilitiesDirectoryFormat,
+    TrueTargetsDirectoryFormat)
 importlib.import_module('q2_sample_classifier._transformer')

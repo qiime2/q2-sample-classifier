@@ -163,8 +163,10 @@ def classify_samples(ctx,
     confusion = ctx.get_action('sample_classifier', 'confusion_matrix')
     heat = ctx.get_action('sample_classifier', 'heatmap')
 
-    X_train, X_test = split(table, metadata, test_size, random_state,
-                            stratify=True, missing_samples=missing_samples)
+    X_train, X_test, y_train, y_test = split(table, metadata, test_size,
+                                             random_state,
+                                             stratify=True,
+                                             missing_samples=missing_samples)
 
     sample_estimator, importance = fit(
         X_train, metadata, step, cv, random_state, n_jobs, n_estimators,
@@ -207,8 +209,10 @@ def regress_samples(ctx,
     summarize_estimator = ctx.get_action('sample_classifier', 'summarize')
     scatter = ctx.get_action('sample_classifier', 'scatterplot')
 
-    X_train, X_test = split(table, metadata, test_size, random_state,
-                            stratify, missing_samples=missing_samples)
+    X_train, X_test, y_train, y_test = split(table, metadata, test_size,
+                                             random_state,
+                                             stratify,
+                                             missing_samples=missing_samples)
 
     sample_estimator, importance = fit(
         X_train, metadata, step, cv, random_state, n_jobs, n_estimators,
@@ -288,7 +292,7 @@ def predict_base(table, sample_estimator, n_jobs):
 
 def predict_classification(table: biom.Table, sample_estimator: Pipeline,
                            n_jobs: int = defaults['n_jobs']) -> (
-                            pd.Series, pd.DataFrame):
+        pd.Series, pd.DataFrame):
     return predict_base(table, sample_estimator, n_jobs)
 
 
@@ -303,7 +307,7 @@ def split_table(table: biom.Table, metadata: qiime2.MetadataColumn,
                 test_size: float = defaults['test_size'],
                 random_state: int = None, stratify: str = True,
                 missing_samples: str = defaults['missing_samples']
-                ) -> (biom.Table, biom.Table):
+                ) -> (biom.Table, biom.Table, pd.Series, pd.Series):
     column = metadata.name
     X_train, X_test, y_train, y_test = _prepare_training_data(
         table, metadata, column, test_size, random_state, load_data=True,
@@ -311,7 +315,7 @@ def split_table(table: biom.Table, metadata: qiime2.MetadataColumn,
     # TODO: we can consider returning the metadata (y_train, y_test) if a
     # SampleData[Metadata] type comes into existence. For now we will just
     # throw this out.
-    return X_train, X_test
+    return X_train, X_test, y_train, y_test
 
 
 def regress_samples_ncv(
@@ -322,7 +326,7 @@ def regress_samples_ncv(
         estimator: str = defaults['estimator_r'], stratify: str = False,
         parameter_tuning: bool = False,
         missing_samples: str = defaults['missing_samples']
-        ) -> (pd.Series, pd.DataFrame):
+) -> (pd.Series, pd.DataFrame):
 
     y_pred, importances, probabilities = nested_cross_validation(
         table, metadata, cv, random_state, n_jobs, n_estimators, estimator,
@@ -339,7 +343,7 @@ def classify_samples_ncv(
         estimator: str = defaults['estimator_c'],
         parameter_tuning: bool = False,
         missing_samples: str = defaults['missing_samples']
-        ) -> (pd.Series, pd.DataFrame, pd.DataFrame):
+) -> (pd.Series, pd.DataFrame, pd.DataFrame):
 
     y_pred, importances, probabilities = nested_cross_validation(
         table, metadata, cv, random_state, n_jobs, n_estimators, estimator,

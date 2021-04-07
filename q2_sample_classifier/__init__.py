@@ -26,4 +26,5 @@ __all__ = ['BooleanSeriesFormat', 'BooleanSeriesDirectoryFormat',
            'SampleEstimatorDirFmt', 'PickleFormat', 'BooleanSeries',
            'ClassifierPredictions', 'RegressorPredictions', 'Importance',
            'Classifier', 'Regressor', 'SampleEstimator', 'Probabilities',
-           'ProbabilitiesFormat', 'ProbabilitiesDirectoryFormat']
+           'ProbabilitiesFormat', 'ProbabilitiesDirectoryFormat',
+           'TrueTargets', 'TrueTargetsDirectoryFormat']
