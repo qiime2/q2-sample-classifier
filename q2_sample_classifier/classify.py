@@ -185,7 +185,7 @@ def classify_samples(ctx,
                        group_samples=True, missing_samples=missing_samples)
 
     return (sample_estimator, importance, predictions, summary,
-            accuracy_results, probabilities, _heatmap)
+            accuracy_results, probabilities, _heatmap, y_train, y_test)
 
 
 def regress_samples(ctx,

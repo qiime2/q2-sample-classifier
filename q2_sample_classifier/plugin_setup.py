@@ -229,14 +229,19 @@ plugin.pipelines.register_function(
              ('predictions', SampleData[ClassifierPredictions])
              ] + pipeline_outputs + [
         ('probabilities', SampleData[Probabilities]),
-        ('heatmap', Visualization)],
+        ('heatmap', Visualization),
+        ('training_targets', SampleData[TrueTargets]),
+        ('test_targets', SampleData[TrueTargets])],
     input_descriptions={'table': input_descriptions['table']},
     parameter_descriptions=classifier_pipeline_parameter_descriptions,
     output_descriptions={
         **pipeline_output_descriptions,
         'probabilities': input_descriptions['probabilities'],
         'heatmap': 'A heatmap of the top 50 most important features from the '
-                   'table.'},
+                   'table.',
+        'training_targets': 'Table containing true target values of'
+        'train samples',
+        'test_targets': 'Table containing true target values of test samples'},
     name='Train and test a cross-validated supervised learning classifier.',
     description=description.format(
         'categorical', 'supervised learning classifier')
