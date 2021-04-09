@@ -292,7 +292,7 @@ def predict_base(table, sample_estimator, n_jobs):
 
 def predict_classification(table: biom.Table, sample_estimator: Pipeline,
                            n_jobs: int = defaults['n_jobs']) -> (
-        pd.Series, pd.DataFrame):
+                            pd.Series, pd.DataFrame):
     return predict_base(table, sample_estimator, n_jobs)
 
 
@@ -323,7 +323,7 @@ def regress_samples_ncv(
         estimator: str = defaults['estimator_r'], stratify: str = False,
         parameter_tuning: bool = False,
         missing_samples: str = defaults['missing_samples']
-) -> (pd.Series, pd.DataFrame):
+        ) -> (pd.Series, pd.DataFrame):
 
     y_pred, importances, probabilities = nested_cross_validation(
         table, metadata, cv, random_state, n_jobs, n_estimators, estimator,
@@ -340,7 +340,7 @@ def classify_samples_ncv(
         estimator: str = defaults['estimator_c'],
         parameter_tuning: bool = False,
         missing_samples: str = defaults['missing_samples']
-) -> (pd.Series, pd.DataFrame, pd.DataFrame):
+        ) -> (pd.Series, pd.DataFrame, pd.DataFrame):
 
     y_pred, importances, probabilities = nested_cross_validation(
         table, metadata, cv, random_state, n_jobs, n_estimators, estimator,

@@ -122,16 +122,16 @@ parameter_descriptions = {
     'base': {'random_state': 'Seed used by random number generator.',
              'n_jobs': 'Number of jobs to run in parallel.',
              'n_estimators': (
-                 'Number of trees to grow for estimation. More trees will '
-                 'improve predictive accuracy up to a threshold level, '
-                 'but will also increase time and memory requirements. This '
-                 'parameter only affects ensemble estimators, such as Random '
-                 'Forest, AdaBoost, ExtraTrees, and GradientBoosting.'),
+                'Number of trees to grow for estimation. More trees will '
+                'improve predictive accuracy up to a threshold level, '
+                'but will also increase time and memory requirements. This '
+                'parameter only affects ensemble estimators, such as Random '
+                'Forest, AdaBoost, ExtraTrees, and GradientBoosting.'),
              'missing_samples': (
-                 'How to handle missing samples in metadata. "error" will fail'
-                 'if missing samples are detected. "ignore" will cause the '
-                 'feature table and metadata to be filtered, so that only '
-                 'samples found in both files are retained.')},
+                'How to handle missing samples in metadata. "error" will fail '
+                'if missing samples are detected. "ignore" will cause the '
+                'feature table and metadata to be filtered, so that only '
+                'samples found in both files are retained.')},
     'splitter': {
         'test_size': ('Fraction of input samples to exclude from training set '
                       'and use for classifier testing.')},
@@ -265,7 +265,7 @@ plugin.pipelines.register_function(
         'metadata': 'Categorical metadata column to use as prediction target.',
         'k': 'Number of nearest neighbors',
         'palette': 'The color palette to use for plotting.',
-    },
+        },
     output_descriptions={
         'predictions': 'leave one out predictions for each sample',
         'accuracy_results': 'Accuracy results visualization.',

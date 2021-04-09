@@ -48,7 +48,7 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
         self.md2 = qiime2.Metadata(md2)
 
     # let's make sure the function runs w/o errors and that the correct
-    # transformers are in place!
+    # transformers are in place (see issue 114)
     def test_action_split_table(self):
         res = sample_classifier.actions.split_table(
             self.tab, self.md, test_size=0.5)
