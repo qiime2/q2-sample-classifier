@@ -34,7 +34,8 @@ defaults = {
     'estimator_c': 'RandomForestClassifier',
     'estimator_r': 'RandomForestRegressor',
     'palette': 'sirocco',
-    'missing_samples': 'error'
+    'missing_samples': 'error',
+    'warn_test': False
 }
 
 
@@ -165,6 +166,10 @@ def classify_samples(ctx,
 
     X_train, X_test = split(table, metadata, test_size, random_state,
                             stratify=True, missing_samples=missing_samples)
+    if test_size == 0.0:
+        warn_test = True
+    else:
+        warn_test = False
 
     sample_estimator, importance = fit(
         X_train, metadata, step, cv, random_state, n_jobs, n_estimators,
@@ -177,7 +182,8 @@ def classify_samples(ctx,
     summary, = summarize_estimator(sample_estimator)
 
     accuracy_results, = confusion(predictions, metadata, probabilities,
-                                  missing_samples='ignore', palette=palette)
+                                  missing_samples='ignore', palette=palette,
+                                  warn_test=warn_test)
 
     _heatmap, _ = heat(table, importance, sample_metadata=metadata,
                        group_samples=True, missing_samples=missing_samples)
@@ -365,7 +371,9 @@ def confusion_matrix(output_dir: str,
                      probabilities: pd.DataFrame = None,
                      missing_samples: str = defaults['missing_samples'],
                      vmin: int = 'auto', vmax: int = 'auto',
-                     palette: str = defaults['palette']) -> None:
+                     palette: str = defaults['palette'],
+                     warn_test: bool = defaults['warn_test']) -> None:
+
     if vmin == 'auto':
         vmin = None
     if vmax == 'auto':
@@ -376,7 +384,8 @@ def confusion_matrix(output_dir: str,
     _plot_accuracy(output_dir, predictions, truth, probabilities,
                    missing_samples=missing_samples,
                    classification=True, palette=palette,
-                   plot_title='confusion matrix', vmin=vmin, vmax=vmax)
+                   plot_title='confusion matrix', vmin=vmin, vmax=vmax,
+                   warn_test=warn_test)
 
 
 def summarize(output_dir: str, sample_estimator: Pipeline):
