@@ -51,5 +51,5 @@ jobs:
       with:
         package-name: q2-sample-classifier
         build-target: tested
-        additional-tests: py.test --pyargs q2_sample_classifier
+        # additional-tests: py.test --pyargs q2_sample_classifier
         library-token: ${{ secrets.LIBRARY_TOKEN }}
