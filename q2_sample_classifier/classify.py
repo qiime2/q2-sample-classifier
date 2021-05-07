@@ -22,7 +22,7 @@ from .utilities import (_load_data, _prepare_training_data,
                         nested_cross_validation, _fit_estimator,
                         _extract_features, _plot_accuracy,
                         _summarize_estimator, predict_probabilities,
-                        _classifiers)
+                        _classifiers, _warn_zero_test_split)
 
 
 defaults = {
@@ -34,8 +34,7 @@ defaults = {
     'estimator_c': 'RandomForestClassifier',
     'estimator_r': 'RandomForestRegressor',
     'palette': 'sirocco',
-    'missing_samples': 'error',
-    'warn_test': False
+    'missing_samples': 'error'
 }
 
 
@@ -167,9 +166,9 @@ def classify_samples(ctx,
     X_train, X_test = split(table, metadata, test_size, random_state,
                             stratify=True, missing_samples=missing_samples)
     if test_size == 0.0:
-        warn_test = True
+        warning_msg = _warn_zero_test_split()
     else:
-        warn_test = False
+        warning_msg = None
 
     sample_estimator, importance = fit(
         X_train, metadata, step, cv, random_state, n_jobs, n_estimators,
@@ -183,7 +182,7 @@ def classify_samples(ctx,
 
     accuracy_results, = confusion(predictions, metadata, probabilities,
                                   missing_samples='ignore', palette=palette,
-                                  warn_test=warn_test)
+                                  warning_msg=warning_msg)
 
     _heatmap, _ = heat(table, importance, sample_metadata=metadata,
                        group_samples=True, missing_samples=missing_samples)
@@ -372,7 +371,7 @@ def confusion_matrix(output_dir: str,
                      missing_samples: str = defaults['missing_samples'],
                      vmin: int = 'auto', vmax: int = 'auto',
                      palette: str = defaults['palette'],
-                     warn_test: bool = defaults['warn_test']) -> None:
+                     warning_msg: str = None) -> None:
 
     if vmin == 'auto':
         vmin = None
@@ -385,7 +384,7 @@ def confusion_matrix(output_dir: str,
                    missing_samples=missing_samples,
                    classification=True, palette=palette,
                    plot_title='confusion matrix', vmin=vmin, vmax=vmax,
-                   warn_test=warn_test)
+                   warning_msg=warning_msg)
 
 
 def summarize(output_dir: str, sample_estimator: Pipeline):

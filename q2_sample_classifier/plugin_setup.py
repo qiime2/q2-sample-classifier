@@ -451,7 +451,7 @@ plugin.visualizers.register_function(
         'vmin': Float | Str % Choices(['auto']),
         'vmax': Float | Str % Choices(['auto']),
         'palette': Str % Choices(_custom_palettes().keys()),
-        'warn_test': Bool},
+        'warning_msg': Str},
     input_descriptions={
         'predictions': 'Predicted values to plot on x axis. Should be '
                        'predictions of categorical data produced by a sample '
@@ -465,7 +465,7 @@ plugin.visualizers.register_function(
         'vmax': 'The maximum value to use for anchoring the colormap. If '
         '"auto", vmax is set to the maximum value in the data.',
         'palette': 'The color palette to use for plotting.',
-        'warn_test': 'Whether a warning is raised about all test values '
+        'warning_msg': 'Whether a warning is raised about all test values '
         'actually being train set values'},
     name='Make a confusion matrix from sample classifier predictions.',
     description='Make a confusion matrix and calculate accuracy of predicted '

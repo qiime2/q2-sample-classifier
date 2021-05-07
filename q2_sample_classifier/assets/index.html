@@ -6,7 +6,7 @@
 
 {% block content %}
 
-{% if warn_test %}
+{% if warning_msg %}
 <div class="panel-group" id="warnings" role="tablist" aria-multiselectable="true">
   <div class="panel panel-warning">
     <div class="panel-heading" role="tab" id="warnings-heading">
@@ -18,10 +18,7 @@
     </div>
     <div id="warnings-list" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="warnings-heading">
       <div class="alert alert-warning col-md-12">
-        <p><strong>Displayed model performance values were calculated on the train set because estimator was 
-          trained on complete dataset (test_size = 0.0). Hence, below model performance metrics do not give any 
-          indication of the model's capacity to generalize on perviously unseen data. 
-          Please consider evaluating your model on a separate dataset.</strong></p>
+        <p><strong>{{ warning_msg }}</strong></p>
       </div>
     </div>
   </div>

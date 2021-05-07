@@ -157,7 +157,9 @@ def _split_training_data(feature_data, targets, column, test_size=0.2,
         except ValueError:
             _stratification_error()
     else:
-        _warn_zero_test_split()
+        warning_msg = _warn_zero_test_split()
+        warnings.warn(warning_msg, UserWarning)
+
         X_train, X_test, y_train, y_test = (
             feature_data, feature_data, targets, targets)
 
@@ -465,7 +467,7 @@ def _match_series_or_die(predictions, truth, missing_samples='error'):
 
 def _plot_accuracy(output_dir, predictions, truth, probabilities,
                    missing_samples, classification, palette, plot_title,
-                   vmin=None, vmax=None, warn_test=False):
+                   vmin=None, vmax=None, warning_msg=None):
     '''Plot accuracy results and send to visualizer on either categorical
     or numeric data inside two pd.Series
     '''
@@ -489,7 +491,7 @@ def _plot_accuracy(output_dir, predictions, truth, probabilities,
     # output to viz
     _visualize(output_dir=output_dir, estimator=None, cm=predictions,
                roc=probabilities, optimize_feature_selection=False,
-               title=plot_title, warn_test=warn_test)
+               title=plot_title, warning_msg=warning_msg)
 
 
 def sort_importances(importances, ascending=False):
@@ -529,7 +531,7 @@ def _summarize_estimator(output_dir, sample_estimator):
 
 def _visualize(output_dir, estimator, cm, roc,
                optimize_feature_selection=True, title='results',
-               warn_test=False):
+               warning_msg=None):
 
     pd.set_option('display.max_colwidth', None)
 
@@ -555,7 +557,7 @@ def _visualize(output_dir, estimator, cm, roc,
         'predictions': cm,
         'roc': roc,
         'optimize_feature_selection': optimize_feature_selection,
-        'warn_test': warn_test})
+        'warning_msg': warning_msg})
 
 
 def _visualize_knn(output_dir, params: pd.Series):
@@ -844,11 +846,9 @@ def _warn_feature_selection():
 
 
 def _warn_zero_test_split():
-    warning = (
+    return \
         ('Using test_size = 0.0, you are using your complete dataset for '
          'fitting the estimator. Hence, any returned model evaluations are '
          'based on that same training dataset and are not representative of '
          'your model\'s performance on a previously unseen dataset. Please '
-         'consider evaluating this model on a separate dataset.'))
-
-    warnings.warn(warning, UserWarning)
+         'consider evaluating this model on a separate dataset.')
