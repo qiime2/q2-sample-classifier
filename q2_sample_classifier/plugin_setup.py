@@ -226,8 +226,8 @@ plugin.pipelines.register_function(
              ('feature_importance', FeatureData[Importance]),
              ('predictions', SampleData[ClassifierPredictions])
              ] + pipeline_outputs + [
-                ('probabilities', SampleData[Probabilities]),
-                ('heatmap', Visualization)],
+        ('probabilities', SampleData[Probabilities]),
+        ('heatmap', Visualization)],
     input_descriptions={'table': input_descriptions['table']},
     parameter_descriptions=classifier_pipeline_parameter_descriptions,
     output_descriptions={
@@ -258,7 +258,7 @@ plugin.pipelines.register_function(
         'metadata': 'Categorical metadata column to use as prediction target.',
         'k': 'Number of nearest neighbors',
         'palette': 'The color palette to use for plotting.',
-        },
+    },
     output_descriptions={
         'predictions': 'leave one out predictions for each sample',
         'accuracy_results': 'Accuracy results visualization.',
@@ -450,8 +450,7 @@ plugin.visualizers.register_function(
         'missing_samples': parameters['base']['missing_samples'],
         'vmin': Float | Str % Choices(['auto']),
         'vmax': Float | Str % Choices(['auto']),
-        'palette': Str % Choices(_custom_palettes().keys()),
-        'warning_msg': Str},
+        'palette': Str % Choices(_custom_palettes().keys())},
     input_descriptions={
         'predictions': 'Predicted values to plot on x axis. Should be '
                        'predictions of categorical data produced by a sample '
@@ -464,9 +463,7 @@ plugin.visualizers.register_function(
         '"auto", vmin is set to the minimum value in the data.',
         'vmax': 'The maximum value to use for anchoring the colormap. If '
         '"auto", vmax is set to the maximum value in the data.',
-        'palette': 'The color palette to use for plotting.',
-        'warning_msg': 'Whether a warning is raised about all test values '
-        'actually being train set values'},
+        'palette': 'The color palette to use for plotting.'},
     name='Make a confusion matrix from sample classifier predictions.',
     description='Make a confusion matrix and calculate accuracy of predicted '
                 'vs. true values for a set of samples classified using a '

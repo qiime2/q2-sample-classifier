@@ -467,11 +467,19 @@ def _match_series_or_die(predictions, truth, missing_samples='error'):
 
 def _plot_accuracy(output_dir, predictions, truth, probabilities,
                    missing_samples, classification, palette, plot_title,
-                   vmin=None, vmax=None, warning_msg=None):
+                   vmin=None, vmax=None):
     '''Plot accuracy results and send to visualizer on either categorical
     or numeric data inside two pd.Series
     '''
     truth = truth.to_series()
+
+    # check if test_size == 0.0 and all predictions are complete dataset
+    if (missing_samples == 'ignore') & (
+            predictions.shape[0] == truth.shape[0]):
+        warning_msg = _warn_zero_test_split()
+    else:
+        warning_msg = None
+
     predictions, truth = _match_series_or_die(
         predictions, truth, missing_samples)
 

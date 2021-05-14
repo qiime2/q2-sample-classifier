@@ -22,7 +22,7 @@ from .utilities import (_load_data, _prepare_training_data,
                         nested_cross_validation, _fit_estimator,
                         _extract_features, _plot_accuracy,
                         _summarize_estimator, predict_probabilities,
-                        _classifiers, _warn_zero_test_split)
+                        _classifiers)
 
 
 defaults = {
@@ -165,10 +165,6 @@ def classify_samples(ctx,
 
     X_train, X_test = split(table, metadata, test_size, random_state,
                             stratify=True, missing_samples=missing_samples)
-    if test_size == 0.0:
-        warning_msg = _warn_zero_test_split()
-    else:
-        warning_msg = None
 
     sample_estimator, importance = fit(
         X_train, metadata, step, cv, random_state, n_jobs, n_estimators,
@@ -181,8 +177,7 @@ def classify_samples(ctx,
     summary, = summarize_estimator(sample_estimator)
 
     accuracy_results, = confusion(predictions, metadata, probabilities,
-                                  missing_samples='ignore', palette=palette,
-                                  warning_msg=warning_msg)
+                                  missing_samples='ignore', palette=palette)
 
     _heatmap, _ = heat(table, importance, sample_metadata=metadata,
                        group_samples=True, missing_samples=missing_samples)
@@ -370,8 +365,7 @@ def confusion_matrix(output_dir: str,
                      probabilities: pd.DataFrame = None,
                      missing_samples: str = defaults['missing_samples'],
                      vmin: int = 'auto', vmax: int = 'auto',
-                     palette: str = defaults['palette'],
-                     warning_msg: str = None) -> None:
+                     palette: str = defaults['palette']) -> None:
 
     if vmin == 'auto':
         vmin = None
@@ -383,8 +377,7 @@ def confusion_matrix(output_dir: str,
     _plot_accuracy(output_dir, predictions, truth, probabilities,
                    missing_samples=missing_samples,
                    classification=True, palette=palette,
-                   plot_title='confusion matrix', vmin=vmin, vmax=vmax,
-                   warning_msg=warning_msg)
+                   plot_title='confusion matrix', vmin=vmin, vmax=vmax)
 
 
 def summarize(output_dir: str, sample_estimator: Pipeline):
