@@ -261,7 +261,7 @@ def fit_regressor(table: biom.Table,
     return estimator, importance
 
 
-def predict_base(table, sample_estimator, n_jobs):
+def predict_base(table, sample_estimator, n_jobs=defaults['n_jobs']):
     # extract feature data from biom
     feature_data = _extract_features(table)
     index = table.ids()
