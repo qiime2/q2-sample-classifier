@@ -239,9 +239,10 @@ plugin.pipelines.register_function(
         'probabilities': input_descriptions['probabilities'],
         'heatmap': 'A heatmap of the top 50 most important features from the '
                    'table.',
-        'training_targets': 'Table containing true target values of'
+        'training_targets': 'Series containing true target values of'
         'train samples',
-        'test_targets': 'Table containing true target values of test samples'},
+        'test_targets': 'Series containing true target values'
+        'of test samples'},
     name='Train and test a cross-validated supervised learning classifier.',
     description=description.format(
         'categorical', 'supervised learning classifier')
@@ -507,9 +508,10 @@ plugin.methods.register_function(
     output_descriptions={
         'training_table': 'Feature table containing training samples',
         'test_table': 'Feature table containing test samples',
-        'training_targets': 'Table containing true target values of'
+        'training_targets': 'Series containing true target values of'
         'train samples',
-        'test_targets': 'Series containing true target values of test samples'},
+        'test_targets': 'Series containing true target values of'
+        'test samples'},
     name='Split a feature table into training and testing sets.',
     description=(
         'Split a feature table into training and testing sets. By default '
