@@ -509,7 +509,7 @@ plugin.methods.register_function(
         'test_table': 'Feature table containing test samples',
         'training_targets': 'Table containing true target values of'
         'train samples',
-        'test_targets': 'Table containing true target values of test samples'},
+        'test_targets': 'Series containing true target values of test samples'},
     name='Split a feature table into training and testing sets.',
     description=(
         'Split a feature table into training and testing sets. By default '
