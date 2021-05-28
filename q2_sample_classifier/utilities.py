@@ -854,9 +854,8 @@ def _warn_feature_selection():
 
 
 def _warn_zero_test_split():
-    return \
-        ('Using test_size = 0.0, you are using your complete dataset for '
-         'fitting the estimator. Hence, any returned model evaluations are '
-         'based on that same training dataset and are not representative of '
-         'your model\'s performance on a previously unseen dataset. Please '
-         'consider evaluating this model on a separate dataset.')
+    return 'Using test_size = 0.0, you are using your complete dataset for ' \
+        'fitting the estimator. Hence, any returned model evaluations are ' \
+        'based on that same training dataset and are not representative of ' \
+        'your model\'s performance on a previously unseen dataset. Please ' \
+        'consider evaluating this model on a separate dataset.'
