@@ -6,6 +6,25 @@
 
 {% block content %}
 
+{% if warning_msg %}
+<div class="panel-group" id="warnings" role="tablist" aria-multiselectable="true">
+  <div class="panel panel-warning">
+    <div class="panel-heading" role="tab" id="warnings-heading">
+      <h4 class="panel-title">
+        <a role="button" data-toggle="collapse" data-parent="#warnings" href="#warnings-list" aria-expanded="true" aria-controls="warnings-list">
+          Warnings (click here to collapse/expand):
+        </a>
+      </h4>
+    </div>
+    <div id="warnings-list" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="warnings-heading">
+      <div class="alert alert-warning col-md-12">
+        <p><strong>{{ warning_msg }}</strong></p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <div class="row">
   {% if predictions %}
   <h1>Model Accuracy</h1>
