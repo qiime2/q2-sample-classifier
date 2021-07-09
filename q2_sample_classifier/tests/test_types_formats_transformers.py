@@ -405,8 +405,6 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
                            index=exp_index)
         pdt.assert_frame_equal(obs.to_dataframe()[:4], exp)
 
-    # todo test TrueTargetDirectoryFormat Transformer from Metadata
-
 
 class TestTypes(SampleClassifierTestPluginBase):
     def test_sample_estimator_semantic_type_registration(self):

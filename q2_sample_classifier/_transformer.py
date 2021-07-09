@@ -185,3 +185,10 @@ def _14(ff: TrueTargetsDirectoryFormat) -> (pd.Series):
 def _15(ff: TrueTargetsDirectoryFormat) -> (qiime2.Metadata):
     df_ff = ff.file.view(pd.Series).to_frame()
     return qiime2.Metadata(df_ff)
+
+
+@plugin.register_transformer
+def _16(obj: qiime2.Metadata) -> (TrueTargetsDirectoryFormat):
+    ff = TrueTargetsDirectoryFormat()
+    obj.save(str(ff.file))
+    return ff
