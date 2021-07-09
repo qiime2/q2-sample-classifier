@@ -371,7 +371,9 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
     def test_TrueTargets_dir_fmt_to_pd_series(self):
         # Read TrueTargetsDirFmt
         filepath = self.get_data_path('training_target')
-        input = TrueTargetsDirectoryFormat(filepath, mode='r')
+        target_path = os.path.join(self.temp_dir.name, 'training_target')
+        shutil.copytree(filepath, target_path)
+        input = TrueTargetsDirectoryFormat(target_path, mode='r')
 
         # Transform to pandas series and verify
         transformer = self.get_transformer(TrueTargetsDirectoryFormat,
@@ -390,7 +392,9 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
     def test_TrueTargets_dir_fmt_to_metadata(self):
         # Read TrueTargetsDirFmt
         filepath = self.get_data_path('training_target')
-        input = TrueTargetsDirectoryFormat(filepath, mode='r')
+        target_path = os.path.join(self.temp_dir.name, 'training_target')
+        shutil.copytree(filepath, target_path)
+        input = TrueTargetsDirectoryFormat(target_path, mode='r')
 
         # Transform to Q2 Metadata and verify
         transformer = self.get_transformer(TrueTargetsDirectoryFormat,
