@@ -412,12 +412,11 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         self.assertEqual(y_train.shape[0] + y_test.shape[0], 21)
 
     def test_split_table_no_split(self):
-        with self.assertWarnsRegex(Warning, "not representative of "
-                                   "your model's performance"):
-            X_train, X_test = split_table(
-                self.table_chard_fp, self.mdc_chard_fp, test_size=0.0,
-                random_state=123, stratify=True, missing_samples='ignore')
-            self.assertEqual(len(X_train.ids()), 21)
+        X_train, X_test, y_train, y_test = split_table(
+            self.table_chard_fp, self.mdc_chard_fp, test_size=0.0,
+            random_state=123, stratify=True, missing_samples='ignore')
+        self.assertEqual(len(X_train.ids()), 21)
+        self.assertEqual(y_train.shape[0], 21)
 
     def test_split_table_invalid_test_size(self):
         with self.assertRaisesRegex(ValueError, "at least two samples"):
