@@ -251,6 +251,20 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                 msg='Accuracy of %s classifier was %f, but expected %f' % (
                     classifier, accuracy, seeded_results[classifier]))
 
+    # test if training classifier with pipeline classify_samples raises
+    # warning when test_size = 0.0
+    def test_classify_samples_w_all_train_set(self):
+        with self.assertWarnsRegex(Warning, "not representative of "
+                                   "your model's performance"):
+            table_fp = self.get_data_path('chardonnay.table.qza')
+            table = qiime2.Artifact.load(table_fp)
+            sample_classifier.actions.classify_samples(
+                table=table, metadata=self.mdc_chard_fp,
+                test_size=0.0, cv=1, n_estimators=10, n_jobs=1,
+                estimator='RandomForestClassifier', random_state=123,
+                parameter_tuning=False, optimize_feature_selection=False,
+                missing_samples='ignore')
+
     # test that the plugin methods/visualizers work
     def test_regress_samples_ncv(self):
         y_pred, importances = regress_samples_ncv(
@@ -398,11 +412,12 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         self.assertEqual(y_train.shape[0] + y_test.shape[0], 21)
 
     def test_split_table_no_split(self):
-        X_train, X_test, y_train, y_test = split_table(
-            self.table_chard_fp, self.mdc_chard_fp, test_size=0.0,
-            random_state=123, stratify=True, missing_samples='ignore')
-        self.assertEqual(len(X_train.ids()), 21)
-        self.assertEqual(y_train.shape[0], 21)
+        with self.assertWarnsRegex(Warning, "not representative of "
+                                   "your model's performance"):
+            X_train, X_test = split_table(
+                self.table_chard_fp, self.mdc_chard_fp, test_size=0.0,
+                random_state=123, stratify=True, missing_samples='ignore')
+            self.assertEqual(len(X_train.ids()), 21)
 
     def test_split_table_invalid_test_size(self):
         with self.assertRaisesRegex(ValueError, "at least two samples"):

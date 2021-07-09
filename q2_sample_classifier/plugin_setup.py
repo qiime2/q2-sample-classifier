@@ -104,7 +104,7 @@ parameters = {
         'missing_samples': Str % Choices(['error', 'ignore'])},
     'splitter': {
         'test_size': Float % Range(0.0, 1.0, inclusive_end=False,
-                                   inclusive_start=False)},
+                                   inclusive_start=True)},
     'rfe': {
         'step': Float % Range(0.0, 1.0, inclusive_end=False,
                               inclusive_start=False),
@@ -266,7 +266,7 @@ plugin.pipelines.register_function(
         'metadata': 'Categorical metadata column to use as prediction target.',
         'k': 'Number of nearest neighbors',
         'palette': 'The color palette to use for plotting.',
-        },
+    },
     output_descriptions={
         'predictions': 'leave one out predictions for each sample',
         'accuracy_results': 'Accuracy results visualization.',

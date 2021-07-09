@@ -367,6 +367,7 @@ def confusion_matrix(output_dir: str,
                      missing_samples: str = defaults['missing_samples'],
                      vmin: int = 'auto', vmax: int = 'auto',
                      palette: str = defaults['palette']) -> None:
+
     if vmin == 'auto':
         vmin = None
     if vmax == 'auto':

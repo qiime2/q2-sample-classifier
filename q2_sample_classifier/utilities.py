@@ -157,6 +157,9 @@ def _split_training_data(feature_data, targets, column, test_size=0.2,
         except ValueError:
             _stratification_error()
     else:
+        warning_msg = _warn_zero_test_split()
+        warnings.warn(warning_msg, UserWarning)
+
         X_train, X_test, y_train, y_test = (
             feature_data, feature_data, targets, targets)
 
@@ -469,6 +472,14 @@ def _plot_accuracy(output_dir, predictions, truth, probabilities,
     or numeric data inside two pd.Series
     '''
     truth = truth.to_series()
+
+    # check if test_size == 0.0 and all predictions are complete dataset
+    if (missing_samples == 'ignore') & (
+            predictions.shape[0] == truth.shape[0]):
+        warning_msg = _warn_zero_test_split()
+    else:
+        warning_msg = None
+
     predictions, truth = _match_series_or_die(
         predictions, truth, missing_samples)
 
@@ -488,7 +499,7 @@ def _plot_accuracy(output_dir, predictions, truth, probabilities,
     # output to viz
     _visualize(output_dir=output_dir, estimator=None, cm=predictions,
                roc=probabilities, optimize_feature_selection=False,
-               title=plot_title)
+               title=plot_title, warning_msg=warning_msg)
 
 
 def sort_importances(importances, ascending=False):
@@ -527,7 +538,8 @@ def _summarize_estimator(output_dir, sample_estimator):
 
 
 def _visualize(output_dir, estimator, cm, roc,
-               optimize_feature_selection=True, title='results'):
+               optimize_feature_selection=True, title='results',
+               warning_msg=None):
 
     pd.set_option('display.max_colwidth', None)
 
@@ -552,7 +564,8 @@ def _visualize(output_dir, estimator, cm, roc,
         'result': result,
         'predictions': cm,
         'roc': roc,
-        'optimize_feature_selection': optimize_feature_selection})
+        'optimize_feature_selection': optimize_feature_selection,
+        'warning_msg': warning_msg})
 
 
 def _visualize_knn(output_dir, params: pd.Series):
@@ -838,3 +851,11 @@ def _warn_feature_selection():
          'the parameter settings requested. See documentation or try a '
          'different estimator model.'))
     warnings.warn(warning, UserWarning)
+
+
+def _warn_zero_test_split():
+    return 'Using test_size = 0.0, you are using your complete dataset for ' \
+        'fitting the estimator. Hence, any returned model evaluations are ' \
+        'based on that same training dataset and are not representative of ' \
+        'your model\'s performance on a previously unseen dataset. Please ' \
+        'consider evaluating this model on a separate dataset.'
