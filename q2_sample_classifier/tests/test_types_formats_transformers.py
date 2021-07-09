@@ -372,7 +372,11 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         # Read TrueTargetsDirFmt
         filepath = self.get_data_path('training_target')
         target_path = os.path.join(self.temp_dir.name, 'training_target')
-        shutil.copytree(filepath, target_path)
+        if not os.path.exists(target_path):
+            os.makedirs(target_path)
+        for file in os.listdir(filepath):
+            shutil.copy(os.path.join(filepath, file),
+                        target_path)
         input = TrueTargetsDirectoryFormat(target_path, mode='r')
 
         # Transform to pandas series and verify
@@ -393,7 +397,11 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         # Read TrueTargetsDirFmt
         filepath = self.get_data_path('training_target')
         target_path = os.path.join(self.temp_dir.name, 'training_target')
-        shutil.copytree(filepath, target_path)
+        if not os.path.exists(target_path):
+            os.makedirs(target_path)
+        for file in os.listdir(filepath):
+            shutil.copy(os.path.join(filepath, file),
+                        target_path)
         input = TrueTargetsDirectoryFormat(target_path, mode='r')
 
         # Transform to Q2 Metadata and verify
