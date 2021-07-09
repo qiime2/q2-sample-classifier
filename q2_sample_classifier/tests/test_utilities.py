@@ -88,7 +88,7 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
             _disable_feature_selection('KNeighborsClassifier', False)
 
     def test_mean_feature_importance_1d_arrays(self):
-        exp = pd.DataFrame([10, 9, 8, 7], columns=["importance0"],
+        exp = pd.DataFrame([10.0, 9.0, 8.0, 7.0], columns=["importance0"],
                            index=[3, 2, 1, 0])
         imps = [pd.DataFrame([1, 2, 3, 4], columns=["importance0"]),
                 pd.DataFrame([5, 6, 7, 8], columns=["importance0"]),
@@ -97,7 +97,7 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
         pdt.assert_frame_equal(_mean_feature_importance(imps), exp)
 
     def test_mean_feature_importance_different_column_names(self):
-        exp = pd.DataFrame([[6, 5, 4, 3], [14, 13, 12, 11]],
+        exp = pd.DataFrame([[6.0, 5.0, 4.0, 3.0], [14.0, 13.0, 12.0, 11.0]],
                            index=["importance0", "importance1"],
                            columns=[3, 2, 1, 0]).T
         imps = [pd.DataFrame([1, 2, 3, 4], columns=["importance0"]),
@@ -121,8 +121,9 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
     # and this should not occur now, but theoretically should just concat and
     # sort but not collapse if all column names are unique
     def test_mean_feature_importance_do_not_collapse(self):
-        imps = [pd.DataFrame([4, 3, 2, 1], columns=["importance0"]),
-                pd.DataFrame([16, 15, 14, 13], columns=["importance1"])]
+        imps = [pd.DataFrame([4.0, 3.0, 2.0, 1.0], columns=["importance0"]),
+                pd.DataFrame([16.0, 15.0, 14.0, 13.0],
+                columns=["importance1"])]
         exp = pd.concat(imps, axis=1)
         pdt.assert_frame_equal(_mean_feature_importance(imps), exp)
 
