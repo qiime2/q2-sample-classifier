@@ -368,55 +368,6 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         self.assertSemanticTypeRegisteredToFormat(
             SampleData[TrueTargets], TrueTargetsDirectoryFormat)
 
-    def test_TrueTargets_dir_fmt_to_pd_series(self):
-        # Read TrueTargetsDirFmt
-        filepath = self.get_data_path('training_target')
-        target_path = os.path.join(self.temp_dir.name, 'training_target')
-        if not os.path.exists(target_path):
-            os.makedirs(target_path)
-        for file in os.listdir(filepath):
-            shutil.copy(os.path.join(filepath, file),
-                        target_path)
-        input = TrueTargetsDirectoryFormat(target_path, mode='r')
-
-        # Transform to pandas series and verify
-        transformer = self.get_transformer(TrueTargetsDirectoryFormat,
-                                           pd.Series)
-        obs = transformer(input)
-
-        exp_index = pd.Index(['10249.C033.06SS', '10249.C030.08SS',
-                              '10249.C009.07SS', '10249.C010.09SS'],
-                             name='id', dtype=object)
-        exp = pd.Series(['Vaginal', 'Vaginal', 'Vaginal', 'Vaginal'],
-                        name='delivery',
-                        index=exp_index)
-
-        pdt.assert_series_equal(obs[:4], exp)
-
-    def test_TrueTargets_dir_fmt_to_metadata(self):
-        # Read TrueTargetsDirFmt
-        filepath = self.get_data_path('training_target')
-        target_path = os.path.join(self.temp_dir.name, 'training_target')
-        if not os.path.exists(target_path):
-            os.makedirs(target_path)
-        for file in os.listdir(filepath):
-            shutil.copy(os.path.join(filepath, file),
-                        target_path)
-        input = TrueTargetsDirectoryFormat(target_path, mode='r')
-
-        # Transform to Q2 Metadata and verify
-        transformer = self.get_transformer(TrueTargetsDirectoryFormat,
-                                           qiime2.Metadata)
-        obs = transformer(input)
-
-        exp_index = pd.Index(['10249.C033.06SS', '10249.C030.08SS',
-                              '10249.C009.07SS', '10249.C010.09SS'],
-                             name='id')
-        exp = pd.DataFrame(['Vaginal', 'Vaginal', 'Vaginal', 'Vaginal'],
-                           columns=['delivery'],
-                           index=exp_index)
-        pdt.assert_frame_equal(obs.to_dataframe()[:4], exp)
-
 
 class TestTypes(SampleClassifierTestPluginBase):
     def test_sample_estimator_semantic_type_registration(self):

@@ -21,7 +21,7 @@ from sklearn.pipeline import Pipeline
 from .plugin_setup import plugin
 from ._format import (SampleEstimatorDirFmt, JSONFormat, BooleanSeriesFormat,
                       ImportanceFormat, PredictionsFormat, PickleFormat,
-                      ProbabilitiesFormat, TrueTargetsDirectoryFormat)
+                      ProbabilitiesFormat)
 
 
 def _read_dataframe(fh):
@@ -174,21 +174,3 @@ def _e(data: dict) -> JSONFormat:
     with result.open() as fh:
         json.dump(data, fh)
     return result
-
-
-@plugin.register_transformer
-def _14(ff: TrueTargetsDirectoryFormat) -> (pd.Series):
-    return ff.file.view(pd.Series)
-
-
-@plugin.register_transformer
-def _15(ff: TrueTargetsDirectoryFormat) -> (qiime2.Metadata):
-    df_ff = ff.file.view(pd.Series).to_frame()
-    return qiime2.Metadata(df_ff)
-
-
-@plugin.register_transformer
-def _16(obj: qiime2.Metadata) -> (TrueTargetsDirectoryFormat):
-    ff = TrueTargetsDirectoryFormat()
-    obj.save(str(ff.file))
-    return ff
