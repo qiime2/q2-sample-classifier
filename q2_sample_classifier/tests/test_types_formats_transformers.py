@@ -357,6 +357,10 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         for palette in _custom_palettes().keys():
             _plot_heatmap_from_confusion_matrix(confused, palette)
 
+    # test TrueTarget
+    def test_TrueTargets_semantic_type_registration(self):
+        self.assertRegisteredSemanticType(TrueTargets)
+
     # test TrueTargetDirectoryFormats
     def test_TrueTargets_dir_fmt_validate_positive(self):
         filepath = self.get_data_path('true_targets.tsv')
