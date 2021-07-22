@@ -26,3 +26,5 @@ Importance = SemanticType(
     'Importance', variant_of=FeatureData.field['type'])
 Probabilities = SemanticType(
     'Probabilities', variant_of=SampleData.field['type'])
+TrueTargets = SemanticType(
+    'TrueTargets', variant_of=SampleData.field['type'])

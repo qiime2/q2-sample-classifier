@@ -28,7 +28,8 @@ from q2_sample_classifier import (
     RegressorPredictions, ImportanceFormat, ImportanceDirectoryFormat,
     Importance, PickleFormat, ProbabilitiesFormat,
     ProbabilitiesDirectoryFormat, Probabilities, Classifier, Regressor,
-    SampleEstimator, SampleEstimatorDirFmt)
+    SampleEstimator, SampleEstimatorDirFmt,
+    TrueTargetsDirectoryFormat, TrueTargets)
 from q2_sample_classifier.visuals import (
     _custom_palettes, _plot_heatmap_from_confusion_matrix,)
 from q2_sample_classifier._format import JSONFormat
@@ -355,6 +356,21 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
         confused = np.array([[1, 0], [0, 1]])
         for palette in _custom_palettes().keys():
             _plot_heatmap_from_confusion_matrix(confused, palette)
+
+    # test TrueTarget
+    def test_TrueTargets_semantic_type_registration(self):
+        self.assertRegisteredSemanticType(TrueTargets)
+
+    # test TrueTargetDirectoryFormats
+    def test_TrueTargets_dir_fmt_validate_positive(self):
+        filepath = self.get_data_path('true_targets.tsv')
+        shutil.copy(filepath, self.temp_dir.name)
+        format = TrueTargetsDirectoryFormat(self.temp_dir.name, mode='r')
+        format.validate()
+
+    def test_TrueTarget_to_TrueTargets_dir_fmt_registration(self):
+        self.assertSemanticTypeRegisteredToFormat(
+            SampleData[TrueTargets], TrueTargetsDirectoryFormat)
 
 
 class TestTypes(SampleClassifierTestPluginBase):

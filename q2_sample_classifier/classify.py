@@ -163,8 +163,10 @@ def classify_samples(ctx,
     confusion = ctx.get_action('sample_classifier', 'confusion_matrix')
     heat = ctx.get_action('sample_classifier', 'heatmap')
 
-    X_train, X_test = split(table, metadata, test_size, random_state,
-                            stratify=True, missing_samples=missing_samples)
+    X_train, X_test, y_train, y_test = split(table, metadata, test_size,
+                                             random_state,
+                                             stratify=True,
+                                             missing_samples=missing_samples)
 
     sample_estimator, importance = fit(
         X_train, metadata, step, cv, random_state, n_jobs, n_estimators,
@@ -183,7 +185,7 @@ def classify_samples(ctx,
                        group_samples=True, missing_samples=missing_samples)
 
     return (sample_estimator, importance, predictions, summary,
-            accuracy_results, probabilities, _heatmap)
+            accuracy_results, probabilities, _heatmap, y_train, y_test)
 
 
 def regress_samples(ctx,
@@ -207,8 +209,10 @@ def regress_samples(ctx,
     summarize_estimator = ctx.get_action('sample_classifier', 'summarize')
     scatter = ctx.get_action('sample_classifier', 'scatterplot')
 
-    X_train, X_test = split(table, metadata, test_size, random_state,
-                            stratify, missing_samples=missing_samples)
+    X_train, X_test, y_train, y_test = split(table, metadata, test_size,
+                                             random_state,
+                                             stratify,
+                                             missing_samples=missing_samples)
 
     sample_estimator, importance = fit(
         X_train, metadata, step, cv, random_state, n_jobs, n_estimators,
@@ -303,15 +307,12 @@ def split_table(table: biom.Table, metadata: qiime2.MetadataColumn,
                 test_size: float = defaults['test_size'],
                 random_state: int = None, stratify: str = True,
                 missing_samples: str = defaults['missing_samples']
-                ) -> (biom.Table, biom.Table):
+                ) -> (biom.Table, biom.Table, pd.Series, pd.Series):
     column = metadata.name
     X_train, X_test, y_train, y_test = _prepare_training_data(
         table, metadata, column, test_size, random_state, load_data=True,
         stratify=stratify, missing_samples=missing_samples)
-    # TODO: we can consider returning the metadata (y_train, y_test) if a
-    # SampleData[Metadata] type comes into existence. For now we will just
-    # throw this out.
-    return X_train, X_test
+    return X_train, X_test, y_train, y_test
 
 
 def regress_samples_ncv(

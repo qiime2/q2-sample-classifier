@@ -9,6 +9,7 @@
 import os
 
 import pandas as pd
+import pandas.testing as pdt
 import numpy as np
 import biom
 
@@ -46,11 +47,21 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
         md2.index.name = 'SampleID'
         self.md2 = qiime2.Metadata(md2)
 
-    # let's make sure the correct transformers are in place! See issue 114
-    # if this runs without error, that's good enough for me. We already
-    # validate the function above.
+    # let's make sure the function runs w/o errors and that the correct
+    # transformers are in place (see issue 114)
     def test_action_split_table(self):
-        sample_classifier.actions.split_table(self.tab, self.md, test_size=0.5)
+        res = sample_classifier.actions.split_table(
+            self.tab, self.md, test_size=0.5)
+        y_train = res.training_targets.view(pd.Series)
+        y_test = res.test_targets.view(pd.Series)
+
+        # test whether extracted target is correct
+        self.assertEqual(y_train.name, 'bugs')
+
+        # test if complete target column is covered
+        y_all = y_train.append(y_test).sort_index()
+        y_all.index.name = 'SampleID'
+        pdt.assert_series_equal(y_all, self.md._series)
 
     def test_metatable(self):
         exp = biom.Table(
