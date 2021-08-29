@@ -27,12 +27,15 @@ requirements:
     - scikit-bio
     - seaborn >=0.8
     - fastcluster
-    - qiime2 {{ release }}.*
-    - q2-types {{ release }}.*
-    - q2templates {{ release }}.*
-    - q2-feature-table {{ release }}.*
+    - qiime2 {{ qiime2 }}
+    - q2-types {{ q2_types }}
+    - q2templates {{ q2templates }}
+    - q2-feature-table {{ q2_feature_table }}
 
 test:
+  requires:
+    - pytest
+
   imports:
     - q2_sample_classifier
     - qiime2.plugins.sample_classifier

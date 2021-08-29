@@ -50,6 +50,6 @@ jobs:
     - uses: qiime2/action-library-packaging@alpha1
       with:
         package-name: q2-sample-classifier
-        build-target: tested
+        build-target: dev
         additional-tests: py.test --pyargs q2_sample_classifier
         library-token: ${{ secrets.LIBRARY_TOKEN }}
