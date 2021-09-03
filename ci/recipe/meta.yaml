@@ -18,7 +18,7 @@ requirements:
 
   run:
     - python {{ python }}
-    - pandas >=1
+    - pandas {{ pandas }}
     - scipy
     - numpy
     - joblib
