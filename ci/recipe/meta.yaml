@@ -22,7 +22,7 @@ requirements:
     - scipy
     - numpy
     - joblib
-    - scikit-learn >=0.22.1
+    - scikit-learn {{ scikit_learn }}
     - scikit-bio
     - seaborn >=0.8
     - fastcluster
