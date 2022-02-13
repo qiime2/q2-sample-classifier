@@ -8,6 +8,7 @@
 from warnings import filterwarnings
 import pandas as pd
 import numpy as np
+import skbio
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import RFECV
 import pandas.testing as pdt
@@ -96,6 +97,12 @@ class TestBinaryClassification(SampleClassifierTestPluginBase):
             sample_ids=[c for c in 'abcdef'])
         self.tab = qiime2.Artifact.import_data('FeatureTable[Frequency]', tab)
 
+        dist = skbio.DistanceMatrix.from_iterable(
+            iterable=[1, 16, 2, 1, 16, 17],
+            metric=lambda x, y: abs(y-x), keys=[c for c in 'abcdef']
+        )
+        self.dist = qiime2.Artifact.import_data('DistanceMatrix', dist)
+
     # we will make sure predictions are correct, but no need to validate
     # other outputs, which are tested elsewhere.
     def test_classify_samples_binary(self):
@@ -114,6 +121,16 @@ class TestBinaryClassification(SampleClassifierTestPluginBase):
         exp = pd.Series([c for c in 'ababab'], name='prediction',
                         index=pd.Index([i for i in 'aebdcf'], name='id'))
         pdt.assert_series_equal(exp, res[0].view(pd.Series))
+
+    def test_classify_samples_dist_binary(self):
+        res = sample_classifier.actions.classify_samples_from_dist(
+            distance_matrix=self.dist, metadata=self.md, k=2, cv=3,
+            n_jobs=1, random_state=123)
+        exp = pd.Series([c for c in 'abaaaa'], name='0',
+                        index=pd.Index([i for i in 'abcdef'], name='id'))
+        pdt.assert_series_equal(
+            exp.sort_index(), res[0].view(pd.Series).sort_index()
+        )
 
 
 class TestROC(SampleClassifierTestPluginBase):

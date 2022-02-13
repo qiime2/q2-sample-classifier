@@ -255,6 +255,9 @@ plugin.pipelines.register_function(
     parameters={
         'metadata': MetadataColumn[Categorical],
         'k': Int,
+        'cv': parameters['cv']['cv'],
+        'random_state': parameters['base']['random_state'],
+        'n_jobs': parameters['base']['n_jobs'],
         'palette': Str % Choices(_custom_palettes().keys()),
     },
     outputs=[
@@ -265,6 +268,9 @@ plugin.pipelines.register_function(
     parameter_descriptions={
         'metadata': 'Categorical metadata column to use as prediction target.',
         'k': 'Number of nearest neighbors',
+        'cv': parameter_descriptions['cv']['cv'],
+        'random_state': parameter_descriptions['base']['random_state'],
+        'n_jobs': parameter_descriptions['base']['n_jobs'],
         'palette': 'The color palette to use for plotting.',
     },
     output_descriptions={

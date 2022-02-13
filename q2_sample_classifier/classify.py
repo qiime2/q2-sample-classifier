@@ -6,11 +6,12 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
-import collections
-
+import numpy as np
 from sklearn.ensemble import IsolationForest
 from sklearn.metrics import mean_squared_error, accuracy_score
 from sklearn.feature_extraction import DictVectorizer
+from sklearn.model_selection import KFold
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 
 import qiime2
@@ -102,42 +103,66 @@ def metatable(ctx,
     return metatab
 
 
-def classify_samples_from_dist(ctx, distance_matrix, metadata, k=1,
-                               palette=defaults['palette']):
-    ''' Returns knn classifier results from a distance matrix.'''
-    distance_matrix = distance_matrix.view(skbio.DistanceMatrix)
-    predictions = []
-    metadata_series = metadata.to_series()
-    for i, row in enumerate(distance_matrix):
-        dists = []
-        categories = []
-        for j, dist in enumerate(row):
-            if j == i:
-                continue  # exclude self
-            dists.append(dist)
-            categories.append(metadata_series[distance_matrix.ids[j]])
+def _fit_predict_knn_cv(
+        x: pd.DataFrame, y: pd.Series, k: int, cv: int,
+        random_state: int, n_jobs: int
+) -> (pd.Series, pd.Series):
+    kf = KFold(n_splits=cv, shuffle=True, random_state=random_state)
 
-        # k-long series of (category: dist) ordered small -> large
-        nn_categories = pd.Series(dists, index=categories).nsmallest(k)
-        counter = collections.Counter(nn_categories.index)
-        max_counts = max(counter.values())
-        # in order of closeness, pick a category that is or shares
-        # max_counts
-        for category in nn_categories.index:
-            if counter[category] == max_counts:
-                predictions.append(category)
-                break
+    # train and test with CV
+    predictions, pred_ids, truth = [], [], []
+    for train_index, test_index in kf.split(x):
+        x_train, x_test = x.iloc[train_index, train_index], \
+                          x.iloc[test_index, train_index]
+        y_train, y_test = y[train_index], y[test_index]
 
-    predictions = pd.Series(predictions, index=distance_matrix.ids)
-    predictions.index.name = 'SampleID'
-    pred = qiime2.Artifact.import_data(
-        'SampleData[ClassifierPredictions]', predictions)
+        knn = KNeighborsClassifier(
+            n_neighbors=k, metric='precomputed', n_jobs=n_jobs
+        )
+        knn.fit(x_train, y_train)
+
+        # gather predictions for the confusion matrix
+        predictions.append(knn.predict(x_test))
+        pred_ids.extend(x_test.index.tolist())
+        truth.append(y_test)
+
+    predictions = pd.Series(
+        np.concatenate(predictions).ravel(),
+        index=pd.Index(pred_ids, name='SampleID')
+    )
+    truth = pd.concat(truth)
+    truth.index.name = 'SampleID'
+
+    return predictions, truth
+
+
+def classify_samples_from_dist(
+        ctx, distance_matrix, metadata, k=1, cv=defaults['cv'],
+        random_state=None, n_jobs=defaults['n_jobs'],
+        palette=defaults['palette']
+):
+    """ Trains and evaluates a KNN classifier from a distance matrix
+        using cross-validation."""
+    distance_matrix = distance_matrix \
+        .view(skbio.DistanceMatrix) \
+        .to_data_frame()
+    # reorder (required for splitting into train/test)
+    metadata_ser = metadata.to_series()[distance_matrix.index]
+
+    predictions, truth = _fit_predict_knn_cv(
+        distance_matrix, metadata_ser, k, cv, random_state, n_jobs
+    )
+    predictions = qiime2.Artifact.import_data(
+        'SampleData[ClassifierPredictions]', predictions
+    )
+    truth = qiime2.CategoricalMetadataColumn(truth)
 
     confusion = ctx.get_action('sample_classifier', 'confusion_matrix')
     accuracy_results, = confusion(
-        pred, metadata, missing_samples='ignore', palette=palette)
+        predictions, truth, missing_samples='ignore', palette=palette
+    )
 
-    return pred, accuracy_results
+    return predictions, accuracy_results
 
 
 def classify_samples(ctx,
