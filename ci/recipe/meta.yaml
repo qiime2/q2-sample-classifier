@@ -23,7 +23,7 @@ requirements:
     - numpy
     - joblib
     - scikit-learn {{ scikit_learn }}
-    - scikit-bio
+    - scikit-bio {{ scikit_bio }}
     - seaborn >=0.8
     - fastcluster
     - qiime2 {{ qiime2_epoch }}.*
