@@ -88,7 +88,7 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
             _disable_feature_selection('KNeighborsClassifier', False)
 
     def test_mean_feature_importance_1d_arrays(self):
-        exp = pd.DataFrame([10, 9, 8, 7], columns=["importance0"],
+        exp = pd.DataFrame([10., 9., 8., 7.], columns=["importance0"],
                            index=[3, 2, 1, 0])
         imps = [pd.DataFrame([1, 2, 3, 4], columns=["importance0"]),
                 pd.DataFrame([5, 6, 7, 8], columns=["importance0"]),
@@ -97,7 +97,7 @@ class UtilitiesTests(SampleClassifierTestPluginBase):
         pdt.assert_frame_equal(_mean_feature_importance(imps), exp)
 
     def test_mean_feature_importance_different_column_names(self):
-        exp = pd.DataFrame([[6, 5, 4, 3], [14, 13, 12, 11]],
+        exp = pd.DataFrame([[6., 5., 4., 3.], [14., 13., 12., 11.]],
                            index=["importance0", "importance1"],
                            columns=[3, 2, 1, 0]).T
         imps = [pd.DataFrame([1, 2, 3, 4], columns=["importance0"]),
