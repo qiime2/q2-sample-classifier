@@ -19,7 +19,7 @@ requirements:
   run:
     - python {{ python }}
     - pandas {{ pandas }}
-    - scipy
+    - scipy {{ scipy }}
     - numpy
     - joblib
     - scikit-learn {{ scikit_learn }}
