@@ -639,6 +639,21 @@ plugin.pipelines.register_function(
                 'displays (normalized) feature abundances per sample.'
 )
 
+plugin.methods.register_function(
+    function=shapely_values,
+    inputs={**inputs, 'sample_estimator': SampleEstimator[Classifier]},
+    outputs=[('shapely_values', SampleData[Probabilities])],
+    input_descriptions={
+        'table': input_descriptions['table'],
+        'sample_estimator': 'Sample classifier trained with fit_classifier.'},
+    output_descriptions={
+        'shapely_values': 'Contributions of each feature towards the prediction.'},
+    name='Use trained classifier to compute Shapely values new samples.',
+    description=(
+        "Computes shapely values, which measures the contribution of each feature "
+        "for a given sample label prediction."
+    )
+)
 
 # Registrations
 plugin.register_semantic_types(
