@@ -41,6 +41,7 @@ from ._type import (ClassifierPredictions, RegressorPredictions,
                     Classifier, Regressor, Probabilities,
                     TrueTargets)
 import q2_sample_classifier
+from q2_sample_classifier.classify import shapely_values
 
 citations = Citations.load('citations.bib', package='q2_sample_classifier')
 
@@ -642,12 +643,13 @@ plugin.pipelines.register_function(
 plugin.methods.register_function(
     function=shapely_values,
     inputs={**inputs, 'sample_estimator': SampleEstimator[Classifier]},
-    outputs=[('shapely_values', SampleData[Probabilities])],
+    parameters={},
+    outputs=[('shap', SampleData[Probabilities])],
     input_descriptions={
         'table': input_descriptions['table'],
         'sample_estimator': 'Sample classifier trained with fit_classifier.'},
     output_descriptions={
-        'shapely_values': 'Contributions of each feature towards the prediction.'},
+        'shap': 'Contributions of each feature towards the prediction.'},
     name='Use trained classifier to compute Shapely values new samples.',
     description=(
         "Computes shapely values, which measures the contribution of each feature "

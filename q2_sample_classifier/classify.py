@@ -514,7 +514,7 @@ def detect_outliers(table: biom.Table,
     return y_pred
 
 def shapely_values(table : biom.Table,
-                   sample_estimator : sklearn.Pipeline) -> pd.DataFrame:
+                   sample_estimator : Pipeline) -> pd.DataFrame:
     import shap  # optional import
     # only set cacl_feature_importance=True if using gradient boosting
     explainer = shap.TreeExplainer(estimator)
