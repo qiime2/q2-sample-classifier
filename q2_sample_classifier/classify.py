@@ -516,8 +516,8 @@ def detect_outliers(table: biom.Table,
 def shapely_values(table : biom.Table,
                    sample_estimator : Pipeline) -> pd.DataFrame:
     import shap  # optional import
-    # only set cacl_feature_importance=True if using gradient boosting
-    explainer = shap.TreeExplainer(estimator)
+    models = sample_estimator['est']
+    explainer = shap.TreeExplainer(models)
     shap_values = explainer.shap_values(table.to_dataframe().T.values)
     sampleids = table.ids()
     featureids = table.ids(axis='observation')
