@@ -650,7 +650,7 @@ plugin.methods.register_function(
         'sample_estimator': 'Sample classifier trained with fit_classifier.'},
     output_descriptions={
         'shap': 'Contributions of each feature towards the prediction.'},
-    name='Use trained classifier to compute Shapely values new samples.',
+    name='Use trained classifier to compute Shapely values for all samples.',
     description=(
         "Computes shapely values, which measures the contribution of each feature "
         "for a given sample label prediction."

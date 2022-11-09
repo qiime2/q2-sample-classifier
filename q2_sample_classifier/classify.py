@@ -24,7 +24,7 @@ from .utilities import (_load_data, _prepare_training_data,
                         _extract_features, _plot_accuracy,
                         _summarize_estimator, predict_probabilities,
                         _classifiers)
-
+import shap 
 
 defaults = {
     'test_size': 0.2,
@@ -515,7 +515,6 @@ def detect_outliers(table: biom.Table,
 
 def shapely_values(table : biom.Table,
                    sample_estimator : Pipeline) -> pd.DataFrame:
-    import shap  # optional import
     models = sample_estimator['est']
     explainer = shap.TreeExplainer(models)
     shap_values = explainer.shap_values(table.to_dataframe().T.values)
