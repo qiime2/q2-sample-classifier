@@ -24,7 +24,7 @@ from .utilities import (_load_data, _prepare_training_data,
                         _extract_features, _plot_accuracy,
                         _summarize_estimator, predict_probabilities,
                         _classifiers)
-import shap 
+import shap
 
 defaults = {
     'test_size': 0.2,
@@ -513,15 +513,15 @@ def detect_outliers(table: biom.Table,
     y_pred.name = "outlier"
     return y_pred
 
-def shapely_values(table : biom.Table,
-                   sample_estimator : Pipeline) -> pd.DataFrame:
+def shapely_values(table: biom.Table,
+                   sample_estimator: Pipeline) -> pd.DataFrame:
     models = sample_estimator['est']
     explainer = shap.TreeExplainer(models)
     features = table.to_dataframe()
-    featureids= sample_estimator.named_steps.dv.get_feature_names()
+    featureids = sample_estimator.named_steps.dv.get_feature_names()
     features = features.loc[featureids]
     shap_values = explainer.shap_values(features.T.values)
     sampleids = table.ids()
-    shap_values = pd.DataFrame(shap_values, index=sampleids, columns=featureids)
+    shap_values = pd.DataFrame(shap_values, index=sampleids, 
+                               columns=featureids)
     return shap_values
-    
