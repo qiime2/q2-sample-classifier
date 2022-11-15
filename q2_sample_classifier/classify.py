@@ -513,6 +513,7 @@ def detect_outliers(table: biom.Table,
     y_pred.name = "outlier"
     return y_pred
 
+
 def shapely_values(table: biom.Table,
                    sample_estimator: Pipeline) -> pd.DataFrame:
     models = sample_estimator['est']
@@ -522,6 +523,6 @@ def shapely_values(table: biom.Table,
     features = features.loc[featureids]
     shap_values = explainer.shap_values(features.T.values)
     sampleids = table.ids()
-    shap_values = pd.DataFrame(shap_values, index=sampleids, 
+    shap_values = pd.DataFrame(shap_values, index=sampleids,
                                columns=featureids)
     return shap_values

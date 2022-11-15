@@ -652,7 +652,7 @@ plugin.methods.register_function(
         'shap': 'Contributions of each feature towards the prediction.'},
     name='Use trained classifier to compute Shapely values for all samples.',
     description=(
-        "Computes shapely values, which measures the contribution of each feature "
+        "Computes shapely values, measures the contribution of each feature "
         "for a given sample label prediction."
     )
 )
