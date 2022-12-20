@@ -20,7 +20,7 @@ requirements:
     - python {{ python }}
     - pandas {{ pandas }}
     - scipy {{ scipy }}
-    - numpy
+    - numpy {{ numpy }}
     - joblib
     - scikit-learn {{ scikit_learn }}
     - scikit-bio {{ scikit_bio }}
