@@ -30,6 +30,7 @@ requirements:
     - q2-types {{ qiime2_epoch }}.*
     - q2templates {{ qiime2_epoch }}.*
     - q2-feature-table {{ qiime2_epoch }}.*
+    - shap
 
 test:
   requires:
