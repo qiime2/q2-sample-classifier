@@ -19,7 +19,7 @@ from sklearn.pipeline import Pipeline
 import skbio
 
 import qiime2
-from q2_types.feature_table import FeatureTable, PercentileNormalized
+from q2_types.feature_table import (FeatureTable, PercentileNormalized)
 
 from qiime2.plugins import sample_classifier
 from q2_sample_classifier.tests.test_base_class import (
