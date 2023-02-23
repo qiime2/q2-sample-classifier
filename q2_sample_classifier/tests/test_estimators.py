@@ -13,6 +13,7 @@ import shutil
 import json
 import numpy as np
 from sklearn.metrics import mean_squared_error, accuracy_score
+from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.pipeline import Pipeline
@@ -624,6 +625,8 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             missing_samples="ignore",
         )
         self.assertEqual(type(abe.named_steps.est), AdaBoostClassifier)
+        self.assertEqual(type(abe.named_steps.est.base_estimator),
+                         DecisionTreeClassifier)
 
     def test_train_adaboost_extra_tree(self):
         abe = _train_adaboost_base_estimator(
@@ -640,6 +643,8 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             missing_samples="ignore",
         )
         self.assertEqual(type(abe.named_steps.est), AdaBoostClassifier)
+        self.assertEqual(type(abe.named_steps.est.base_estimator),
+                         ExtraTreeClassifier)
 
     # test some invalid inputs/edge cases
     def test_invalids(self):
