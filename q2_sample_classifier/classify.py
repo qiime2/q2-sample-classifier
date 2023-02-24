@@ -18,13 +18,13 @@ import qiime2
 import pandas as pd
 import biom
 import skbio
+import shap
 
 from .utilities import (_load_data, _prepare_training_data,
                         nested_cross_validation, _fit_estimator,
                         _extract_features, _plot_accuracy,
                         _summarize_estimator, predict_probabilities,
                         _classifiers)
-import shap
 
 defaults = {
     'test_size': 0.2,
