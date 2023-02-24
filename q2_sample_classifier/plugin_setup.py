@@ -647,7 +647,7 @@ plugin.methods.register_function(
     outputs=[('shap', SampleData[Probabilities])],
     input_descriptions={
         'table': input_descriptions['table'],
-        'sample_estimator': 'Sample classifier trained with fit_classifier.'},
+        'sample_estimator': 'Sample classifier trained with `fit_classifier`.'},
     output_descriptions={
         'shap': 'Contributions of each feature towards the prediction.'},
     name='Use trained classifier to compute Shapely values for all samples.',
