@@ -41,7 +41,7 @@ from ._type import (ClassifierPredictions, RegressorPredictions,
                     Classifier, Regressor, Probabilities,
                     TrueTargets)
 import q2_sample_classifier
-from q2_sample_classifier.classify import shapely_values
+from q2_sample_classifier.classify import shapley_values
 
 citations = Citations.load('citations.bib', package='q2_sample_classifier')
 
