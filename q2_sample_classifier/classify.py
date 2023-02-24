@@ -514,7 +514,7 @@ def detect_outliers(table: biom.Table,
     return y_pred
 
 
-def shapely_values(table: biom.Table,
+def shapley_values(table: biom.Table,
                    sample_estimator: Pipeline) -> pd.DataFrame:
     models = sample_estimator['est']
     explainer = shap.TreeExplainer(models)
