@@ -641,18 +641,18 @@ plugin.pipelines.register_function(
 )
 
 plugin.methods.register_function(
-    function=shapely_values,
+    function=shapley_values,
     inputs={**inputs, 'sample_estimator': SampleEstimator[Classifier]},
     parameters={},
     outputs=[('shap', SampleData[Probabilities])],
     input_descriptions={
         'table': input_descriptions['table'],
-        'sample_estimator': 'Sample classifier trained with `fit_classifier`.'},
+        'sample_estimator': 'Sample classifier trained with fit_classifier.'},
     output_descriptions={
         'shap': 'Contributions of each feature towards the prediction.'},
-    name='Use trained classifier to compute Shapely values for all samples.',
+    name='Use trained classifier to compute Shapley values for all samples.',
     description=(
-        "Computes Shapely values, measures the contribution of each feature "
+        "Computes Shapley values, measures the contribution of each feature "
         "for a given sample label prediction."
     )
 )
