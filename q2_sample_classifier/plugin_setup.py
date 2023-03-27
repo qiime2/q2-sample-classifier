@@ -156,13 +156,13 @@ parameter_descriptions = {
 classifiers = Str % Choices(
     ['RandomForestClassifier', 'ExtraTreesClassifier',
      'GradientBoostingClassifier',
-     'AdaBoostClassifier[DecisionTree]', 'AdaBoostClassifier[ExtraTree]',
+     'AdaBoostClassifier[DecisionTree]', 'AdaBoostClassifier[ExtraTrees]',
      'KNeighborsClassifier', 'LinearSVC', 'SVC'])
 
 regressors = Str % Choices(
     ['RandomForestRegressor', 'ExtraTreesRegressor',
      'GradientBoostingRegressor',
-     'AdaBoostRegressor[DecisionTree]', 'AdaBoostRegressor[ExtraTree]',
+     'AdaBoostRegressor[DecisionTree]', 'AdaBoostRegressor[ExtraTrees]',
      'ElasticNet',
      'Ridge', 'Lasso', 'KNeighborsRegressor', 'LinearSVR', 'SVR'])
 

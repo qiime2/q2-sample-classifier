@@ -795,14 +795,14 @@ def _train_adaboost_base_estimator(table, metadata, column, base_estimator,
     if classification:
         base_est = {
                     'DecisionTree': DecisionTreeClassifier(),
-                    'ExtraTree': ExtraTreeClassifier()
+                    'ExtraTrees': ExtraTreeClassifier()
                     }
         pipe_base_estimator = base_est[base_estimator]
         adaboost_estimator = AdaBoostClassifier
     else:
         base_est = {
                     'DecisionTree': DecisionTreeRegressor(),
-                    'ExtraTree': ExtraTreeRegressor()
+                    'ExtraTrees': ExtraTreeRegressor()
                     }
         pipe_base_estimator = base_est[base_estimator]
         adaboost_estimator = AdaBoostRegressor
