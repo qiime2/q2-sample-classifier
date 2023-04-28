@@ -14,6 +14,7 @@ import json
 import numpy as np
 from sklearn.metrics import mean_squared_error, accuracy_score
 from sklearn.ensemble import AdaBoostClassifier
+from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.pipeline import Pipeline
 import skbio
@@ -235,8 +236,10 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     # when a random seed is set.
     def test_classifiers(self):
         for classifier in ['RandomForestClassifier', 'ExtraTreesClassifier',
-                           'GradientBoostingClassifier', 'AdaBoostClassifier',
-                           'LinearSVC', 'SVC', 'KNeighborsClassifier']:
+                           'GradientBoostingClassifier',
+                           'AdaBoostClassifier[DecisionTree]',
+                           'AdaBoostClassifier[ExtraTrees]', 'LinearSVC',
+                           'SVC', 'KNeighborsClassifier']:
             table_fp = self.get_data_path('chardonnay.table.qza')
             table = qiime2.Artifact.load(table_fp)
             res = sample_classifier.actions.classify_samples(
@@ -356,9 +359,11 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     # when a random seed is set.
     def test_regressors(self):
         for regressor in ['RandomForestRegressor', 'ExtraTreesRegressor',
-                          'GradientBoostingRegressor', 'AdaBoostRegressor',
-                          'Lasso', 'Ridge', 'ElasticNet',
-                          'KNeighborsRegressor', 'LinearSVR', 'SVR']:
+                          'GradientBoostingRegressor',
+                          'AdaBoostRegressor[DecisionTree]',
+                          'AdaBoostRegressor[ExtraTrees]', 'Lasso', 'Ridge',
+                          'ElasticNet', 'KNeighborsRegressor', 'LinearSVR',
+                          'SVR']:
             table_fp = self.get_data_path('ecam-table-maturity.qza')
             table = qiime2.Artifact.load(table_fp)
             res = sample_classifier.actions.regress_samples(
@@ -386,13 +391,25 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
                         regressor, accuracy, seeded_results[regressor]))
 
     # test adaboost base estimator trainer
-    def test_train_adaboost_base_estimator(self):
+    def test_train_adaboost_decision_tree(self):
         abe = _train_adaboost_base_estimator(
             self.table_chard_fp, self.mdc_chard_fp, 'Region',
             n_estimators=10, n_jobs=1, cv=3, random_state=None,
             parameter_tuning=True, classification=True,
-            missing_samples='ignore')
+            missing_samples='ignore', base_estimator="DecisionTree")
         self.assertEqual(type(abe.named_steps.est), AdaBoostClassifier)
+        self.assertEqual(type(abe.named_steps.est.base_estimator),
+                         DecisionTreeClassifier)
+
+    def test_train_adaboost_extra_trees(self):
+        abe = _train_adaboost_base_estimator(
+            self.table_chard_fp, self.mdc_chard_fp, 'Region',
+            n_estimators=10, n_jobs=1, cv=3, random_state=None,
+            parameter_tuning=True, classification=True,
+            missing_samples='ignore', base_estimator="ExtraTrees")
+        self.assertEqual(type(abe.named_steps.est), AdaBoostClassifier)
+        self.assertEqual(type(abe.named_steps.est.base_estimator),
+                         ExtraTreeClassifier)
 
     # test some invalid inputs/edge cases
     def test_invalids(self):
@@ -458,8 +475,10 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
     # x, y, and z predicts the correct metadata values for those same samples.
     def test_predict_classifications(self):
         for classifier in ['RandomForestClassifier', 'ExtraTreesClassifier',
-                           'GradientBoostingClassifier', 'AdaBoostClassifier',
-                           'LinearSVC', 'SVC', 'KNeighborsClassifier']:
+                           'GradientBoostingClassifier',
+                           'AdaBoostClassifier[DecisionTree]',
+                           'AdaBoostClassifier[ExtraTrees]', 'LinearSVC',
+                           'SVC', 'KNeighborsClassifier']:
             estimator, importances = fit_classifier(
                 self.table_chard_fp, self.mdc_chard_fp, random_state=123,
                 n_estimators=2, estimator=classifier, n_jobs=1,
@@ -494,7 +513,9 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
 
     def test_predict_regressions(self):
         for regressor in ['RandomForestRegressor', 'ExtraTreesRegressor',
-                          'GradientBoostingRegressor', 'AdaBoostRegressor',
+                          'GradientBoostingRegressor',
+                          'AdaBoostRegressor[DecisionTree]',
+                          'AdaBoostRegressor[ExtraTrees]',
                           'Lasso', 'Ridge', 'ElasticNet',
                           'KNeighborsRegressor', 'SVR', 'LinearSVR']:
             estimator, importances = fit_regressor(
@@ -558,14 +579,16 @@ seeded_results = {
     'RandomForestClassifier': 0.63636363636363635,
     'ExtraTreesClassifier': 0.454545454545,
     'GradientBoostingClassifier': 0.272727272727,
-    'AdaBoostClassifier': 0.272727272727,
+    'AdaBoostClassifier[DecisionTree]': 0.272727272727,
+    'AdaBoostClassifier[ExtraTrees]': 0.272727272727,
     'LinearSVC': 0.818182,
     'SVC': 0.36363636363636365,
     'KNeighborsClassifier': 0.363636363636,
     'RandomForestRegressor': 23.226508,
     'ExtraTreesRegressor': 19.725397,
     'GradientBoostingRegressor': 34.157100,
-    'AdaBoostRegressor': 30.920635,
+    'AdaBoostRegressor[DecisionTree]': 30.920635,
+    'AdaBoostRegressor[ExtraTrees]': 21.746031,
     'Lasso': 722.827623,
     'Ridge': 521.195194222418,
     'ElasticNet': 618.532273,
@@ -577,14 +600,16 @@ seeded_predict_results = {
     'RandomForestClassifier': 18,
     'ExtraTreesClassifier': 21,
     'GradientBoostingClassifier': 21,
-    'AdaBoostClassifier': 21,
+    'AdaBoostClassifier[DecisionTree]': 21,
+    'AdaBoostClassifier[ExtraTrees]': 21,
     'LinearSVC': 21,
     'SVC': 12,
     'KNeighborsClassifier': 14,
     'RandomForestRegressor': 7.4246031746,
     'ExtraTreesRegressor': 0.,
     'GradientBoostingRegressor': 50.1955883469,
-    'AdaBoostRegressor': 9.7857142857142865,
+    'AdaBoostRegressor[DecisionTree]': 9.7857142857142865,
+    'AdaBoostRegressor[ExtraTrees]': 33.95238095238095,
     'Lasso': 0.173138653701,
     'Ridge': 2.694020055323081e-05,
     'ElasticNet': 0.0614243397637,

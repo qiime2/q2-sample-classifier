@@ -21,7 +21,10 @@ from sklearn.ensemble import (RandomForestRegressor, RandomForestClassifier,
 from sklearn.svm import SVR, SVC
 from sklearn.linear_model import Ridge, Lasso, ElasticNet
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.tree import (
+    DecisionTreeClassifier, DecisionTreeRegressor,
+    ExtraTreeClassifier, ExtraTreeRegressor
+)
 from sklearn.pipeline import Pipeline
 
 import q2templates
@@ -32,6 +35,7 @@ import pkg_resources
 from scipy.sparse import issparse
 from scipy.stats import randint
 import biom
+import re
 
 from .visuals import (_linear_regress, _plot_confusion_matrix, _plot_RFE,
                       _regplot_from_dataframe, _generate_roc_plots)
@@ -781,32 +785,42 @@ def _select_estimator(estimator, n_jobs, n_estimators, random_state=None):
     return param_dist, estimator
 
 
-def _train_adaboost_base_estimator(table, metadata, column, n_estimators,
-                                   n_jobs, cv, random_state=None,
+def _train_adaboost_base_estimator(table, metadata, column, base_estimator,
+                                   n_estimators, n_jobs, cv, random_state=None,
                                    parameter_tuning=False,
                                    classification=True,
                                    missing_samples='error'):
     param_dist = parameters['ensemble']
+
     if classification:
-        base_estimator = DecisionTreeClassifier()
+        base_est = {
+                    'DecisionTree': DecisionTreeClassifier(),
+                    'ExtraTrees': ExtraTreeClassifier()
+                    }
+        pipe_base_estimator = base_est[base_estimator]
         adaboost_estimator = AdaBoostClassifier
     else:
-        base_estimator = DecisionTreeRegressor()
+        base_est = {
+                    'DecisionTree': DecisionTreeRegressor(),
+                    'ExtraTrees': ExtraTreeRegressor()
+                    }
+        pipe_base_estimator = base_est[base_estimator]
         adaboost_estimator = AdaBoostRegressor
-    base_estimator = Pipeline(
-        [('dv', DictVectorizer()), ('est', base_estimator)])
+
+    estimator = Pipeline(
+        [('dv', DictVectorizer()), ('est', pipe_base_estimator)])
 
     if parameter_tuning:
         features, targets = _load_data(
             table, metadata, missing_samples=missing_samples)
         param_dist = _map_params_to_pipeline(param_dist)
         base_estimator = _tune_parameters(
-            features, targets[column], base_estimator, param_dist,
+            features, targets[column], estimator, param_dist,
             n_jobs=n_jobs, cv=cv, random_state=random_state).best_estimator_
 
     return Pipeline(
-        [('dv', base_estimator.named_steps.dv),
-         ('est', adaboost_estimator(base_estimator.named_steps.est,
+        [('dv', estimator.named_steps.dv),
+         ('est', adaboost_estimator(estimator.named_steps.est,
                                     n_estimators, random_state=random_state))])
 
 
@@ -830,10 +844,11 @@ def _set_parameters_and_estimator(estimator, table, metadata, column,
                                   parameter_tuning, classification=True,
                                   missing_samples='error'):
     # specify parameters and distributions to sample from for parameter tuning
-    if estimator in ['AdaBoostClassifier', 'AdaBoostRegressor']:
+    if estimator.startswith("AdaBoost"):
+        base_estimator = re.search(r"\[([A-Za-z]+)\]", estimator).group(1)
         estimator = _train_adaboost_base_estimator(
-            table, metadata, column, n_estimators, n_jobs, cv, random_state,
-            parameter_tuning, classification=classification,
+            table, metadata, column, base_estimator, n_estimators, n_jobs, cv,
+            random_state, parameter_tuning, classification=classification,
             missing_samples=missing_samples)
         parameter_tuning = False
         param_dist = None
