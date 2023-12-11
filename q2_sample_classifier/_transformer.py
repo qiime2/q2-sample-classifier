@@ -153,7 +153,7 @@ def _a(dirfmt: SampleEstimatorDirFmt) -> Pipeline:
                 if not is_within_directory(path, member_path):
                     raise Exception("Attempted Path Traversal in Tar File")
 
-            tar.extractall(path, members, numeric_owner=numeric_owner) 
+            tar.extractall(path, members, numeric_owner=numeric_owner)
 
         safe_extract(tar, dirname)
         pipeline = joblib.load(os.path.join(dirname, 'sklearn_pipeline.pkl'))

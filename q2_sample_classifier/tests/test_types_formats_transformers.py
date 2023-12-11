@@ -440,7 +440,7 @@ class TestTransformers(SampleEstimatorTestBase):
                             raise Exception("Attempted Path Traversal in Tar"
                                             "File")
 
-                    tar.extractall(path, members, numeric_owner=numeric_owner) 
+                    tar.extractall(path, members, numeric_owner=numeric_owner)
 
                 safe_extract(tar, dirname)
                 pipeline = joblib.load(os.path.join(dirname,
