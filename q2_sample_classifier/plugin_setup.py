@@ -13,7 +13,7 @@ from qiime2.plugin import (
     Numeric, Categorical, Citations, Visualization, TypeMatch)
 from q2_types.feature_table import (
     FeatureTable, Frequency, RelativeFrequency, PresenceAbsence, Balance,
-    PercentileNormalized, Design)
+    PercentileNormalized, Design, Composition)
 from q2_types.sample_data import SampleData
 from q2_types.feature_data import FeatureData
 from q2_types.distance_matrix import DistanceMatrix
@@ -89,7 +89,8 @@ predict_description = (
     'contain overlapping features with the feature table used to train '
     'the estimator.')
 
-inputs = {'table': FeatureTable[Frequency]}
+inputs = {'table': FeatureTable[
+    Frequency | RelativeFrequency | PresenceAbsence | Composition]}
 
 input_descriptions = {'table': 'Feature table containing all features that '
                                'should be used for target prediction.',
@@ -492,7 +493,7 @@ plugin.visualizers.register_function(
 
 
 T = TypeMatch([Frequency, RelativeFrequency, PresenceAbsence, Balance,
-               PercentileNormalized, Design])
+               PercentileNormalized, Design, Composition])
 plugin.methods.register_function(
     function=split_table,
     inputs={'table': FeatureTable[T]},
