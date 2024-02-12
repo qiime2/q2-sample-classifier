@@ -27,6 +27,7 @@ from sklearn.tree import (
 )
 from sklearn.pipeline import Pipeline
 
+from qiime2.plugin import get_available_cores
 import q2templates
 import pandas as pd
 import numpy as np
@@ -264,6 +265,9 @@ def nested_cross_validation(table, metadata, cv, random_state, n_jobs,
                             n_estimators, estimator, stratify,
                             parameter_tuning, classification, scoring,
                             missing_samples='error'):
+    if n_jobs == 0:
+        n_jobs = get_available_cores()
+
     # extract column name from NumericMetadataColumn
     column = metadata.name
 
@@ -301,6 +305,9 @@ def _fit_estimator(features, targets, estimator, n_estimators=100, step=0.05,
                    cv=5, random_state=None, n_jobs=1,
                    optimize_feature_selection=False, parameter_tuning=False,
                    missing_samples='error', classification=True):
+    if n_jobs == 0:
+        n_jobs = get_available_cores()
+
     # extract column name from CategoricalMetadataColumn
     column = targets.to_series().name
 

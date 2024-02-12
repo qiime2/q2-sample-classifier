@@ -15,6 +15,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 
 import qiime2
+from qiime2.plugin import get_available_cores
 import pandas as pd
 import biom
 import skbio
@@ -107,6 +108,9 @@ def _fit_predict_knn_cv(
         x: pd.DataFrame, y: pd.Series, k: int, cv: int,
         random_state: int, n_jobs: int
 ) -> (pd.Series, pd.Series):
+    if n_jobs == 0:
+        n_jobs = get_available_cores()
+
     kf = KFold(n_splits=cv, shuffle=True, random_state=random_state)
 
     # train and test with CV
@@ -291,6 +295,9 @@ def fit_regressor(table: biom.Table,
 
 
 def predict_base(table, sample_estimator, n_jobs):
+    if n_jobs == 0:
+        n_jobs = get_available_cores()
+
     # extract feature data from biom
     feature_data = _extract_features(table)
     index = table.ids()

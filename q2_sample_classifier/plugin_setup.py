@@ -10,7 +10,7 @@ import importlib
 
 from qiime2.plugin import (
     Int, Str, Float, Range, Bool, Plugin, Metadata, Choices, MetadataColumn,
-    Numeric, Categorical, Citations, Visualization, TypeMatch)
+    Numeric, Categorical, Citations, Visualization, TypeMatch, Threads)
 from q2_types.feature_table import (
     FeatureTable, Frequency, RelativeFrequency, PresenceAbsence, Balance,
     PercentileNormalized, Design, Composition)
@@ -100,7 +100,7 @@ input_descriptions = {'table': 'Feature table containing all features that '
 parameters = {
     'base': {
         'random_state': Int,
-        'n_jobs': Int,
+        'n_jobs': Threads,
         'n_estimators': Int % Range(1, None),
         'missing_samples': Str % Choices(['error', 'ignore'])},
     'splitter': {
