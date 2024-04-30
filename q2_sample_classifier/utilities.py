@@ -249,16 +249,17 @@ def _rfecv_feature_selection(feature_data, targets, estimator,
 
 
 def _extract_rfe_scores(rfecv):
+    grid_scores_ = rfecv.cv_results_['mean_test_score']
     n_features = len(rfecv.ranking_)
     # If using fractional step, step = integer of fraction * n_features
     if rfecv.step < 1:
         rfecv.step = int(rfecv.step * n_features)
-    # Need to manually calculate x-axis, as rfecv.grid_scores_ are a 1-d array
+    # Need to manually calculate x-axis, grid_scores_ is a 1-d array
     x = [n_features - (n * rfecv.step)
-         for n in range(len(rfecv.grid_scores_)-1, -1, -1)]
+         for n in range(len(grid_scores_)-1, -1, -1)]
     if x[0] < 1:
         x[0] = 1
-    return pd.Series(rfecv.grid_scores_, index=x, name='Accuracy')
+    return pd.Series(grid_scores_, index=x, name='Accuracy')
 
 
 def nested_cross_validation(table, metadata, cv, random_state, n_jobs,
