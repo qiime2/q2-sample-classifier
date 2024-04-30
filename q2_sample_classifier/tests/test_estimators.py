@@ -135,7 +135,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         dv = DictVectorizer()
         dv.fit(dicts)
         features = table.ids('observation')
-        self.assertEqual(set(dv.get_feature_names()), set(features))
+        self.assertEqual(set(dv.get_feature_names_out()), set(features))
         self.assertEqual(len(dicts), len(table.ids()))
         for dict_row, (table_row, _, _) in zip(dicts, table.iter()):
             for feature, count in zip(features, table_row):

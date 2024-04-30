@@ -239,7 +239,7 @@ def _rfecv_feature_selection(feature_data, targets, estimator,
     # Describe top features
     n_opt = rfecv.named_steps.est.n_features_
     importance = _extract_important_features(
-        rfecv.named_steps.dv.get_feature_names(),
+        rfecv.named_steps.dv.get_feature_names_out(),
         rfecv.named_steps.est.ranking_)
     importance = sort_importances(importance, ascending=True)[:n_opt]
 
@@ -411,12 +411,12 @@ def _calculate_feature_importances(estimator):
     # feature_importances_ or coef_ to report feature importance/weights
     try:
         importances = _extract_important_features(
-            estimator.named_steps.dv.get_feature_names(),
+            estimator.named_steps.dv.get_feature_names_out(),
             estimator.named_steps.est.feature_importances_)
     # is there a better way to determine whether estimator has coef_ ?
     except AttributeError:
         importances = _extract_important_features(
-            estimator.named_steps.dv.get_feature_names(),
+            estimator.named_steps.dv.get_feature_names_out(),
             estimator.named_steps.est.coef_)
     return importances
 
@@ -718,7 +718,7 @@ def _mean_feature_importance(importances):
 def _null_feature_importance(table):
     feature_extractor = DictVectorizer()
     feature_extractor.fit(table)
-    imp = pd.DataFrame(index=feature_extractor.get_feature_names())
+    imp = pd.DataFrame(index=feature_extractor.get_feature_names_out())
     imp.index.name = "feature"
     imp["importance"] = 1
     return imp
