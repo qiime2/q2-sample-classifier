@@ -117,7 +117,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             index_col=0, names=['feature', 'importance'])
         self.exp_pred = pd.read_csv(
             self.get_data_path('predictions.tsv'), sep='\t', header=0,
-            index_col=0, squeeze=True)
+            index_col=0).squeeze('columns')
         index = pd.Index(['A', 'B', 'C', 'D'], name='id')
         self.table_percnorm = qiime2.Artifact.import_data(
             FeatureTable[PercentileNormalized], pd.DataFrame(
