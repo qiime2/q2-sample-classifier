@@ -828,8 +828,9 @@ def _train_adaboost_base_estimator(table, metadata, column, base_estimator,
 
     return Pipeline(
         [('dv', estimator.named_steps.dv),
-         ('est', adaboost_estimator(estimator.named_steps.est,
-                                    n_estimators, random_state=random_state))])
+         ('est', adaboost_estimator(estimator=estimator.named_steps.est,
+                                    n_estimators=n_estimators,
+                                    random_state=random_state))])
 
 
 def _disable_feature_selection(estimator, optimize_feature_selection):

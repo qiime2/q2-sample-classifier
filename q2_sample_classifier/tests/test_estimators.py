@@ -398,7 +398,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             parameter_tuning=True, classification=True,
             missing_samples='ignore', base_estimator="DecisionTree")
         self.assertEqual(type(abe.named_steps.est), AdaBoostClassifier)
-        self.assertEqual(type(abe.named_steps.est.base_estimator),
+        self.assertEqual(type(abe.named_steps.est.estimator),
                          DecisionTreeClassifier)
 
     def test_train_adaboost_extra_trees(self):
@@ -408,7 +408,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             parameter_tuning=True, classification=True,
             missing_samples='ignore', base_estimator="ExtraTrees")
         self.assertEqual(type(abe.named_steps.est), AdaBoostClassifier)
-        self.assertEqual(type(abe.named_steps.est.base_estimator),
+        self.assertEqual(type(abe.named_steps.est.estimator),
                          ExtraTreeClassifier)
 
     # test some invalid inputs/edge cases
