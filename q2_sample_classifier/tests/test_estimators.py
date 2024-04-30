@@ -504,7 +504,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             ls_pred_classes = prob.columns.tolist()
             ls_correct_range = [col for col in ls_pred_classes if
                                 prob[col].between(
-                                    0, 1, inclusive=True).all()]
+                                    0, 1, inclusive="both").all()]
             self.assertEqual(len(ls_correct_range), prob.shape[1],
                              msg='Predicted probabilities of class {}'
                              'are not in range [0,1]'.format(
