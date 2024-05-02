@@ -117,7 +117,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             index_col=0, names=['feature', 'importance'])
         self.exp_pred = pd.read_csv(
             self.get_data_path('predictions.tsv'), sep='\t', header=0,
-            index_col=0, squeeze=True)
+            index_col=0).squeeze('columns')
         index = pd.Index(['A', 'B', 'C', 'D'], name='id')
         self.table_percnorm = qiime2.Artifact.import_data(
             FeatureTable[PercentileNormalized], pd.DataFrame(
@@ -135,7 +135,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         dv = DictVectorizer()
         dv.fit(dicts)
         features = table.ids('observation')
-        self.assertEqual(set(dv.get_feature_names()), set(features))
+        self.assertEqual(set(dv.get_feature_names_out()), set(features))
         self.assertEqual(len(dicts), len(table.ids()))
         for dict_row, (table_row, _, _) in zip(dicts, table.iter()):
             for feature, count in zip(features, table_row):
@@ -398,7 +398,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             parameter_tuning=True, classification=True,
             missing_samples='ignore', base_estimator="DecisionTree")
         self.assertEqual(type(abe.named_steps.est), AdaBoostClassifier)
-        self.assertEqual(type(abe.named_steps.est.base_estimator),
+        self.assertEqual(type(abe.named_steps.est.estimator),
                          DecisionTreeClassifier)
 
     def test_train_adaboost_extra_trees(self):
@@ -408,7 +408,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             parameter_tuning=True, classification=True,
             missing_samples='ignore', base_estimator="ExtraTrees")
         self.assertEqual(type(abe.named_steps.est), AdaBoostClassifier)
-        self.assertEqual(type(abe.named_steps.est.base_estimator),
+        self.assertEqual(type(abe.named_steps.est.estimator),
                          ExtraTreeClassifier)
 
     # test some invalid inputs/edge cases
@@ -504,7 +504,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             ls_pred_classes = prob.columns.tolist()
             ls_correct_range = [col for col in ls_pred_classes if
                                 prob[col].between(
-                                    0, 1, inclusive=True).all()]
+                                    0, 1, inclusive="both").all()]
             self.assertEqual(len(ls_correct_range), prob.shape[1],
                              msg='Predicted probabilities of class {}'
                              'are not in range [0,1]'.format(

@@ -83,7 +83,7 @@ def metatable(ctx,
             raise ValueError('Missing samples in metadata: %r' %
                              table_ids.difference(metadata_ids))
         else:
-            metadata = metadata.loc[sample_ids]
+            metadata = metadata.loc[list(sample_ids)]
         if len(sample_ids) < len(table_ids):
             tab = tab.filter(
                 ids_to_keep=sample_ids, axis='sample', inplace=False)

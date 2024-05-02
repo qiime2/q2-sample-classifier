@@ -59,7 +59,7 @@ class NowLetsTestTheActions(SampleClassifierTestPluginBase):
         self.assertEqual(y_train.name, 'bugs')
 
         # test if complete target column is covered
-        y_all = y_train.append(y_test).sort_index()
+        y_all = pd.concat([y_train, y_test]).sort_index()
         y_all.index.name = 'SampleID'
         pdt.assert_series_equal(y_all, self.md._series)
 

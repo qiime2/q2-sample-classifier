@@ -167,9 +167,9 @@ def _plot_confusion_matrix(y_test, y_pred, classes, normalize, palette,
     predictions.loc["Overall Accuracy"] = ""
     predictions.loc["Baseline Accuracy"] = ""
     predictions.loc["Accuracy Ratio"] = ""
-    predictions.loc["Overall Accuracy"]["Overall Accuracy"] = accuracy
-    predictions.loc["Baseline Accuracy"]["Overall Accuracy"] = basline_accuracy
-    predictions.loc["Accuracy Ratio"]["Overall Accuracy"] = accuracy_ratio
+    predictions.loc["Overall Accuracy", "Overall Accuracy"] = accuracy
+    predictions.loc["Baseline Accuracy", "Overall Accuracy"] = basline_accuracy
+    predictions.loc["Accuracy Ratio", "Overall Accuracy"] = accuracy_ratio
 
     return predictions, confusion
 

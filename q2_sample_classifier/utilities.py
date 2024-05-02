@@ -239,7 +239,7 @@ def _rfecv_feature_selection(feature_data, targets, estimator,
     # Describe top features
     n_opt = rfecv.named_steps.est.n_features_
     importance = _extract_important_features(
-        rfecv.named_steps.dv.get_feature_names(),
+        rfecv.named_steps.dv.get_feature_names_out(),
         rfecv.named_steps.est.ranking_)
     importance = sort_importances(importance, ascending=True)[:n_opt]
 
@@ -249,16 +249,17 @@ def _rfecv_feature_selection(feature_data, targets, estimator,
 
 
 def _extract_rfe_scores(rfecv):
+    grid_scores_ = rfecv.cv_results_['mean_test_score']
     n_features = len(rfecv.ranking_)
     # If using fractional step, step = integer of fraction * n_features
     if rfecv.step < 1:
         rfecv.step = int(rfecv.step * n_features)
-    # Need to manually calculate x-axis, as rfecv.grid_scores_ are a 1-d array
+    # Need to manually calculate x-axis, grid_scores_ is a 1-d array
     x = [n_features - (n * rfecv.step)
-         for n in range(len(rfecv.grid_scores_)-1, -1, -1)]
+         for n in range(len(grid_scores_)-1, -1, -1)]
     if x[0] < 1:
         x[0] = 1
-    return pd.Series(rfecv.grid_scores_, index=x, name='Accuracy')
+    return pd.Series(grid_scores_, index=x, name='Accuracy')
 
 
 def nested_cross_validation(table, metadata, cv, random_state, n_jobs,
@@ -411,12 +412,12 @@ def _calculate_feature_importances(estimator):
     # feature_importances_ or coef_ to report feature importance/weights
     try:
         importances = _extract_important_features(
-            estimator.named_steps.dv.get_feature_names(),
+            estimator.named_steps.dv.get_feature_names_out(),
             estimator.named_steps.est.feature_importances_)
     # is there a better way to determine whether estimator has coef_ ?
     except AttributeError:
         importances = _extract_important_features(
-            estimator.named_steps.dv.get_feature_names(),
+            estimator.named_steps.dv.get_feature_names_out(),
             estimator.named_steps.est.coef_)
     return importances
 
@@ -718,7 +719,7 @@ def _mean_feature_importance(importances):
 def _null_feature_importance(table):
     feature_extractor = DictVectorizer()
     feature_extractor.fit(table)
-    imp = pd.DataFrame(index=feature_extractor.get_feature_names())
+    imp = pd.DataFrame(index=feature_extractor.get_feature_names_out())
     imp.index.name = "feature"
     imp["importance"] = 1
     return imp
@@ -827,8 +828,9 @@ def _train_adaboost_base_estimator(table, metadata, column, base_estimator,
 
     return Pipeline(
         [('dv', estimator.named_steps.dv),
-         ('est', adaboost_estimator(estimator.named_steps.est,
-                                    n_estimators, random_state=random_state))])
+         ('est', adaboost_estimator(estimator=estimator.named_steps.est,
+                                    n_estimators=n_estimators,
+                                    random_state=random_state))])
 
 
 def _disable_feature_selection(estimator, optimize_feature_selection):
