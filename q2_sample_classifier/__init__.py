@@ -15,11 +15,12 @@ from ._format import (
 from ._type import (BooleanSeries, ClassifierPredictions, RegressorPredictions,
                     Importance, SampleEstimator, Classifier, Regressor,
                     Probabilities, TrueTargets)
-from ._version import get_versions
 
 
-__version__ = get_versions()['version']
-del get_versions
+try:
+    from ._version import __version__
+except ModuleNotFoundError:
+    __version__ = '0.0.0+notfound'
 
 __all__ = ['BooleanSeriesFormat', 'BooleanSeriesDirectoryFormat',
            'PredictionsFormat', 'PredictionsDirectoryFormat',
