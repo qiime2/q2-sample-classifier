@@ -6,13 +6,13 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 import tempfile
-import pkg_resources
+import importlib
 
 from qiime2.plugin.testing import TestPluginBase
 
 
 class SampleClassifierTestPluginBase(TestPluginBase):
-    package = 'q2_sample_classifier.tests'
+    package = 'q2_sample_classifier.tests.data'
 
     def setUp(self):
         super().setUp()
@@ -23,5 +23,4 @@ class SampleClassifierTestPluginBase(TestPluginBase):
         self.temp_dir.cleanup()
 
     def get_data_path(self, filename):
-        return pkg_resources.resource_filename(self.package,
-                                               'data/%s' % filename)
+        return importlib.resources.files(self.package) / 'data' / filename

@@ -32,7 +32,7 @@ import q2templates
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import pkg_resources
+import importlib
 from scipy.sparse import issparse
 from scipy.stats import randint
 import biom
@@ -63,7 +63,7 @@ parameters = {
 }
 
 
-TEMPLATES = pkg_resources.resource_filename('q2_sample_classifier', 'assets')
+TEMPLATES = importlib.resources.files('q2_sample_classifier') / 'assets'
 
 
 def _extract_features(feature_data):
