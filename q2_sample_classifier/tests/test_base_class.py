@@ -12,7 +12,7 @@ from qiime2.plugin.testing import TestPluginBase
 
 
 class SampleClassifierTestPluginBase(TestPluginBase):
-    package = 'q2_sample_classifier.tests.data'
+    package = 'q2_sample_classifier.tests'
 
     def setUp(self):
         super().setUp()
