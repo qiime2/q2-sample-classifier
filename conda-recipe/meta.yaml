@@ -21,10 +21,10 @@ requirements:
   - scikit-bio {{ scikit_bio }}
   - seaborn >=0.8
   - fastcluster
-  - qiime2 {{ qiime2_epoch }}.*
-  - q2-types {{ qiime2_epoch }}.*
-  - q2templates {{ qiime2_epoch }}.*
-  - q2-feature-table {{ qiime2_epoch }}.*
+  - qiime2 >={{ qiime2 }}
+  - q2-types >={{ q2_types }}
+  - q2templates >={{ q2templates }}
+  - q2-feature-table >={{ q2_feature_table }}
   build:
   - python {{ python }}
   - setuptools
