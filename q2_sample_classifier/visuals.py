@@ -175,8 +175,12 @@ def _plot_confusion_matrix(y_test, y_pred, classes, normalize, palette,
 
 
 def _check_vmin_and_vmax(cm, vmin, vmax):
-    lowest_frequency = np.amin(cm)
-    highest_frequency = np.amax(cm)
+    cm = np.asarray(cm)
+
+    lowest_frequency = float(cm.min())
+    highest_frequency = float(cm.max())
+
+    def fmt(x): return f"{float(x):.1f}"
 
     error = ''
     if vmin is not None:
