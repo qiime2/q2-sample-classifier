@@ -55,7 +55,7 @@ class TestRFEExtractor(SampleClassifierTestPluginBase):
 
     def extract_rfe_scores_template(self, steps, expected):
         selector = RFECV(RandomForestClassifier(
-            random_state=123, n_estimators=2), step=steps, cv=10)
+            random_state=123, n_estimators=20), step=steps, cv=10)
         selector = selector.fit(self.X, self.y.ravel())
         pdt.assert_series_equal(
             _extract_rfe_scores(selector), expected)

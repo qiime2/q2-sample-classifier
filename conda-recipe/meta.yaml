@@ -32,6 +32,9 @@ requirements:
 test:
   commands:
   - py.test --pyargs q2_sample_classifier
+  # Dbugz - DELETEMELATER
+  - py.test --pyargs q2_sample_classifier -vv -s -k TestRFEExtractor
+  - py.test --pyargs q2_sample_classifier -vv -s -k TestRFEExtractor
   requires:
   - qiime2 >={{ qiime2 }}
   - q2-types >={{ q2_types }}
