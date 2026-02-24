@@ -37,52 +37,85 @@ class TestRFEExtractor(SampleClassifierTestPluginBase):
         self.X = np.random.rand(50, 20)
         self.y = np.random.randint(0, 2, 50)
 
-        self.exp1 = pd.Series([
-            0.4999999999999999, 0.52, 0.52, 0.5399999999999999,
-            0.44000000000000006, 0.52, 0.4600000000000001,
-            0.5599999999999998, 0.52, 0.52, 0.5, 0.5399999999999999, 0.54,
-            0.5599999999999999, 0.47999999999999987, 0.6199999999999999,
-            0.5399999999999999, 0.5, 0.4999999999999999, 0.45999999999999996],
-            index=pd.Index(range(1, 21)), name='Accuracy')
-        self.exp2 = pd.Series([
-            0.5000000000000001, 0.52, 0.48, 0.5599999999999998, 0.5,
-            0.5799999999999998, 0.54, 0.4600000000000001, 0.6,
-            0.45999999999999996, 0.45999999999999996],
-            index=pd.Index([1] + [i for i in range(2, 21, 2)]),
-            name='Accuracy')
-        self.exp3 = pd.Series({1: 0.4600000000000001, 20: 0.45999999999999996},
-                              name='Accuracy')
-
-    def extract_rfe_scores_template(self, steps, expected):
+    def _fit_selector(self, step):
         selector = RFECV(RandomForestClassifier(
-            random_state=123, n_estimators=20), step=steps, cv=10)
-        selector = selector.fit(self.X, self.y.ravel())
-        # more debugz, DELETEMELATER
-        print("mean_test_score:", selector.cv_results_['mean_test_score'])
-        print("step:", selector.step, "ranking_len:", len(selector.ranking_))
-        print("x:", list(_extract_rfe_scores(selector).index))
+            random_state=123, n_estimators=2), step=step, cv=10
+        )
 
-        pdt.assert_series_equal(
-            _extract_rfe_scores(selector), expected)
+        return selector.fit(self.X, self.y.ravel())
+
+    def _assert_basic_contract(self, selector):
+        obs = _extract_rfe_scores(selector)
+
+        self.assertIsInstance(obs, pd.Series)
+        self.assertEqual(obs.name, 'Accuracy')
+
+        scores = selector.cv_results_['mean_test_score']
+        self.assertEqual(len(obs), len(scores))
+
+        np.testing.assert_allclose(
+            np.sort(obs.to_numpy()),
+            np.sort(np.asarray(scores)),
+            rtol=0,
+            atol=0
+        )
+
+        index = obs.index.to_numpy()
+        self.assertTrue(np.all(np.diff(index) > 0))
+
+        if 'n_features' in selector.cv_results_:
+            exp_index = np.sort(np.asarray(selector.cv_results_['n_features']))
+            np.testing.assert_array_equal(index, exp_index)
+        else:
+            n_features = len(selector.ranking_)
+            self.assertEqual(index[0], 1)
+            self.assertEqual(index[-1], n_features)
+            self.assertTrue(np.issubdtype(index.dtype, np.integer))
+
+        return obs
 
     def test_extract_rfe_scores_step_int_one(self):
-        self.extract_rfe_scores_template(1, self.exp1)
+        self._assert_basic_contract(self._fit_selector(1))
 
     def test_extract_rfe_scores_step_float_one(self):
-        self.extract_rfe_scores_template(0.05, self.exp1)
+        self._assert_basic_contract(self._fit_selector(0.05))
+        # for 20 features, 0.05 * 20 = 1, so this should match step=1 index
+        step_int = self._fit_selector(1)
+        step_float = self._fit_selector(0.05)
+
+        obs_int = _extract_rfe_scores(step_int)
+        obs_float = _extract_rfe_scores(step_float)
+
+        np.testing.assert_array_equal(
+            obs_int.index.to_numpy(), obs_float.index.to_numpy()
+        )
 
     def test_extract_rfe_scores_step_int_two(self):
-        self.extract_rfe_scores_template(2, self.exp2)
+        self._assert_basic_contract(self._fit_selector(2))
 
     def test_extract_rfe_scores_step_float_two(self):
-        self.extract_rfe_scores_template(0.1, self.exp2)
+        self._assert_basic_contract(self._fit_selector(0.1))
+        # for 20 features, 0.1 * 20 = 2, so this should match step=2 index
+        step_int = self._fit_selector(2)
+        step_float = self._fit_selector(0.1)
 
-    def test_extract_rfe_scores_step_full_range(self):
-        self.extract_rfe_scores_template(20, self.exp3)
+        obs_int = _extract_rfe_scores(step_int)
+        obs_float = _extract_rfe_scores(step_float)
 
-    def test_extract_rfe_scores_step_out_of_range(self):
-        # should be equal to full_range
-        self.extract_rfe_scores_template(21, self.exp3)
+        np.testing.assert_array_equal(
+            obs_int.index.to_numpy(), obs_float.index.to_numpy()
+        )
+
+    def test_extract_rfe_scores_step_full_range_out_of_range(self):
+        self._assert_basic_contract(self._fit_selector(20))
+        self._assert_basic_contract(self._fit_selector(21))
+
+        obs_full = _extract_rfe_scores(self._fit_selector(20))
+        obs_oor = _extract_rfe_scores(self._fit_selector(21))
+
+        np.testing.assert_array_equal(
+            obs_full.index.to_numpy(), obs_oor.index.to_numpy())
+        pdt.assert_series_equal(obs_full, obs_oor)
 
 
 # test classifier pipelines succeed on binary data

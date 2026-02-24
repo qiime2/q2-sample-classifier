@@ -250,16 +250,27 @@ def _rfecv_feature_selection(feature_data, targets, estimator,
 
 def _extract_rfe_scores(rfecv):
     grid_scores_ = rfecv.cv_results_['mean_test_score']
-    n_features = len(rfecv.ranking_)
-    # If using fractional step, step = integer of fraction * n_features
-    if rfecv.step < 1:
-        rfecv.step = int(rfecv.step * n_features)
-    # Need to manually calculate x-axis, grid_scores_ is a 1-d array
-    x = [n_features - (n * rfecv.step)
-         for n in range(len(grid_scores_)-1, -1, -1)]
-    if x[0] < 1:
-        x[0] = 1
-    return pd.Series(grid_scores_, index=x, name='Accuracy')
+
+    # sklearn >= 1.5 provides the x-axis directly
+    # https://scikit-learn.org/stable/whats_new/v1.5.html#sklearn-feature-selection
+    if 'n_features' in rfecv.cv_results_:
+        x = rfecv.cv_results_['n_features']
+
+    else:
+        n_features = len(rfecv.ranking_)
+        # If using fractional step, step = integer of fraction * n_features
+        step = rfecv.step
+        if step < 1:
+            # prevent case where step = 0
+            step = max(1, int(step * n_features))
+
+        # Need to manually calculate x-axis, grid_scores_ is a 1-d array
+        x = [n_features - (n * step)
+             for n in range(len(grid_scores_)-1, -1, -1)]
+        if x[0] < 1:
+            x[0] = 1
+
+    return pd.Series(grid_scores_, index=x, name='Accuracy').sort_index()
 
 
 def nested_cross_validation(table, metadata, cv, random_state, n_jobs,
