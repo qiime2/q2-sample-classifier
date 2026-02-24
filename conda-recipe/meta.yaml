@@ -31,7 +31,7 @@ requirements:
   - versioningit
 test:
   commands:
-  - py.test --pyargs q2_sample_classifier
+  # - py.test --pyargs q2_sample_classifier
   # Dbugz - DELETEMELATER
   - py.test --pyargs q2_sample_classifier -vv -s -k TestRFEExtractor
   - py.test --pyargs q2_sample_classifier -vv -s -k TestRFEExtractor

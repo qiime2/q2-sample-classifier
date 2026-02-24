@@ -57,6 +57,11 @@ class TestRFEExtractor(SampleClassifierTestPluginBase):
         selector = RFECV(RandomForestClassifier(
             random_state=123, n_estimators=20), step=steps, cv=10)
         selector = selector.fit(self.X, self.y.ravel())
+        # more debugz, DELETEMELATER
+        print("mean_test_score:", selector.cv_results_['mean_test_score'])
+        print("step:", selector.step, "ranking_len:", len(selector.ranking_))
+        print("x:", list(_extract_rfe_scores(selector).index))
+
         pdt.assert_series_equal(
             _extract_rfe_scores(selector), expected)
 
