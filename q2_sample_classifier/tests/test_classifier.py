@@ -53,24 +53,18 @@ class TestRFEExtractor(SampleClassifierTestPluginBase):
         scores = selector.cv_results_['mean_test_score']
         self.assertEqual(len(obs), len(scores))
 
-        np.testing.assert_allclose(
+        np.testing.assert_array_equal(
             np.sort(obs.to_numpy()),
-            np.sort(np.asarray(scores)),
-            rtol=0,
-            atol=0
-        )
+            np.sort(np.asarray(scores)))
 
         index = obs.index.to_numpy()
         self.assertTrue(np.all(np.diff(index) > 0))
 
-        if 'n_features' in selector.cv_results_:
-            exp_index = np.sort(np.asarray(selector.cv_results_['n_features']))
-            np.testing.assert_array_equal(index, exp_index)
-        else:
-            n_features = len(selector.ranking_)
-            self.assertEqual(index[0], 1)
-            self.assertEqual(index[-1], n_features)
-            self.assertTrue(np.issubdtype(index.dtype, np.integer))
+        n_features = len(selector.ranking_)
+
+        self.assertEqual(index[0], 1)
+        self.assertEqual(index[-1], n_features)
+        self.assertTrue(np.issubdtype(index.dtype, np.integer))
 
         return obs
 

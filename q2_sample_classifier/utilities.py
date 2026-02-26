@@ -270,7 +270,7 @@ def _extract_rfe_scores(rfecv):
         if x[0] < 1:
             x[0] = 1
 
-    return pd.Series(grid_scores_, index=x, name='Accuracy').sort_index()
+    return pd.Series(grid_scores_, index=x, name='Accuracy')
 
 
 def nested_cross_validation(table, metadata, cv, random_state, n_jobs,
