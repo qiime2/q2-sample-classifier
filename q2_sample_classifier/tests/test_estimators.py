@@ -334,7 +334,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
             self.table_ecam_fp, self.mdc_ecam_fp, random_state=123,
             n_estimators=2, n_jobs=1, missing_samples='ignore')
         pdt.assert_series_equal(y_pred, self.exp_pred)
-        pdt.assert_frame_equal(importances, self.exp_imp)
+        pdt.assert_frame_equal(importances, self.exp_imp, atol=1e-12)
 
     # test that fit_* methods output consistent importance scores
     def test_fit_regressor(self):
@@ -344,7 +344,7 @@ class EstimatorsTests(SampleClassifierTestPluginBase):
         exp_imp = pd.read_csv(
             self.get_data_path('importance_cv.tsv'), sep='\t', header=0,
             index_col=0)
-        pdt.assert_frame_equal(importances, exp_imp)
+        pdt.assert_frame_equal(importances, exp_imp, atol=1e-12)
 
     # just make sure this method runs. Uses the same internal function as
     # fit_regressor, so importance score consistency is covered by the above
