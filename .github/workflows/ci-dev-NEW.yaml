@@ -1,5 +1,5 @@
 # Example of workflow trigger for calling workflow (the client).
-name: ci-dev
+name: ci-dev-NEW
 on:
   pull_request:
     branches: ["dev"]
@@ -7,7 +7,7 @@ on:
     branches: ["dev"]
 jobs:
   ci:
-    uses: qiime2/distributions/.github/workflows/lib-ci-dev.yaml@dev
+    uses: qiime2/distributions/.github/workflows/lib-ci-dev-NEW.yaml@dev
     with:
       distro: amplicon
       recipe-path: 'conda-recipe'
