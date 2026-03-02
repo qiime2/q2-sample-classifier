@@ -7,7 +7,7 @@ on:
     branches: ["dev"]
 jobs:
   ci:
-    uses: qiime2/distributions/.github/workflows/lib-ci-dev.yaml@dev
+    uses: qiime2/distributions/.github/workflows/lib-ci-dev-NEW.yaml@dev
     with:
       distro: amplicon
       recipe-path: 'conda-recipe'
