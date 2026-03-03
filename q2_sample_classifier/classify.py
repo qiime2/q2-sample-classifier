@@ -291,13 +291,6 @@ def fit_regressor(table: biom.Table,
         n_jobs, optimize_feature_selection, parameter_tuning,
         missing_samples=missing_samples, classification=False)
 
-    # this is sorted by the first column rather than 'importance' because
-    # the column name isn't consistent across methods - so this is the least
-    # invasive way to preserve order with the first column (which does
-    # contain the importance values)
-    importance = importance.sort_values(by=importance.columns[0],
-                                        ascending=False, kind='mergesort')
-
     return estimator, importance
 
 

@@ -526,8 +526,12 @@ def _plot_accuracy(output_dir, predictions, truth, probabilities,
 
 
 def sort_importances(importances, ascending=False):
-    return importances.sort_values(
-        by=importances.columns[0], ascending=ascending)
+    importances['idx'] = importances.index.astype(str)
+    # sort first by descending order of importance values, then by the index
+    # to resolve differing zero sort orders across operating systems
+    return importances.sort_values(by=[importances.columns[0], 'idx'],
+                                   ascending=[ascending, True],
+                                   kind='mergesort').drop(columns='idx')
 
 
 def _extract_estimator_parameters(estimator):
