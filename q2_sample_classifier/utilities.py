@@ -728,7 +728,7 @@ def _mean_feature_importance(importances):
     imp = pd.concat(importances, axis=1, sort=True)
     # groupby column name instead of taking column mean to support 2d arrays
     imp = imp.groupby(imp.columns, axis=1).mean()
-    return imp.sort_values(imp.columns[0], ascending=False)
+    return sort_importances(imp)
 
 
 def _null_feature_importance(table):
