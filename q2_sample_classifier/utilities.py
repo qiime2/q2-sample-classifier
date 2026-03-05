@@ -526,8 +526,12 @@ def _plot_accuracy(output_dir, predictions, truth, probabilities,
 
 
 def sort_importances(importances, ascending=False):
-    return importances.sort_values(
-        by=importances.columns[0], ascending=ascending)
+    importances['idx'] = importances.index.astype(str)
+    # sort first by descending order of importance values, then by the index
+    # to resolve differing zero sort orders across operating systems
+    return importances.sort_values(by=[importances.columns[0], 'idx'],
+                                   ascending=[ascending, True],
+                                   kind='mergesort').drop(columns='idx')
 
 
 def _extract_estimator_parameters(estimator):
@@ -724,7 +728,7 @@ def _mean_feature_importance(importances):
     imp = pd.concat(importances, axis=1, sort=True)
     # groupby column name instead of taking column mean to support 2d arrays
     imp = imp.groupby(imp.columns, axis=1).mean()
-    return imp.sort_values(imp.columns[0], ascending=False)
+    return sort_importances(imp)
 
 
 def _null_feature_importance(table):
