@@ -18,15 +18,13 @@ from sklearn.pipeline import Pipeline
 
 
 import qiime2
-from q2_types.feature_data import FeatureData
 from qiime2.plugin import ValidationError
 from q2_types.sample_data import SampleData
 
 from q2_sample_classifier import (
     BooleanSeriesFormat, BooleanSeriesDirectoryFormat, BooleanSeries,
     PredictionsFormat, PredictionsDirectoryFormat, ClassifierPredictions,
-    RegressorPredictions, ImportanceFormat, ImportanceDirectoryFormat,
-    Importance, PickleFormat, ProbabilitiesFormat,
+    RegressorPredictions, PickleFormat, ProbabilitiesFormat,
     ProbabilitiesDirectoryFormat, Probabilities, Classifier, Regressor,
     SampleEstimator, SampleEstimatorDirFmt,
     TrueTargetsDirectoryFormat, TrueTargets)
@@ -181,80 +179,6 @@ class TestSemanticTypes(SampleClassifierTestPluginBase):
                               '10249.C004.01SS', '10249.C004.11SS'],
                              name='id')
         exp = pd.DataFrame([4.5, 2.5, 0.5, 4.5], columns=['prediction'],
-                           index=exp_index)
-        pdt.assert_frame_equal(obs.to_dataframe()[:4], exp)
-
-    # test Importance format
-    def test_Importance_format_validate_positive(self):
-        filepath = self.get_data_path('importance.tsv')
-        format = ImportanceFormat(filepath, mode='r')
-        format.validate(level='min')
-        format.validate()
-
-    def test_Importance_format_validate_negative_nonnumeric(self):
-        filepath = self.get_data_path('chardonnay.map.txt')
-        format = ImportanceFormat(filepath, mode='r')
-        with self.assertRaisesRegex(ValidationError, 'numeric values'):
-            format.validate()
-
-    def test_Importance_format_validate_negative_empty(self):
-        filepath = self.get_data_path('empty_file.txt')
-        format = ImportanceFormat(filepath, mode='r')
-        with self.assertRaisesRegex(ValidationError, 'one data record'):
-            format.validate()
-
-    def test_Importance_format_validate_negative(self):
-        filepath = self.get_data_path('garbage.txt')
-        format = ImportanceFormat(filepath, mode='r')
-        with self.assertRaisesRegex(ValidationError, 'two or more fields'):
-            format.validate()
-
-    def test_Importance_dir_fmt_validate_positive(self):
-        filepath = self.get_data_path('importance.tsv')
-        shutil.copy(filepath, self.temp_dir.name)
-        format = ImportanceDirectoryFormat(self.temp_dir.name, mode='r')
-        format.validate()
-
-    def test_Importance_semantic_type_registration(self):
-        self.assertRegisteredSemanticType(Importance)
-
-    def test_sample_data_Importance_to_Importance_dir_fmt_registration(self):
-        self.assertSemanticTypeRegisteredToFormat(
-            FeatureData[Importance], ImportanceDirectoryFormat)
-
-    def test_pd_dataframe_to_Importance_format(self):
-        transformer = self.get_transformer(pd.DataFrame, ImportanceFormat)
-        exp = pd.DataFrame([1, 2, 3, 4],
-                           columns=['importance'], index=['a', 'b', 'c', 'd'])
-        obs = transformer(exp)
-        obs = pd.read_csv(str(obs), sep='\t', header=0, index_col=0)
-        pdt.assert_frame_equal(exp, obs)
-
-    def test_Importance_format_to_pd_dataframe(self):
-        _, obs = self.transform_format(
-            ImportanceFormat, pd.DataFrame, 'importance.tsv')
-        exp_index = pd.Index(['74ec9fe6ffab4ecff6d5def74298a825',
-                              'c82032c40c98975f71892e4be561c87a',
-                              '79280cea51a6fe8a3432b2f266dd34db',
-                              'f7686a74ca2d3729eb66305e8a26309b'],
-                             name='id')
-        exp = pd.DataFrame([0.44469828320835586, 0.07760118417569697,
-                            0.06570251750505914, 0.061718558716901406],
-                           columns=['importance'],
-                           index=exp_index)
-        pdt.assert_frame_equal(exp, obs[:4])
-
-    def test_Importance_format_to_metadata(self):
-        _, obs = self.transform_format(
-            ImportanceFormat, qiime2.Metadata, 'importance.tsv')
-        exp_index = pd.Index(['74ec9fe6ffab4ecff6d5def74298a825',
-                              'c82032c40c98975f71892e4be561c87a',
-                              '79280cea51a6fe8a3432b2f266dd34db',
-                              'f7686a74ca2d3729eb66305e8a26309b'],
-                             name='id')
-        exp = pd.DataFrame([0.44469828320835586, 0.07760118417569697,
-                            0.06570251750505914, 0.061718558716901406],
-                           columns=['importance'],
                            index=exp_index)
         pdt.assert_frame_equal(obs.to_dataframe()[:4], exp)
 

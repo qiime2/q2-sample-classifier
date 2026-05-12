@@ -8,7 +8,6 @@
 
 from qiime2.plugin import SemanticType
 from q2_types.sample_data import SampleData
-from q2_types.feature_data import FeatureData
 
 
 ClassifierPredictions = SemanticType(
@@ -22,8 +21,6 @@ Regressor = SemanticType(
     'Regressor', variant_of=SampleEstimator.field['type'])
 BooleanSeries = SemanticType(
     'BooleanSeries', variant_of=SampleData.field['type'])
-Importance = SemanticType(
-    'Importance', variant_of=FeatureData.field['type'])
 Probabilities = SemanticType(
     'Probabilities', variant_of=SampleData.field['type'])
 TrueTargets = SemanticType(

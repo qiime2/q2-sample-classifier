@@ -11,6 +11,7 @@ import json
 
 import qiime2.plugin.model as model
 from qiime2.plugin import ValidationError
+from q2_types.feature_data._formats import _MultiColumnNumericFormat
 
 
 def _validate_record_len(cells, current_line_number, exp_len):
@@ -118,55 +119,6 @@ class PredictionsFormat(model.TextFileFormat):
 PredictionsDirectoryFormat = model.SingleFileDirectoryFormat(
     'PredictionsDirectoryFormat', 'predictions.tsv',
     PredictionsFormat)
-
-
-class _MultiColumnNumericFormat(model.TextFileFormat):
-    def _validate(self, n_records=None):
-        with self.open() as fh:
-            # validate header
-            # for now we will not validate any information in the header,
-            # since column names, count etc are frequently unique to individual
-            # estimators. Let's keep this flexible.
-            line = fh.readline()
-
-            # validate body
-            has_data = False
-            for line_number, line in enumerate(fh, start=2):
-                # we want to strip each cell, not the original line
-                # otherwise empty cells are dropped, causing a TypeError
-                cells = [c.strip() for c in line.split('\t')]
-                if len(cells) < 2:
-                    raise ValidationError(
-                        "Expected data record to be TSV with two or more "
-                        "fields. Detected {0} fields at line {1}:\n\n{2!r}"
-                        .format(len(cells), line_number, cells))
-                # all values (except row name) should be numbers
-                try:
-                    [float(c) for c in cells[1:]]
-                except ValueError:
-                    raise ValidationError(
-                        "Columns must contain only numeric values. "
-                        "A non-numeric value ({0!r}) was detected at line "
-                        "{1}.".format(cells[1], line_number))
-
-                has_data = True
-                if n_records is not None and (line_number - 1) >= n_records:
-                    break
-
-            _validate_file_not_empty(has_data)
-
-    def _validate_(self, level):
-        record_count_map = {'min': 5, 'max': None}
-        self._validate(record_count_map[level])
-
-
-class ImportanceFormat(_MultiColumnNumericFormat):
-    pass
-
-
-ImportanceDirectoryFormat = model.SingleFileDirectoryFormat(
-    'ImportanceDirectoryFormat', 'importance.tsv',
-    ImportanceFormat)
 
 
 class ProbabilitiesFormat(_MultiColumnNumericFormat):

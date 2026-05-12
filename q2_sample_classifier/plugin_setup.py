@@ -28,8 +28,6 @@ from .visuals import _custom_palettes
 from ._format import (SampleEstimatorDirFmt,
                       BooleanSeriesFormat,
                       BooleanSeriesDirectoryFormat,
-                      ImportanceFormat,
-                      ImportanceDirectoryFormat,
                       PredictionsFormat,
                       PredictionsDirectoryFormat,
                       ProbabilitiesFormat,
@@ -37,9 +35,9 @@ from ._format import (SampleEstimatorDirFmt,
                       TrueTargetsDirectoryFormat)
 
 from ._type import (ClassifierPredictions, RegressorPredictions,
-                    SampleEstimator, BooleanSeries, Importance,
-                    Classifier, Regressor, Probabilities,
-                    TrueTargets)
+                    SampleEstimator, BooleanSeries, Classifier, Regressor,
+                    Probabilities, TrueTargets)
+from q2_types.feature_data import Importance
 import q2_sample_classifier
 
 citations = Citations.load('citations.bib', package='q2_sample_classifier')
@@ -646,7 +644,7 @@ plugin.pipelines.register_function(
 
 # Registrations
 plugin.register_semantic_types(
-    SampleEstimator, BooleanSeries, Importance, ClassifierPredictions,
+    SampleEstimator, BooleanSeries, ClassifierPredictions,
     RegressorPredictions, Classifier, Regressor, Probabilities, TrueTargets)
 plugin.register_semantic_type_to_format(
     SampleEstimator[Classifier],
@@ -664,9 +662,6 @@ plugin.register_semantic_type_to_format(
     SampleData[ClassifierPredictions],
     artifact_format=PredictionsDirectoryFormat)
 plugin.register_semantic_type_to_format(
-    FeatureData[Importance],
-    artifact_format=ImportanceDirectoryFormat)
-plugin.register_semantic_type_to_format(
     SampleData[Probabilities],
     artifact_format=ProbabilitiesDirectoryFormat)
 plugin.register_semantic_type_to_format(
@@ -674,8 +669,7 @@ plugin.register_semantic_type_to_format(
     artifact_format=TrueTargetsDirectoryFormat)
 plugin.register_formats(
     SampleEstimatorDirFmt, BooleanSeriesFormat, BooleanSeriesDirectoryFormat,
-    ImportanceFormat, ImportanceDirectoryFormat, PredictionsFormat,
-    PredictionsDirectoryFormat, ProbabilitiesFormat,
+    PredictionsFormat, PredictionsDirectoryFormat, ProbabilitiesFormat,
     ProbabilitiesDirectoryFormat,
     TrueTargetsDirectoryFormat)
 importlib.import_module('q2_sample_classifier._transformer')
