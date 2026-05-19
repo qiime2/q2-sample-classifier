@@ -11,7 +11,6 @@ import json
 
 import qiime2.plugin.model as model
 from qiime2.plugin import ValidationError
-from q2_types.feature_data._formats import _MultiColumnNumericFormat
 
 
 def _validate_record_len(cells, current_line_number, exp_len):
@@ -121,8 +120,43 @@ PredictionsDirectoryFormat = model.SingleFileDirectoryFormat(
     PredictionsFormat)
 
 
-class ProbabilitiesFormat(_MultiColumnNumericFormat):
-    pass
+class ProbabilitiesFormat(model.TextFileFormat):
+    def _validate(self, n_records=None):
+        """Validate rows with an identifier followed by numeric values."""
+        with self.open() as fh:
+            # The header is intentionally flexible because column names and
+            # counts can vary by estimator.
+            fh.readline()
+
+            has_data = False
+            for line_number, line in enumerate(fh, start=2):
+                # Strip each cell rather than the full line so empty cells are
+                # preserved and fail numeric validation.
+                cells = [c.strip() for c in line.split('\t')]
+                if len(cells) < 2:
+                    raise ValidationError(
+                        "Expected data record to be TSV with two or more "
+                        "fields. Detected {0} fields at line {1}:\n\n{2!r}"
+                        .format(len(cells), line_number, cells))
+
+                try:
+                    [float(c) for c in cells[1:]]
+                except ValueError:
+                    raise ValidationError(
+                        "Columns must contain only numeric values. "
+                        "A non-numeric value ({0!r}) was detected at line "
+                        "{1}.".format(cells[1], line_number))
+
+                has_data = True
+                if n_records is not None and (line_number - 1) >= n_records:
+                    break
+
+            _validate_file_not_empty(has_data)
+
+    def _validate_(self, level):
+        """Validate this format using QIIME 2's min or max validation level."""
+        record_count_map = {'min': 5, 'max': None}
+        self._validate(record_count_map[level])
 
 
 ProbabilitiesDirectoryFormat = model.SingleFileDirectoryFormat(
