@@ -20,8 +20,7 @@ from sklearn.pipeline import Pipeline
 
 from .plugin_setup import plugin
 from ._format import (SampleEstimatorDirFmt, JSONFormat, BooleanSeriesFormat,
-                      ImportanceFormat, PredictionsFormat, PickleFormat,
-                      ProbabilitiesFormat)
+                      PredictionsFormat, PickleFormat, ProbabilitiesFormat)
 
 
 def _read_dataframe(fh):
@@ -74,28 +73,6 @@ def _6(ff: PredictionsFormat) -> (qiime2.Metadata):
     with ff.open() as fh:
         return qiime2.Metadata(_read_dataframe(fh).apply(
             lambda x: pd.to_numeric(x, errors='ignore')))
-
-
-@plugin.register_transformer
-def _7(data: pd.DataFrame) -> (ImportanceFormat):
-    ff = ImportanceFormat()
-    with ff.open() as fh:
-        data.to_csv(fh, sep='\t', header=True, na_rep=np.nan)
-    return ff
-
-
-@plugin.register_transformer
-def _8(ff: ImportanceFormat) -> (pd.DataFrame):
-    with ff.open() as fh:
-        return _read_dataframe(fh).apply(
-            lambda x: pd.to_numeric(x, errors='raise'))
-
-
-@plugin.register_transformer
-def _9(ff: ImportanceFormat) -> (qiime2.Metadata):
-    with ff.open() as fh:
-        return qiime2.Metadata(_read_dataframe(fh).apply(
-            lambda x: pd.to_numeric(x, errors='raise')))
 
 
 @plugin.register_transformer

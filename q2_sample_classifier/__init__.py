@@ -8,13 +8,12 @@
 
 from ._format import (
     BooleanSeriesFormat, BooleanSeriesDirectoryFormat,
-    PredictionsFormat, PredictionsDirectoryFormat, ImportanceFormat,
-    ImportanceDirectoryFormat, SampleEstimatorDirFmt, PickleFormat,
-    ProbabilitiesFormat, ProbabilitiesDirectoryFormat,
+    PredictionsFormat, PredictionsDirectoryFormat, SampleEstimatorDirFmt,
+    PickleFormat, ProbabilitiesFormat, ProbabilitiesDirectoryFormat,
     TrueTargetsDirectoryFormat)
 from ._type import (BooleanSeries, ClassifierPredictions, RegressorPredictions,
-                    Importance, SampleEstimator, Classifier, Regressor,
-                    Probabilities, TrueTargets)
+                    SampleEstimator, Classifier, Regressor, Probabilities,
+                    TrueTargets)
 
 
 try:
@@ -24,9 +23,8 @@ except ModuleNotFoundError:
 
 __all__ = ['BooleanSeriesFormat', 'BooleanSeriesDirectoryFormat',
            'PredictionsFormat', 'PredictionsDirectoryFormat',
-           'ImportanceFormat', 'ImportanceDirectoryFormat',
            'SampleEstimatorDirFmt', 'PickleFormat', 'BooleanSeries',
-           'ClassifierPredictions', 'RegressorPredictions', 'Importance',
+           'ClassifierPredictions', 'RegressorPredictions',
            'Classifier', 'Regressor', 'SampleEstimator', 'Probabilities',
            'ProbabilitiesFormat', 'ProbabilitiesDirectoryFormat',
            'TrueTargets', 'TrueTargetsDirectoryFormat']
