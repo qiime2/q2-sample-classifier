@@ -120,25 +120,27 @@ PredictionsDirectoryFormat = model.SingleFileDirectoryFormat(
     PredictionsFormat)
 
 
-class ProbabilitiesFormat(model.TextFileFormat):
+class _MultiColumnNumericFormat(model.TextFileFormat):
     def _validate(self, n_records=None):
-        """Validate rows with an identifier followed by numeric values."""
         with self.open() as fh:
-            # The header is intentionally flexible because column names and
-            # counts can vary by estimator.
-            fh.readline()
+            # validate header
+            # for now we will not validate any information in the header,
+            # since column names, count etc are frequently unique to individual
+            # estimators. Let's keep this flexible.
+            line = fh.readline()
 
+            # validate body
             has_data = False
             for line_number, line in enumerate(fh, start=2):
-                # Strip each cell rather than the full line so empty cells are
-                # preserved and fail numeric validation.
+                # we want to strip each cell, not the original line
+                # otherwise empty cells are dropped, causing a TypeError
                 cells = [c.strip() for c in line.split('\t')]
                 if len(cells) < 2:
                     raise ValidationError(
                         "Expected data record to be TSV with two or more "
                         "fields. Detected {0} fields at line {1}:\n\n{2!r}"
                         .format(len(cells), line_number, cells))
-
+                # all values (except row name) should be numbers
                 try:
                     [float(c) for c in cells[1:]]
                 except ValueError:
@@ -154,9 +156,21 @@ class ProbabilitiesFormat(model.TextFileFormat):
             _validate_file_not_empty(has_data)
 
     def _validate_(self, level):
-        """Validate this format using QIIME 2's min or max validation level."""
         record_count_map = {'min': 5, 'max': None}
         self._validate(record_count_map[level])
+
+
+class ImportanceFormat(_MultiColumnNumericFormat):
+    pass
+
+
+ImportanceDirectoryFormat = model.SingleFileDirectoryFormat(
+    'ImportanceDirectoryFormat', 'importance.tsv',
+    ImportanceFormat)
+
+
+class ProbabilitiesFormat(_MultiColumnNumericFormat):
+    pass
 
 
 ProbabilitiesDirectoryFormat = model.SingleFileDirectoryFormat(
